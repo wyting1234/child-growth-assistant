@@ -1,0 +1,45 @@
+/* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装） */
+const CACHE = 'child-growth-v1';
+const CORE = ['./', './index.html', './manifest.json'];
+
+self.addEventListener('install', function (e) {
+  e.waitUntil(
+    caches.open(CACHE).then(function (c) {
+      return c.addAll(CORE);
+    }).then(function () {
+      return self.skipWaiting();
+    })
+  );
+});
+
+self.addEventListener('activate', function (e) {
+  e.waitUntil(
+    caches.keys().then(function (keys) {
+      return Promise.all(keys.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); }));
+    }).then(function () {
+      return self.clients.claim();
+    })
+  );
+});
+
+/* 网络优先，失败回退缓存（离线时仍可使用核心功能） */
+self.addEventListener('fetch', function (e) {
+  var url;
+  try { url = new URL(e.request.url); } catch (err) { return; }
+  if (url.origin !== location.origin) return; // 跨域资源（如 CDN）不拦截
+  if (e.request.method !== 'GET') return;
+
+  e.respondWith(
+    fetch(e.request).then(function (res) {
+      if (res && res.status === 200) {
+        var copy = res.clone();
+        caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.match(e.request).then(function (m) {
+        return m || caches.match('./index.html');
+      });
+    })
+  );
+});
