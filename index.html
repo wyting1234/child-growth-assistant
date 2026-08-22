@@ -118,6 +118,7 @@
             z-index: 999;
             opacity: 0;
             transition: 0.3s;
+            pointer-events: none; /* 提示气泡不拦截页面点击 */
         }
         .toast.show {
             opacity: 1;
@@ -1766,7 +1767,8 @@
                     <button data-view="month" onclick="setDailyView('month')">月</button>
                 </div>
                 <div id="daily-day-view">
-                    <div class="section-title">📋 固定任务（每日必做）</div>
+                    <div class="section-title">📋 固定任务（指标库自动同步）</div>
+                    <p style="color:var(--gray);font-size:12px;margin:-6px 0 10px;">自动匹配指标库中周期为「每天」的指标；「特定周期」指标在所选日期自动出现，无需手动添加</p>
                     <div id="daily-fixed-tasks"></div>
                     <div class="section-title">📝 临时事项</div>
                     <div id="daily-temp-tasks"></div>
@@ -2679,6 +2681,7 @@
             closeIndicatorModal();
             renderIndicatorList();
             populateCustomSelectSm();
+            refreshDailyFromIndicators();
         });
 
         window.deleteIndicator = function() {
@@ -2691,6 +2694,7 @@
             renderIndicatorList();
             showToast('🗑️ 指标已删除');
             populateCustomSelectSm();
+            refreshDailyFromIndicators();
         };
 
         // ✅ 优化后的 renderIndicatorList（批量构建 HTML，解决卡顿）
@@ -2736,6 +2740,7 @@
             renderIndicatorList();
             showToast('🗑️ 指标已删除');
             populateCustomSelectSm();
+            refreshDailyFromIndicators();
         };
 
         function populateIndicatorSelects() { /* 在弹窗中动态填充 */ }
@@ -2757,18 +2762,49 @@
                 updateSummary(); }
         }
 
+        // ================================================================
+        //  固定任务：自动与指标库联动
+        //  - 周期为「每天」的指标 → 每天出现在固定任务
+        //  - 周期为「特定周期」的指标 → 仅在所选日期命中时出现
+        //  - 指标缺少周期/日期时，回退使用其所属行动的周期/日期
+        //  - 打卡数据仍按「任务名」存入 daily_fixed_<日期>，兼容历史记录
+        // ================================================================
         function getFixedTaskList() {
-            var fixedTaskNames = ['课内作业', '错题整理', '课外阅读', '运动/特长'];
-            var fixedEstimates = { '课内作业': 60, '错题整理': 30, '课外阅读': 30, '运动/特长': 60 };
+            var dateInput = document.getElementById('daily-date');
+            var selectedDate = (dateInput && dateInput.value) ? dateInput.value : today;
             var indicators = getIndicators();
-            var dailyIndicators = indicators.filter(function(ind) { return ind.periodType === 'daily'; });
-            dailyIndicators.forEach(function(ind) {
-                if (fixedTaskNames.indexOf(ind.name) === -1) {
-                    fixedTaskNames.push(ind.name);
-                    fixedEstimates[ind.name] = ind.estimate || '';
+            var actions = getActions();
+            var actionMap = {};
+            actions.forEach(function(a) { actionMap[a.id] = a; });
+            var names = [];
+            var estimates = {};
+            var details = {};
+            indicators.forEach(function(ind) {
+                if (!ind || !ind.name) return;
+                var action = actionMap[ind.actionId];
+                var periodType = ind.periodType || (action ? action.periodType : '') || 'daily';
+                var dates = (ind.dates && ind.dates.length ? ind.dates : (action ? (action.dates || []) : [])) || [];
+                var hit = false;
+                if (periodType === 'daily') { hit = true; }
+                else if (periodType === 'specific' && dates.indexOf(selectedDate) !== -1) { hit = true; }
+                if (hit && names.indexOf(ind.name) === -1) {
+                    names.push(ind.name);
+                    estimates[ind.name] = (ind.estimate !== '' && ind.estimate !== undefined && ind.estimate !== null)
+                        ? ind.estimate : (action ? (action.estimate || '') : '');
+                    details[ind.name] = { periodType: periodType, indicatorId: ind.id };
                 }
             });
-            return { names: fixedTaskNames, estimates: fixedEstimates };
+            return { names: names, estimates: estimates, details: details };
+        }
+
+        // 指标库数据变化后，联动刷新「每日陪伴」固定任务与汇总表
+        function refreshDailyFromIndicators() {
+            try {
+                if (document.getElementById('daily-fixed-tasks')) {
+                    loadDailyTasks();
+                    updateSummary();
+                }
+            } catch (e) { console.error('refreshDailyFromIndicators error:', e); }
         }
 
         function loadDailyTasks() {
@@ -2792,14 +2828,25 @@
                 }
             });
             var fixedContainer = document.getElementById('daily-fixed-tasks');
+            var fixedDetails = fixedInfo.details || {};
             var html = '';
+            if (fixedTaskNames.length === 0) {
+                html = '<p style="color:var(--gray);font-size:14px;line-height:1.8;">' +
+                    '📭 暂无固定任务<br>固定任务已与「指标库」自动联动：' +
+                    '在指标库中添加周期为<b>「每天」</b>的指标后，将自动同步到这里；' +
+                    '「特定周期」的指标会在所选日期自动出现。</p>';
+            }
             fixedTaskNames.forEach(function(name, index) {
                 var item = fixedData[name] || { status: '未完成', estimate: '', actualTime: '' };
                 var status = item.status || '未完成';
-                var estimate = item.estimate || '';
+                var estimate = item.estimate || fixedEstimates[name] || '';
+                var detail = fixedDetails[name] || {};
+                var cycleTag = detail.periodType === 'specific'
+                    ? '<span style="font-size:11px;color:#fff;background:var(--warning,#f39c12);border-radius:8px;padding:1px 6px;margin-left:6px;white-space:nowrap;">📅特定</span>'
+                    : '';
                 html += '<div class="task-item" data-task="' + name + '">';
                 html += '<span class="task-index">' + (index + 1) + '.</span>';
-                html += '<span class="task-name">' + name + '</span>';
+                html += '<span class="task-name">' + name + cycleTag + '</span>';
                 html += '<span class="task-status"><select class="fixed-status" data-task="' + name + '">';
                 ['已完成', '部分完成', '未完成'].forEach(function(opt) {
                     html += '<option value="' + opt + '" ' + (status === opt ? 'selected' : '') + '>' + opt +
