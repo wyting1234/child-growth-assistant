@@ -226,8 +226,40 @@
         .brand-area {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 12px;
             flex-wrap: wrap;
+            flex: 1;
+        }
+        .brand-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nav-toggle {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--primary);
+            font-size: 20px;
+            line-height: 1;
+            border-radius: 10px;
+            cursor: pointer;
+            flex: none;
+            transition: .15s;
+        }
+        .nav-toggle:hover {
+            background: #eef2ff;
+            border-color: var(--primary);
+        }
+        .nav-toggle.open {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
         }
         .account-btn {
             display: inline-flex;
@@ -1339,23 +1371,50 @@
                 flex-direction: column;
                 align-items: stretch;
                 min-height: 0;
-                padding: 14px 16px;
+                padding: 10px 14px;
+                position: relative;
+            }
+            .brand-area {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                gap: 8px;
+            }
+            .brand-right {
+                flex-direction: row;
             }
             .logo {
-                text-align: center;
-                margin-bottom: 10px;
+                text-align: left;
+                margin-bottom: 0;
+                font-size: 15px;
+                flex: 1;
+            }
+            .account-btn {
+                padding: 4px 10px;
+                font-size: 12px;
+            }
+            .nav-toggle {
+                display: inline-flex;
             }
             .nav-menu {
+                display: none;
                 flex-direction: column;
-                gap: 6px;
+                gap: 4px;
                 width: 100%;
+                margin-top: 8px;
+                background: var(--light);
+                border-radius: 10px;
+                padding: 6px;
+            }
+            .nav-menu.open {
+                display: flex;
             }
             .nav-menu a {
                 display: block;
-                padding: 11px 14px;
+                padding: 10px 14px;
                 border-radius: 8px;
-                background: #f8fafc;
-                text-align: center;
+                background: #fff;
+                text-align: left;
                 font-size: 14px;
             }
             .nav-menu a.active {
@@ -1364,8 +1423,8 @@
             }
             .sync-nav-btn {
                 margin-left: 0;
-                margin-top: 4px;
-                background: #eef2ff !important;
+                margin-top: 0;
+                background: #fff !important;
             }
             .sync-nav-btn.active {
                 background: var(--primary) !important;
@@ -1547,9 +1606,12 @@
         <div class="container nav-wrap">
             <div class="brand-area">
                 <div class="logo">🌱 儿童成长监控复盘系统</div>
-                <button class="account-btn" id="accountBtn" title="切换儿童账户">👦 <span id="accountName">选择儿童</span> ▾</button>
+                <div class="brand-right">
+                    <button class="account-btn" id="accountBtn" title="切换儿童账户">👦 <span id="accountName">选择儿童</span> ▾</button>
+                    <button class="nav-toggle" id="navToggle" title="展开菜单" aria-label="展开菜单">☰</button>
+                </div>
             </div>
-            <nav class="nav-menu">
+            <nav class="nav-menu" id="navMenu">
                 <a href="javascript:;" class="active" data-target="dashboard">⏱️ 总览</a>
                 <a href="javascript:;" data-target="goal">🎯 目标库</a>
                 <a href="javascript:;" data-target="daily">✅ 每日监控</a>
@@ -4731,6 +4793,23 @@
                 if (modal) {
                     modal.addEventListener('click', function(e) {
                         if (e.target === modal) closeAccountModal();
+                    });
+                }
+                // 移动端：汉堡菜单
+                var navToggle = $('navToggle');
+                var navMenu = $('navMenu');
+                if (navToggle && navMenu) {
+                    navToggle.addEventListener('click', function() {
+                        var isOpen = navMenu.classList.toggle('open');
+                        navToggle.classList.toggle('open', isOpen);
+                        navToggle.textContent = isOpen ? '✕' : '☰';
+                    });
+                    navMenu.querySelectorAll('a').forEach(function(a) {
+                        a.addEventListener('click', function() {
+                            navMenu.classList.remove('open');
+                            navToggle.classList.remove('open');
+                            navToggle.textContent = '☰';
+                        });
                     });
                 }
                 // 首次使用：还没有任何儿童账户时自动引导添加
