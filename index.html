@@ -1452,8 +1452,8 @@
             </div>
             <div class="form-item"><label>指标名称 *</label><input type="text" id="indicator-name" placeholder="如：每日阅读30分钟"></div>
             <div class="form-item"><label>所属目标 *</label><select id="indicator-target" onchange="onIndicatorTargetChange()"><option value="">-- 请选择目标 --</option></select></div>
-            <div class="form-item"><label>行动 *</label><select id="indicator-action" onchange="onIndicatorActionChange()"><option value="">-- 请先选择目标 --</option></select></div>
-            <div class="form-item"><label>要点</label><select id="indicator-keypoint"><option value="">-- 请先选择行动 --</option></select></div>
+            <div class="form-item"><label>科目类别 *</label><select id="indicator-subject" onchange="onIndicatorSubjectChange()"><option value="">-- 请先选择目标 --</option></select></div>
+            <div class="form-item"><label>行动 *</label><select id="indicator-action" onchange="onIndicatorActionChange()"><option value="">-- 请先选择科目类别 --</option></select></div>
             <div class="form-item"><label>预计完成时间（分钟）</label><input type="number" id="indicator-estimate" placeholder="分钟数" min="0"></div>
             <div class="form-item">
                 <label>周期类型 *</label>
@@ -1480,13 +1480,13 @@
     <div class="modal-overlay" id="categoryModal">
         <div class="modal-box">
             <div class="modal-title">
-                <span>📂 管理分类（目标 / 行动 / 要点）</span>
+                <span>📂 管理分类（目标 / 科目类别 / 行动）</span>
                 <button class="modal-close" onclick="closeCategoryModal()">&times;</button>
             </div>
             <div class="cat-tabs">
                 <button class="active" data-cat="target">🎯 目标</button>
+                <button data-cat="subject">📚 科目类别</button>
                 <button data-cat="action">⚡ 行动</button>
-                <button data-cat="keypoint">📍 要点</button>
             </div>
             <!-- 目标面板 -->
             <div class="cat-panel active" id="cat-panel-target">
@@ -1496,10 +1496,20 @@
                 </div>
                 <div id="cat-target-list"></div>
             </div>
+            <!-- 科目类别面板 -->
+            <div class="cat-panel" id="cat-panel-subject">
+                <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
+                    <select id="cat-subject-target" style="flex:1; min-width:120px;"><option value="">选择所属目标</option></select>
+                    <input type="text" id="cat-subject-input" placeholder="科目类别名称" style="flex:1; min-width:120px;">
+                    <button class="btn btn-primary btn-sm" onclick="addCategory('subject')">添加</button>
+                </div>
+                <div id="cat-subject-list"></div>
+            </div>
             <!-- 行动面板 -->
             <div class="cat-panel" id="cat-panel-action">
                 <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
-                    <select id="cat-action-target" style="flex:1; min-width:120px;"><option value="">选择所属目标</option></select>
+                    <select id="cat-action-target" style="flex:1; min-width:120px;" onchange="onCatActionTargetChange()"><option value="">选择所属目标</option></select>
+                    <select id="cat-action-subject" style="flex:1; min-width:120px;"><option value="">选择所属科目类别</option></select>
                     <input type="text" id="cat-action-input" placeholder="行动名称" style="flex:1; min-width:120px;">
                     <div class="time-input-group">
                         <input type="number" id="cat-action-estimate" placeholder="分钟" min="0" style="width:80px;">
@@ -1515,15 +1525,6 @@
                 <div id="cat-action-selected-dates" class="selected-dates"></div>
                 <div id="cat-action-list"></div>
                 <input type="hidden" id="cat-action-dates-json" value="[]">
-            </div>
-            <!-- 要点面板 -->
-            <div class="cat-panel" id="cat-panel-keypoint">
-                <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-                    <select id="cat-keypoint-action" style="flex:1; min-width:120px;"><option value="">选择所属行动</option></select>
-                    <input type="text" id="cat-keypoint-input" placeholder="要点名称" style="flex:1; min-width:120px;">
-                    <button class="btn btn-primary btn-sm" onclick="addCategory('keypoint')">添加</button>
-                </div>
-                <div id="cat-keypoint-list"></div>
             </div>
         </div>
     </div>
@@ -2008,11 +2009,11 @@
                     if (panel) panel.classList.add('active');
                     renderCategoryList(cat);
                     if (cat === 'action') populateActionTargetSelect();
-                    if (cat === 'keypoint') populateKeypointActionSelect();
+                    if (cat === 'subject') populateSubjectTargetSelect();
                 });
             });
             populateActionTargetSelect();
-            populateKeypointActionSelect();
+            populateSubjectTargetSelect();
 
             // 周期类型切换
             var periodTypeSelect = document.getElementById('cat-action-period-type');
@@ -2158,8 +2159,8 @@
                 月复盘记录: Storage.get('growth_month_review'),
                 指标库: {
                     目标: Storage.get('growth_targets'),
+                    科目类别: Storage.get('growth_subjects'),
                     行动: Storage.get('growth_actions'),
-                    要点: Storage.get('growth_keypoints'),
                     指标: Storage.get('growth_indicators')
                 },
                 时间统计: {
@@ -2194,6 +2195,51 @@
         //  指标库（保留原有）
         // ================================================================
         function initIndicatorData() {
+            // 旧结构迁移：growth_keypoints → growth_subjects
+            if (!Storage.get('growth_subjects')) {
+                var legacyKeypoints = Storage.get('growth_keypoints') || [];
+                var legacyActions = Storage.get('growth_actions') || [];
+                var legacyIndicators = Storage.get('growth_indicators') || [];
+                if (legacyKeypoints.length > 0) {
+                    // keypoints 转为 subjects，targetId 取自其原属 action
+                    var subjects = legacyKeypoints.map(function(kp) {
+                        var action = legacyActions.find(function(a) { return a.id === kp.actionId; });
+                        return { id: kp.id, name: kp.name, targetId: action ? action.targetId : '' };
+                    });
+                    Storage.set('growth_subjects', subjects);
+
+                    // actions 新增 subjectId（取原 keypointId）
+                    legacyActions.forEach(function(a) {
+                        var kp = legacyKeypoints.find(function(k) { return k.actionId === a.id; });
+                        a.subjectId = kp ? kp.id : '';
+                    });
+                    Storage.set('growth_actions', legacyActions);
+
+                    // indicators keypointId → subjectId
+                    legacyIndicators.forEach(function(ind) {
+                        ind.subjectId = ind.keypointId || '';
+                        delete ind.keypointId;
+                    });
+                    Storage.set('growth_indicators', legacyIndicators);
+                } else {
+                    // 无旧要点：写入新默认结构
+                    Storage.set('growth_targets', [
+                        { id: 't1', name: '学科提升' },
+                        { id: 't2', name: '习惯养成' }
+                    ]);
+                    Storage.set('growth_subjects', [
+                        { id: 's1', name: '数学', targetId: 't1' },
+                        { id: 's2', name: '语文', targetId: 't1' },
+                        { id: 's3', name: '生活习惯', targetId: 't2' }
+                    ]);
+                    Storage.set('growth_actions', [
+                        { id: 'a1', name: '每日练习', targetId: 't1', subjectId: 's1', periodType: 'daily', dates: [], estimate: '' },
+                        { id: 'a2', name: '错题整理', targetId: 't1', subjectId: 's1', periodType: 'daily', dates: [], estimate: '' },
+                        { id: 'a3', name: '每日阅读', targetId: 't1', subjectId: 's2', periodType: 'daily', dates: [], estimate: '' },
+                        { id: 'a4', name: '作息自律', targetId: 't2', subjectId: 's3', periodType: 'daily', dates: [], estimate: '' }
+                    ]);
+                }
+            }
             if (!Storage.get('growth_targets')) {
                 Storage.set('growth_targets', [
                     { id: 't1', name: '学科提升' },
@@ -2201,30 +2247,19 @@
                 ]);
             }
             if (!Storage.get('growth_actions')) {
-                Storage.set('growth_actions', [
-                    { id: 'a1', name: '每日练习', targetId: 't1', periodType: 'daily', dates: [], estimate: '' },
-                    { id: 'a2', name: '错题整理', targetId: 't1', periodType: 'daily', dates: [], estimate: '' },
-                    { id: 'a3', name: '作息自律', targetId: 't2', periodType: 'daily', dates: [], estimate: '' }
-                ]);
-            }
-            if (!Storage.get('growth_keypoints')) {
-                Storage.set('growth_keypoints', [
-                    { id: 'k1', name: '数学计算', actionId: 'a1' },
-                    { id: 'k2', name: '语文阅读', actionId: 'a1' }
-                ]);
+                Storage.set('growth_actions', []);
             }
             var indicators = Storage.get('growth_indicators');
             if (!indicators) {
                 indicators = [
-                    { id: 'i1', name: '每日数学计算', targetId: 't1', actionId: 'a1', keypointId: 'k1',
+                    { id: 'i1', name: '每日数学计算', targetId: 't1', subjectId: 's1', actionId: 'a1',
                         periodType: 'daily', dates: [], estimate: 30 },
-                    { id: 'i2', name: '每日阅读20分钟', targetId: 't1', actionId: 'a1', keypointId: 'k2',
+                    { id: 'i2', name: '每日阅读20分钟', targetId: 't1', subjectId: 's2', actionId: 'a3',
                         periodType: 'daily', dates: [], estimate: 20 }
                 ];
             } else {
                 indicators = indicators.map(function(ind) {
-                    if (!ind.periodType) { ind.periodType = 'daily';
-                        ind.dates = []; }
+                    if (!ind.periodType) { ind.periodType = 'daily'; ind.dates = []; }
                     if (ind.estimate === undefined) ind.estimate = '';
                     return ind;
                 });
@@ -2236,7 +2271,7 @@
 
         function getActions() { return Storage.get('growth_actions') || []; }
 
-        function getKeypoints() { return Storage.get('growth_keypoints') || []; }
+        function getSubjects() { return Storage.get('growth_subjects') || []; }
 
         function getIndicators() { return Storage.get('growth_indicators') || []; }
 
@@ -2249,7 +2284,7 @@
                 modal.classList.add('show');
                 document.querySelector('.cat-tabs button[data-cat="target"]').click();
                 populateActionTargetSelect();
-                populateKeypointActionSelect();
+                populateSubjectTargetSelect();
                 renderCategoryList('target');
                 document.getElementById('cat-action-dates-json').value = '[]';
                 document.getElementById('cat-action-selected-dates').innerHTML = '';
@@ -2266,8 +2301,8 @@
             var container = document.getElementById('cat-' + type + '-list');
             var items = [];
             if (type === 'target') items = getTargets();
+            else if (type === 'subject') items = getSubjects();
             else if (type === 'action') items = getActions();
-            else if (type === 'keypoint') items = getKeypoints();
             if (items.length === 0) {
                 container.innerHTML = '<p style="color:var(--gray);text-align:center;">暂无数据，添加一个吧</p>';
                 return;
@@ -2275,16 +2310,17 @@
             var html = '';
             items.forEach(function(item) {
                 var label = item.name;
-                if (type === 'action') {
+                if (type === 'subject') {
                     var target = getTargets().find(function(t) { return t.id === item.targetId; });
+                    label += ' (目标: ' + (target ? target.name : '未关联') + ')';
+                } else if (type === 'action') {
+                    var target = getTargets().find(function(t) { return t.id === item.targetId; });
+                    var subject = getSubjects().find(function(s) { return s.id === item.subjectId; });
                     var periodLabel = item.periodType === 'daily' ? '每天' : ('特定周期(' + (item.dates ? item.dates
                         .length : 0) + '天)');
                     var estimate = item.estimate ? ' ⏱️' + item.estimate + '分钟' : '';
-                    label += ' (目标: ' + (target ? target.name : '未关联') + '，周期: ' + periodLabel + estimate +
-                        ')';
-                } else if (type === 'keypoint') {
-                    var action = getActions().find(function(a) { return a.id === item.actionId; });
-                    label += ' (行动: ' + (action ? action.name : '未关联') + ')';
+                    label += ' (目标: ' + (target ? target.name : '未关联') + '，科目: ' + (subject ? subject.name : '未关联') +
+                        '，周期: ' + periodLabel + estimate + ')';
                 }
                 html += '<div class="cat-item"><span>' + label + '</span><div class="cat-actions"><button class="btn btn-primary btn-sm" onclick="editCategory(\'' +
                     type + '\',\'' + item.id + '\')">编辑</button><button class="btn btn-danger btn-sm" onclick="deleteCategory(\'' +
@@ -2295,15 +2331,20 @@
 
         function addCategory(type) {
             var nameInput, targetId = null,
-                actionId = null,
+                subjectId = null,
                 periodType = 'daily',
                 dates = [],
                 estimate = '';
             if (type === 'target') {
                 nameInput = document.getElementById('cat-target-input');
+            } else if (type === 'subject') {
+                nameInput = document.getElementById('cat-subject-input');
+                targetId = document.getElementById('cat-subject-target').value;
+                if (!targetId) { showToast('⚠️ 请选择所属目标'); return; }
             } else if (type === 'action') {
                 nameInput = document.getElementById('cat-action-input');
                 targetId = document.getElementById('cat-action-target').value;
+                subjectId = document.getElementById('cat-action-subject').value;
                 periodType = document.getElementById('cat-action-period-type').value;
                 estimate = document.getElementById('cat-action-estimate').value.trim();
                 if (periodType === 'specific') {
@@ -2311,22 +2352,19 @@
                         []; }
                 }
                 if (!targetId) { showToast('⚠️ 请选择所属目标'); return; }
-            } else if (type === 'keypoint') {
-                nameInput = document.getElementById('cat-keypoint-input');
-                actionId = document.getElementById('cat-keypoint-action').value;
-                if (!actionId) { showToast('⚠️ 请选择所属行动'); return; }
+                if (!subjectId) { showToast('⚠️ 请选择所属科目类别'); return; }
             }
             var name = nameInput.value.trim();
             if (!name) { showToast('⚠️ 请输入名称'); return; }
             var items = [];
             if (type === 'target') { items = getTargets();
                 items.push({ id: genId(), name: name });
-                Storage.set('growth_targets', items); } else if (type === 'action') { items = getActions();
-                items.push({ id: genId(), name: name, targetId: targetId, periodType: periodType, dates: dates,
-                    estimate: estimate });
-                Storage.set('growth_actions', items); } else if (type === 'keypoint') { items = getKeypoints();
-                items.push({ id: genId(), name: name, actionId: actionId });
-                Storage.set('growth_keypoints', items); }
+                Storage.set('growth_targets', items); } else if (type === 'subject') { items = getSubjects();
+                items.push({ id: genId(), name: name, targetId: targetId });
+                Storage.set('growth_subjects', items); } else if (type === 'action') { items = getActions();
+                items.push({ id: genId(), name: name, targetId: targetId, subjectId: subjectId, periodType: periodType,
+                    dates: dates, estimate: estimate });
+                Storage.set('growth_actions', items); }
             nameInput.value = '';
             if (type === 'action') {
                 document.getElementById('cat-action-dates-json').value = '[]';
@@ -2334,11 +2372,12 @@
                 document.getElementById('cat-action-estimate').value = '';
             }
             renderCategoryList(type);
-            if (type === 'target') { populateActionTargetSelect();
+            if (type === 'target') { populateSubjectTargetSelect();
+                populateActionTargetSelect();
                 populateIndicatorSelects(); }
-            if (type === 'action') { populateKeypointActionSelect();
+            if (type === 'subject') { populateActionTargetSelect();
                 populateIndicatorSelects(); }
-            if (type === 'keypoint') { populateIndicatorSelects(); }
+            if (type === 'action') { populateIndicatorSelects(); }
             showToast('✅ 添加成功');
             populateCustomSelectSm();
         }
@@ -2347,10 +2386,9 @@
             var items = [],
                 item;
             if (type === 'target') { items = getTargets();
-                item = items.find(function(t) { return t.id === id; }); } else if (type === 'action') { items = getActions();
-                item = items.find(function(a) { return a.id === id; }); } else if (type === 'keypoint') { items =
-                    getKeypoints();
-                item = items.find(function(k) { return k.id === id; }); }
+                item = items.find(function(t) { return t.id === id }); } else if (type === 'subject') { items = getSubjects();
+                item = items.find(function(s) { return s.id === id }); } else if (type === 'action') { items = getActions();
+                item = items.find(function(a) { return a.id === id }); }
             if (!item) return;
             var newName = prompt('修改名称：', item.name);
             if (newName === null) return;
@@ -2373,8 +2411,8 @@
                 }
             }
             if (type === 'target') Storage.set('growth_targets', items);
+            else if (type === 'subject') Storage.set('growth_subjects', items);
             else if (type === 'action') Storage.set('growth_actions', items);
-            else if (type === 'keypoint') Storage.set('growth_keypoints', items);
             renderCategoryList(type);
             populateIndicatorSelects();
             showToast('✅ 修改成功');
@@ -2382,32 +2420,55 @@
         }
 
         function deleteCategory(type, id) {
-            if (!confirm('确定要删除吗？若被指标引用，将无法删除。')) return;
+            if (!confirm('确定要删除吗？')) return;
             var items = [],
                 refs = [];
             if (type === 'target') {
                 items = getTargets();
-                refs = getActions().filter(function(a) { return a.targetId === id; });
-                if (refs.length > 0) { showToast('⚠️ 该目标下存在行动，请先删除相关行动'); return; }
+                refs = getSubjects().filter(function(s) { return s.targetId === id; });
+                if (refs.length > 0) { showToast('⚠️ 该目标下存在科目类别，请先删除相关科目类别'); return; }
                 items = items.filter(function(t) { return t.id !== id; });
                 Storage.set('growth_targets', items);
+            } else if (type === 'subject') {
+                items = getSubjects();
+                refs = getActions().filter(function(a) { return a.subjectId === id; });
+                if (refs.length > 0) { showToast('⚠️ 该科目类别下存在行动，请先删除相关行动'); return; }
+                items = items.filter(function(s) { return s.id !== id; });
+                Storage.set('growth_subjects', items);
             } else if (type === 'action') {
                 items = getActions();
-                refs = getKeypoints().filter(function(k) { return k.actionId === id; });
-                if (refs.length > 0) { showToast('⚠️ 该行动下存在要点，请先删除相关要点'); return; }
+                // 行动可直接删除；被指标引用时仅提示，由用户确认
+                var inds = getIndicators().filter(function(i) { return i.actionId === id; });
+                if (inds.length > 0) {
+                    if (!confirm('该行动已被 ' + inds.length + ' 个指标引用，删除后这些指标将显示为"未关联"。是否继续？')) return;
+                }
                 items = items.filter(function(a) { return a.id !== id; });
                 Storage.set('growth_actions', items);
-            } else if (type === 'keypoint') {
-                items = getKeypoints();
-                var inds = getIndicators().filter(function(i) { return i.keypointId === id; });
-                if (inds.length > 0) { showToast('⚠️ 该要点被指标引用，请先删除相关指标'); return; }
-                items = items.filter(function(k) { return k.id !== id; });
-                Storage.set('growth_keypoints', items);
             }
             renderCategoryList(type);
             populateIndicatorSelects();
             showToast('🗑️ 已删除');
             populateCustomSelectSm();
+            refreshDailyFromIndicators();
+        }
+
+        function populateSubjectTargetSelect() {
+            var sel = document.getElementById('cat-subject-target');
+            var targets = getTargets();
+            sel.innerHTML = '<option value="">选择所属目标</option>' + targets.map(function(t) { return '<option value="' +
+                    t.id + '">' + t.name + '</option>'; }).join('');
+        }
+
+        function onCatActionTargetChange() {
+            var targetId = document.getElementById('cat-action-target').value;
+            var sel = document.getElementById('cat-action-subject');
+            if (!targetId) {
+                sel.innerHTML = '<option value="">选择所属科目类别</option>';
+                return;
+            }
+            var subjects = getSubjects().filter(function(s) { return s.targetId === targetId; });
+            sel.innerHTML = '<option value="">选择所属科目类别</option>' + subjects.map(function(s) { return '<option value="' +
+                    s.id + '">' + s.name + '</option>'; }).join('');
         }
 
         function populateActionTargetSelect() {
@@ -2415,13 +2476,7 @@
             var targets = getTargets();
             sel.innerHTML = '<option value="">选择所属目标</option>' + targets.map(function(t) { return '<option value="' +
                     t.id + '">' + t.name + '</option>'; }).join('');
-        }
-
-        function populateKeypointActionSelect() {
-            var sel = document.getElementById('cat-keypoint-action');
-            var actions = getActions();
-            sel.innerHTML = '<option value="">选择所属行动</option>' + actions.map(function(a) { return '<option value="' +
-                    a.id + '">' + a.name + '</option>'; }).join('');
+            onCatActionTargetChange();
         }
 
         // ----- 日历选择（公用）-----
@@ -2541,8 +2596,8 @@
             var title = document.getElementById('indicatorModalTitle');
             var nameInput = document.getElementById('indicator-name');
             var targetSelect = document.getElementById('indicator-target');
+            var subjectSelect = document.getElementById('indicator-subject');
             var actionSelect = document.getElementById('indicator-action');
-            var keypointSelect = document.getElementById('indicator-keypoint');
             var estimateInput = document.getElementById('indicator-estimate');
             var periodTypeSelect = document.getElementById('indicator-period-type');
             var dateSelector = document.getElementById('indicator-date-selector');
@@ -2562,9 +2617,10 @@
                 nameInput.value = ind.name;
                 targetSelect.value = ind.targetId;
                 onIndicatorTargetChange();
+                subjectSelect.value = ind.subjectId || '';
+                onIndicatorSubjectChange();
                 actionSelect.value = ind.actionId;
                 onIndicatorActionChange();
-                keypointSelect.value = ind.keypointId || '';
                 estimateInput.value = ind.estimate || '';
                 periodTypeSelect.value = ind.periodType || 'daily';
                 if (ind.periodType === 'specific') {
@@ -2583,8 +2639,8 @@
                 title.innerText = '新增指标';
                 nameInput.value = '';
                 targetSelect.value = '';
-                actionSelect.innerHTML = '<option value="">-- 请先选择目标 --</option>';
-                keypointSelect.innerHTML = '<option value="">-- 请先选择行动 --</option>';
+                subjectSelect.innerHTML = '<option value="">-- 请先选择目标 --</option>';
+                actionSelect.innerHTML = '<option value="">-- 请先选择科目类别 --</option>';
                 estimateInput.value = '';
                 periodTypeSelect.value = 'daily';
                 dateSelector.style.display = 'none';
@@ -2601,32 +2657,37 @@
 
         window.onIndicatorTargetChange = function() {
             var targetId = document.getElementById('indicator-target').value;
+            var subjectSelect = document.getElementById('indicator-subject');
             var actionSelect = document.getElementById('indicator-action');
-            var keypointSelect = document.getElementById('indicator-keypoint');
             if (!targetId) {
-                actionSelect.innerHTML = '<option value="">-- 请先选择目标 --</option>';
-                keypointSelect.innerHTML = '<option value="">-- 请先选择行动 --</option>';
+                subjectSelect.innerHTML = '<option value="">-- 请先选择目标 --</option>';
+                actionSelect.innerHTML = '<option value="">-- 请先选择科目类别 --</option>';
                 return;
             }
-            var actions = getActions().filter(function(a) { return a.targetId === targetId; });
+            var subjects = getSubjects().filter(function(s) { return s.targetId === targetId; });
+            subjectSelect.innerHTML = '<option value="">-- 请选择科目类别 --</option>' + subjects.map(function(s) { return '<option value="' +
+                    s.id + '">' + s.name + '</option>'; }).join('');
+            actionSelect.innerHTML = '<option value="">-- 请先选择科目类别 --</option>';
+        };
+
+        window.onIndicatorSubjectChange = function() {
+            var subjectId = document.getElementById('indicator-subject').value;
+            var actionSelect = document.getElementById('indicator-action');
+            if (!subjectId) {
+                actionSelect.innerHTML = '<option value="">-- 请先选择科目类别 --</option>';
+                return;
+            }
+            var actions = getActions().filter(function(a) { return a.subjectId === subjectId; });
             actionSelect.innerHTML = '<option value="">-- 请选择行动 --</option>' + actions.map(function(a) { return '<option value="' +
                     a.id + '">' + a.name + '</option>'; }).join('');
-            keypointSelect.innerHTML = '<option value="">-- 请先选择行动 --</option>';
         };
 
         window.onIndicatorActionChange = function() {
             var actionId = document.getElementById('indicator-action').value;
-            var keypointSelect = document.getElementById('indicator-keypoint');
             var estimateInput = document.getElementById('indicator-estimate');
             var periodTypeSelect = document.getElementById('indicator-period-type');
             var dateSelector = document.getElementById('indicator-date-selector');
-            if (!actionId) {
-                keypointSelect.innerHTML = '<option value="">-- 请先选择行动 --</option>';
-                return;
-            }
-            var keypoints = getKeypoints().filter(function(k) { return k.actionId === actionId; });
-            keypointSelect.innerHTML = '<option value="">-- 请选择要点（可选）--</option>' + keypoints.map(function(k) { return '<option value="' +
-                    k.id + '">' + k.name + '</option>'; }).join('');
+            if (!actionId) return;
             var action = getActions().find(function(a) { return a.id === actionId; });
             if (action) {
                 estimateInput.value = action.estimate || '';
@@ -2646,8 +2707,8 @@
         document.getElementById('indicatorSaveBtn').addEventListener('click', function() {
             var name = document.getElementById('indicator-name').value.trim();
             var targetId = document.getElementById('indicator-target').value;
+            var subjectId = document.getElementById('indicator-subject').value;
             var actionId = document.getElementById('indicator-action').value;
-            var keypointId = document.getElementById('indicator-keypoint').value;
             var estimate = document.getElementById('indicator-estimate').value.trim();
             var periodType = document.getElementById('indicator-period-type').value;
             var dates = [];
@@ -2657,6 +2718,7 @@
             var editId = document.getElementById('indicator-edit-id').value;
             if (!name) { showToast('⚠️ 请输入指标名称'); return; }
             if (!targetId) { showToast('⚠️ 请选择所属目标'); return; }
+            if (!subjectId) { showToast('⚠️ 请选择科目类别'); return; }
             if (!actionId) { showToast('⚠️ 请选择行动'); return; }
             if (periodType === 'specific' && dates.length === 0) { showToast('⚠️ 请选择至少一个执行日期'); return; }
             var indicators = getIndicators();
@@ -2665,16 +2727,16 @@
                 if (!ind) { showToast('指标不存在'); return; }
                 ind.name = name;
                 ind.targetId = targetId;
+                ind.subjectId = subjectId;
                 ind.actionId = actionId;
-                ind.keypointId = keypointId || '';
                 ind.estimate = estimate;
                 ind.periodType = periodType;
                 ind.dates = dates;
                 Storage.set('growth_indicators', indicators);
                 showToast('✅ 指标已更新');
             } else {
-                indicators.push({ id: genId(), name: name, targetId: targetId, actionId: actionId, keypointId: keypointId ||
-                        '', estimate: estimate, periodType: periodType, dates: dates });
+                indicators.push({ id: genId(), name: name, targetId: targetId, subjectId: subjectId, actionId: actionId,
+                    estimate: estimate, periodType: periodType, dates: dates });
                 Storage.set('growth_indicators', indicators);
                 showToast('✅ 指标已添加');
             }
@@ -2706,23 +2768,23 @@
                 return;
             }
             var targets = getTargets();
+            var subjects = getSubjects();
             var actions = getActions();
-            var keypoints = getKeypoints();
             var html = '';
             indicators.forEach(function(ind) {
                 var target = targets.find(function(t) { return t.id === ind.targetId; });
+                var subject = subjects.find(function(s) { return s.id === ind.subjectId; });
                 var action = actions.find(function(a) { return a.id === ind.actionId; });
-                var keypoint = keypoints.find(function(k) { return k.id === ind.keypointId; });
                 var targetName = target ? target.name : '未关联';
+                var subjectName = subject ? subject.name : '（无）';
                 var actionName = action ? action.name : '未关联';
-                var keypointName = keypoint ? keypoint.name : '（无）';
                 var periodDesc = ind.periodType === 'daily' ? '每天' : ('特定周期(' + (ind.dates ? ind.dates.length : 0) + '天)');
                 var estimate = ind.estimate ? ' ⏱️' + ind.estimate + '分钟' : '';
                 html +=
                     '<div class="indicator-item" data-id="' + ind.id + '">' +
                         '<div class="info">' +
                             '<strong>' + (ind.name || '未命名') + '</strong>' +
-                            '<div class="meta">🎯 ' + targetName + '  ⚡ ' + actionName + '  📍 ' + keypointName + '  🔄 ' + periodDesc + estimate + '</div>' +
+                            '<div class="meta">🎯 ' + targetName + '  📚 ' + subjectName + '  ⚡ ' + actionName + '  🔄 ' + periodDesc + estimate + '</div>' +
                         '</div>' +
                         '<div class="actions">' +
                             '<button class="btn btn-primary btn-sm" onclick="openIndicatorModal(\'' + ind.id + '\')">编辑</button>' +
@@ -2782,8 +2844,10 @@
             indicators.forEach(function(ind) {
                 if (!ind || !ind.name) return;
                 var action = actionMap[ind.actionId];
-                var periodType = ind.periodType || (action ? action.periodType : '') || 'daily';
-                var dates = (ind.dates && ind.dates.length ? ind.dates : (action ? (action.dates || []) : [])) || [];
+                // 行动已不存在时，该指标不再驱动固定任务（但保留历史打卡记录）
+                if (!action) return;
+                var periodType = ind.periodType || action.periodType || 'daily';
+                var dates = (ind.dates && ind.dates.length ? ind.dates : (action.dates || [])) || [];
                 var hit = false;
                 if (periodType === 'daily') { hit = true; }
                 else if (periodType === 'specific' && dates.indexOf(selectedDate) !== -1) { hit = true; }
