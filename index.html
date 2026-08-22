@@ -222,6 +222,120 @@
             margin: 0 4px;
             font-size: 11px;
         }
+        /* ===== 多儿童账户 ===== */
+        .brand-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .account-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all .15s;
+            box-shadow: 0 1px 4px #0000000a;
+        }
+        .account-btn:hover {
+            background: #eef2ff;
+            border-color: var(--primary);
+        }
+        .account-rows {
+            max-height: 300px;
+            overflow: auto;
+        }
+        .account-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            background: var(--light);
+        }
+        .account-row .acc-ico {
+            font-size: 18px;
+            flex: none;
+        }
+        .account-row .acc-name {
+            flex: 1;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .account-row .acc-cur {
+            font-size: 11px;
+            background: #dcfce7;
+            color: #15803d;
+            border-radius: 10px;
+            padding: 2px 8px;
+        }
+        .account-row .acc-act {
+            display: flex;
+            gap: 6px;
+        }
+        .account-row .acc-act button {
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--gray);
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: .15s;
+        }
+        .account-row .acc-act button:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .account-row .acc-act button.acc-del:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        .account-note {
+            font-size: 12px;
+            color: var(--gray);
+            background: #fffbeb;
+            border: 1px dashed #fcd34d;
+            border-radius: 8px;
+            padding: 10px 12px;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+        .account-empty {
+            text-align: center;
+            color: var(--gray);
+            padding: 20px 0;
+            font-size: 13px;
+        }
+        /* ===== 鼓励语 ===== */
+        .encourage-tip {
+            text-align: center;
+            background: linear-gradient(135deg, #ecfdf5, #e0f2fe);
+            color: #0f766e;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin: 0 0 14px;
+            border: 1px solid #a7f3d0;
+        }
+        @media (max-width: 780px) {
+            .brand-area {
+                justify-content: center;
+                flex-direction: column;
+                gap: 6px;
+            }
+        }
         .btn {
             padding: 10px 20px;
             border-radius: 8px;
@@ -1410,10 +1524,31 @@
         </div>
     </div>
 
+    <!-- 多儿童账户管理 -->
+    <div class="modal-overlay" id="accountModal">
+        <div class="modal-box">
+            <div class="modal-title">
+                <span>👦 儿童账户管理</span>
+                <button class="modal-close" onclick="closeAccountModal()">&times;</button>
+            </div>
+            <div class="account-note">
+                🧩 <b>模板共享</b>：目标库、指标库、计时类别等所有孩子共用一套<br />
+                📝 <b>记录隔离</b>：时间记录、每日打卡、复盘、待办、里程碑等各自保存，互不干扰
+            </div>
+            <div class="account-rows" id="accountRows"></div>
+            <div style="display:flex; gap:8px; margin-top:14px; align-items:center;">
+                <button class="btn btn-primary" onclick="addAccount()" style="flex:1;">＋ 添加儿童</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== 主界面 ===== -->
     <header>
         <div class="container nav-wrap">
-            <div class="logo">🌱 儿童成长监控复盘系统</div>
+            <div class="brand-area">
+                <div class="logo">🌱 儿童成长监控复盘系统</div>
+                <button class="account-btn" id="accountBtn" title="切换儿童账户">👦 <span id="accountName">选择儿童</span> ▾</button>
+            </div>
             <nav class="nav-menu">
                 <a href="javascript:;" class="active" data-target="dashboard">⏱️ 总览</a>
                 <a href="javascript:;" data-target="goal">🎯 目标库</a>
@@ -1440,6 +1575,8 @@
                         <span id="statsDateRange">今日</span>
                     </span>
                 </div>
+
+                <div class="encourage-tip">✨ 学习的精髓在于重复，坚持就是最大的天赋</div>
 
                 <div class="stats-timer-row">
                     <div class="stats-compact">
@@ -1666,12 +1803,38 @@
         // ================================================================
         //  全局存储工具
         // ================================================================
+        /* ===== 多儿童账户存储层 =====
+         * 模板类数据（目标库/指标库/计时类别等）多账户共享；
+         * 记录类数据（时间记录/打卡/复盘/待办/里程碑等）按当前账户隔离。
+         * 隔离规则：在存储键前加 "<账户名>::" 前缀。
+         */
         var Storage = {
+            _ACCOUNT_KEY: 'child_account_current',
+            _LIST_KEY: 'child_account_list',
+            // 需要按账户隔离的记录类键（daily_* 覆盖每日打卡/临时/签到动态键）
+            _ISOLATED: /^(time_records|todos|timer_state_sm|growth_week_review|growth_month_review|growth_milestone|growth_month_days|daily_)/,
+            cur: function() {
+                try { return localStorage.getItem(Storage._ACCOUNT_KEY) || ''; } catch (e) { return ''; }
+            },
+            list: function() {
+                try {
+                    var v = JSON.parse(localStorage.getItem(Storage._LIST_KEY) || '[]');
+                    return Array.isArray(v) ? v : [];
+                } catch (e) { return []; }
+            },
+            saveList: function(list) {
+                try { localStorage.setItem(Storage._LIST_KEY, JSON.stringify(list)); } catch (e) {}
+            },
+            rk: function(key) {
+                var acc = Storage.cur();
+                if (acc && Storage._ISOLATED.test(key)) return acc + '::' + key;
+                return key;
+            },
             set: function(key, val) {
-                try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { console.warn(e); }
+                try { localStorage.setItem(Storage.rk(key), JSON.stringify(val)); } catch (e) { console.warn(e); }
             },
             get: function(key) {
-                try { var res = localStorage.getItem(key); return res ? JSON.parse(res) : null; } catch (e) { console.warn(
+                try { var res = localStorage.getItem(Storage.rk(key)); return res ? JSON.parse(res) : null; } catch (e) { console.warn(
                         e); return null; }
             }
         };
@@ -1952,7 +2115,12 @@
         });
         document.getElementById('clear-data').addEventListener('click', function() {
             if (confirm('⚠️ 确定要清空所有本地成长数据吗？此操作不可恢复！')) {
-                localStorage.clear();
+                // 保留儿童账户身份，仅清空数据（含各账户记录与共享模板）
+                var keep = ['child_account_list', 'child_account_current'];
+                for (var i = localStorage.length - 1; i >= 0; i--) {
+                    var k = localStorage.key(i);
+                    if (keep.indexOf(k) === -1) localStorage.removeItem(k);
+                }
                 showToast('🗑️ 已清空所有数据，页面即将刷新...');
                 setTimeout(function() { location.reload(); }, 800);
             }
@@ -2656,7 +2824,8 @@
             if (!selectedDate) { selectedDate = today; }
             var titleEl = document.getElementById('summary-title');
             if (titleEl) {
-                titleEl.textContent = selectedDate + ' 成长计划完成表';
+                var accName = Storage.cur() || '';
+                titleEl.textContent = selectedDate + (accName ? ' ' + accName : '') + ' 计划成长计划完成情况';
                 titleEl.style.textAlign = 'center';
             }
 
@@ -2922,16 +3091,17 @@
             if (!content) { showToast('未找到汇总内容'); return; }
             var dateInput = document.getElementById('daily-date');
             var dateStr = dateInput ? dateInput.value : today;
+            var accName = Storage.cur() || '';
             var printWindow = window.open('', '_blank', 'width=1000,height=700');
             if (!printWindow) { window.print(); return; }
             var styles = document.querySelector('style').innerHTML;
             var clone = content.cloneNode(true);
-            var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>成长计划完成表</title>';
+            var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + dateStr + (accName ? ' ' + accName : '') + ' 计划成长计划完成情况</title>';
             html += '<style>' + styles + '</style>';
             html +=
                 '<style>body { padding:20px; } .summary-actions, .btn, .toast, .view-toggle, .temp-add-btn, #save-daily-new { display:none; } table { width:100%; border-collapse:collapse; } th, td { border:1px solid #ddd; padding:6px; } th { background:#f0f0f0; }</style>';
             html += '</head><body>';
-            html += '<h2 style="text-align:center;">' + dateStr + ' 成长计划完成表</h2>';
+            html += '<h2 style="text-align:center;">' + dateStr + (accName ? ' ' + accName : '') + ' 计划成长计划完成情况</h2>';
             html += clone.innerHTML;
             html += '</body></html>';
             printWindow.document.write(html);
@@ -2949,8 +3119,9 @@
             wrapper.style.fontFamily = '"Microsoft Yahei", sans-serif';
             var dateInput = document.getElementById('daily-date');
             var dateStr = dateInput ? dateInput.value : today;
+            var accName = Storage.cur() || '';
             var title = document.createElement('h2');
-            title.innerText = dateStr + ' 成长计划完成表';
+            title.innerText = dateStr + (accName ? ' ' + accName : '') + ' 计划成长计划完成情况';
             title.style.textAlign = 'center';
             wrapper.appendChild(title);
             var clone = element.cloneNode(true);
@@ -2959,7 +3130,7 @@
             html2canvas(wrapper, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(function(canvas) {
                 document.body.removeChild(wrapper);
                 var link = document.createElement('a');
-                link.download = '成长计划完成表_' + dateStr + '.png';
+                link.download = '计划成长计划完成情况_' + (accName || '') + '_' + dateStr + '.png';
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 showToast('🖼️ 图片导出成功');
@@ -4441,6 +4612,131 @@
                 wrapStorage();
                 if (!token) return;
                 findOrCreateGist().then(function() { connected = true; }).catch(function() { connected = false; });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
+    </script>
+
+    <script>
+        /* ================================================================
+         *  👦 多儿童账户管理
+         *  模板共享（目标库/指标库/计时类别），记录隔离（时间/打卡/复盘/待办/里程碑）
+         * ================================================================ */
+        (function() {
+            'use strict';
+
+            function $(id) { return document.getElementById(id); }
+
+            function curAccount() { return Storage.cur(); }
+
+            function accountList() { return Storage.list(); }
+
+            function renderAccountName() {
+                var el = $('accountName');
+                if (!el) return;
+                var c = curAccount();
+                el.textContent = c || '选择儿童';
+            }
+
+            function openAccountModal() {
+                renderAccountRows();
+                var m = $('accountModal');
+                if (m) m.classList.add('show');
+            }
+
+            window.closeAccountModal = function() {
+                var m = $('accountModal');
+                if (m) m.classList.remove('show');
+            };
+
+            function esc(s) {
+                return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
+            function renderAccountRows() {
+                var wrap = $('accountRows');
+                if (!wrap) return;
+                var accs = accountList();
+                var c = curAccount();
+                if (accs.length === 0) {
+                    wrap.innerHTML = '<div class="account-empty">还没有儿童账户，点下方「＋ 添加儿童」创建第一个吧 👶</div>';
+                    return;
+                }
+                var html = '';
+                accs.forEach(function(n) {
+                    html += '<div class="account-row">' +
+                        '<span class="acc-ico">👦</span>' +
+                        '<span class="acc-name">' + esc(n) + '</span>' +
+                        (n === c ? '<span class="acc-cur">当前</span>' : '') +
+                        '<span class="acc-act">' +
+                        (n === c ? '' : '<button onclick="switchAccount(\'' + esc(n).replace(/'/g, "\\'") + '\')">切换</button>') +
+                        '<button class="acc-del" onclick="deleteAccount(\'' + esc(n).replace(/'/g, "\\'") + '\')">删除</button>' +
+                        '</span></div>';
+                });
+                wrap.innerHTML = html;
+            }
+
+            window.switchAccount = function(name) {
+                try { localStorage.setItem('child_account_current', name); } catch (e) {}
+                showToast('👦 已切换到：' + name);
+                setTimeout(function() { location.reload(); }, 300);
+            };
+
+            window.addAccount = function() {
+                var name = prompt('请输入儿童姓名：');
+                if (!name || !name.trim()) return;
+                name = name.trim();
+                var accs = accountList();
+                if (accs.indexOf(name) > -1) { alert('该儿童已存在'); return; }
+                accs.push(name);
+                Storage.saveList(accs);
+                try { localStorage.setItem('child_account_current', name); } catch (e) {}
+                showToast('✅ 已添加并切换到：' + name);
+                setTimeout(function() { location.reload(); }, 300);
+            };
+
+            window.deleteAccount = function(name) {
+                var accs = accountList();
+                var curName = curAccount();
+                if (!confirm('确定删除儿童「' + name + '」吗？\n其时间记录、每日打卡、复盘、待办、里程碑等数据将一并删除，且不可恢复！')) return;
+                var prefix = name + '::';
+                var toRemove = [];
+                for (var i = 0; i < localStorage.length; i++) {
+                    var k = localStorage.key(i);
+                    if (k.indexOf(prefix) === 0) toRemove.push(k);
+                }
+                toRemove.forEach(function(k) { localStorage.removeItem(k); });
+                accs = accs.filter(function(a) { return a !== name; });
+                Storage.saveList(accs);
+                if (curName === name) {
+                    try { localStorage.removeItem('child_account_current'); } catch (e) {}
+                    if (accs.length > 0) {
+                        try { localStorage.setItem('child_account_current', accs[0]); } catch (e) {}
+                    }
+                }
+                showToast('🗑️ 已删除儿童：' + name);
+                setTimeout(function() { location.reload(); }, 300);
+            };
+
+            function init() {
+                renderAccountName();
+                var btn = $('accountBtn');
+                if (btn) btn.addEventListener('click', openAccountModal);
+                var modal = $('accountModal');
+                if (modal) {
+                    modal.addEventListener('click', function(e) {
+                        if (e.target === modal) closeAccountModal();
+                    });
+                }
+                // 首次使用：还没有任何儿童账户时自动引导添加
+                if (accountList().length === 0) {
+                    setTimeout(openAccountModal, 500);
+                }
             }
 
             if (document.readyState === 'loading') {
