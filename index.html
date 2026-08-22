@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="儿童全周期学习成长计划：目标管理、每日监控、周期复盘、成长档案、时间统计于一体的成长助手。" />
+    <meta name="description" content="儿童全周期学习成长计划：目标管理、每日陪伴、周期复盘、成长档案、时间统计于一体的成长助手。" />
     <meta name="theme-color" content="#2563eb" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -1605,7 +1605,7 @@
     <header>
         <div class="container nav-wrap">
             <div class="brand-area">
-                <div class="logo">🌱 儿童成长监控复盘系统</div>
+                <div class="logo">🌱 儿童成长陪伴复盘系统</div>
                 <div class="brand-right">
                     <button class="account-btn" id="accountBtn" title="切换儿童账户">👦 <span id="accountName">选择儿童</span> ▾</button>
                     <button class="nav-toggle" id="navToggle" title="展开菜单" aria-label="展开菜单">☰</button>
@@ -1614,7 +1614,7 @@
             <nav class="nav-menu" id="navMenu">
                 <a href="javascript:;" class="active" data-target="dashboard">⏱️ 总览</a>
                 <a href="javascript:;" data-target="goal">🎯 目标库</a>
-                <a href="javascript:;" data-target="daily">✅ 每日监控</a>
+                <a href="javascript:;" data-target="daily">✅ 每日陪伴</a>
                 <a href="javascript:;" data-target="review">📝 周期复盘</a>
                 <a href="javascript:;" data-target="archive">📂 成长档案</a>
                 <a href="javascript:;" data-target="indicator">📋 指标库</a>
@@ -1752,7 +1752,7 @@
             </div>
         </div>
 
-        <!-- 3. 每日监控 -->
+        <!-- 3. 每日陪伴 -->
         <div class="module" id="daily">
             <div class="card">
                 <div class="card-title">✅ 今日任务打卡记录</div>
@@ -2040,7 +2040,7 @@
                 });
             }
 
-            // 每日监控
+            // 每日陪伴
             loadDailyTasks();
             updateSummary();
 
@@ -2741,7 +2741,7 @@
         function populateIndicatorSelects() { /* 在弹窗中动态填充 */ }
 
         // ================================================================
-        //  每日监控（保留原有，修改表格）
+        //  每日陪伴（保留原有，修改表格）
         // ================================================================
         var currentView = 'day';
 
