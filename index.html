@@ -698,13 +698,15 @@
             flex-wrap: wrap;
             margin-bottom: 12px;
         }
-        .todo-input-row input {
+        .todo-input-row input,
+        .todo-input-row select {
             flex: 1;
             min-width: 120px;
             padding: 8px 12px;
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 14px;
+            width: auto;
         }
         .todo-input-row .btn {
             flex: 0 0 auto;
@@ -744,6 +746,12 @@
         .todo-item .del:hover {
             color: var(--danger);
         }
+        .todo-item .ck,
+        .quadrant-item input[type="checkbox"] {
+            width: auto;
+            flex: 0 0 auto;
+            margin: 0;
+        }
         .empty-state {
             text-align: center;
             padding: 20px 0;
@@ -770,6 +778,160 @@
             padding: 3px 10px;
             border-radius: 20px;
             font-size: 12px;
+        }
+        /* ===== 待办优先级 + 四维图 ===== */
+        .todo-input-row .todo-priority-select {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+            flex: 0 0 auto;
+            width: auto;
+            min-width: 140px;
+        }
+        .todo-view-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .todo-view-tabs button {
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            background: #fff;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--gray);
+            transition: 0.2s;
+        }
+        .todo-view-tabs button.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+        .todo-prio-badge {
+            font-size: 11px;
+            padding: 1px 7px;
+            border-radius: 10px;
+            margin-left: 4px;
+            white-space: nowrap;
+        }
+        .todo-prio-badge.q1 { color: #b91c1c; background: #fee2e2; }
+        .todo-prio-badge.q2 { color: #c2410c; background: #ffedd5; }
+        .todo-prio-badge.q3 { color: #a16207; background: #fef9c3; }
+        .todo-prio-badge.q4 { color: #475569; background: #f1f5f9; }
+        .todo-quadrant-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .todo-quadrant {
+            border-radius: 10px;
+            padding: 12px;
+            min-height: 130px;
+            display: flex;
+            flex-direction: column;
+        }
+        .todo-quadrant.q1 { background: #fee2e2; border: 1px solid #fecaca; }
+        .todo-quadrant.q2 { background: #ffedd5; border: 1px solid #fed7aa; }
+        .todo-quadrant.q3 { background: #fef9c3; border: 1px solid #fef08a; }
+        .todo-quadrant.q4 { background: #f1f5f9; border: 1px solid #e2e8f0; }
+        .todo-quadrant h4 {
+            font-size: 14px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .q-icon {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex: 0 0 auto;
+        }
+        .q-icon.q1 { background: #ef4444; }
+        .q-icon.q2 { background: #f97316; }
+        .q-icon.q3 { background: #eab308; }
+        .q-icon.q4 { background: #94a3b8; }
+        .todo-quadrant .q-tip {
+            font-size: 11px;
+            color: var(--gray);
+            margin-bottom: 6px;
+        }
+        .todo-quadrant .q-empty {
+            font-size: 12px;
+            color: var(--gray);
+            text-align: center;
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+        .quadrant-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 8px;
+            margin-top: 6px;
+            background: #fff;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .quadrant-item .q-text { min-width: 0; overflow-wrap: anywhere; }
+        .quadrant-item .q-text.done { text-decoration: line-through; color: var(--gray); }
+        .quadrant-item .q-del { cursor: pointer; color: var(--gray); }
+        .quadrant-item .q-del:hover { color: var(--danger); }
+        /* ===== 番茄时钟 ===== */
+        .pomodoro {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            padding: 8px 0;
+        }
+        .pomo-modes {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .pomo-modes button {
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            background: #fff;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--gray);
+            transition: 0.2s;
+        }
+        .pomo-modes button.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+        .pomo-display {
+            font-size: 56px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--primary);
+            letter-spacing: 2px;
+        }
+        .pomo-display.break { color: var(--success); }
+        .pomo-controls {
+            display: flex;
+            gap: 10px;
+        }
+        .pomo-count {
+            font-size: 13px;
+            color: var(--gray);
+        }
+        .pomo-count span { color: var(--primary); font-weight: 600; }
+        @media (max-width: 640px) {
+            .todo-quadrant-grid { grid-template-columns: 1fr; }
+            .pomo-display { font-size: 42px; }
+            .pomo-modes button { padding: 5px 10px; font-size: 12px; }
         }
         table {
             width: 100%;
@@ -1712,11 +1874,41 @@
                 <div class="card-title">📝 待办清单</div>
                 <div class="todo-input-row">
                     <input type="text" id="todoInput" placeholder="写一个待办..." />
+                    <select id="todoPriority" class="todo-priority-select" title="优先级（重要/紧急程度）">
+                    <option value="q1">重要且紧急</option>
+                    <option value="q2" selected>重要不紧急</option>
+                    <option value="q3">不重要但紧急</option>
+                    <option value="q4">不重要不紧急</option>
+                    </select>
                     <input type="date" id="todoDeadline" />
                     <button class="btn btn-primary" id="todoAddBtn">+ 添加</button>
                 </div>
+                <div class="todo-view-tabs" id="todoViewTabs">
+                    <button class="active" data-todo-view="list">📋 列表</button>
+                    <button data-todo-view="matrix">🔲 四维图</button>
+                </div>
                 <div id="todoList">
                     <div class="empty-state">暂无待办，添加一个吧！</div>
+                </div>
+                <div id="todoMatrix" style="display:none;"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🍅 番茄时钟</div>
+                <div class="pomodoro">
+                    <div class="pomo-modes" id="pomoModes">
+                    <button class="active" data-pomo-mode="work">专注 25′</button>
+                    <button data-pomo-mode="short">短休 5′</button>
+                    <button data-pomo-mode="long">长休 15′</button>
+                    </div>
+                    <div class="pomo-display" id="pomoDisplay">25:00</div>
+                    <div class="pomo-ring" id="pomoRing" aria-hidden="true"></div>
+                    <div class="pomo-controls">
+                        <button class="btn btn-start" id="pomoStart">▶ 开始</button>
+                        <button class="btn btn-pause" id="pomoPause" style="display:none;">⏸ 暂停</button>
+                        <button class="btn btn-stop" id="pomoReset">⟲ 重置</button>
+                    </div>
+                    <div class="pomo-count">今日已完成番茄：<span id="pomoCount">0</span> 🍅</div>
                 </div>
             </div>
 
@@ -2053,6 +2245,8 @@
             renderTodos();
             setupTimerEventListenersSm();
             setupTodoEventListeners();
+            setupTodoViewTabs();
+            setupPomodoro();
             setupFilterTabs();
             setupRecordModal();
             setupCategoryAddSm();
@@ -4328,6 +4522,14 @@
         };
 
         // ----- 待办清单 -----
+        var PRIO = {
+            q1: { label: '重要且紧急', short: '重要紧急', color: 'q1' },
+            q2: { label: '重要不紧急', short: '重要不急', color: 'q2' },
+            q3: { label: '不重要但紧急', short: '不重要急', color: 'q3' },
+            q4: { label: '不重要不紧急', short: '不重要不急', color: 'q4' }
+        };
+        function prioOf(todo) { return PRIO[todo.priority] ? todo.priority : 'q2'; }
+
         function renderTodos() {
             var todos = getTodos();
             var container = document.getElementById('todoList');
@@ -4345,9 +4547,11 @@
                     var cls = isOverdue ? 'deadline overdue' : 'deadline';
                     deadlineHtml = '<span class="' + cls + '">📅 ' + deadline + (isOverdue ? ' ⚠️过期' : '') + '</span>';
                 }
+                var p = PRIO[prioOf(todo)];
+                var badge = '<span class="todo-prio-badge ' + p.color + '">' + p.short + '</span>';
                 html += '<div class="todo-item" data-id="' + todo.id + '">';
                 html += '<input type="checkbox" class="ck" ' + (todo.completed ? 'checked' : '') + ' />';
-                html += '<span class="text ' + doneClass + '">' + todo.text + '</span>';
+                html += '<span class="text ' + doneClass + '">' + todo.text + badge + '</span>';
                 html += deadlineHtml;
                 html += '<span class="del" onclick="deleteTodo(\'' + todo.id + '\')">✕</span>';
                 html += '</div>';
@@ -4363,10 +4567,60 @@
             });
         }
 
+        // 四维图（按 重要 / 紧急 划分的 2x2 矩阵）
+        function renderTodoMatrix() {
+            var container = document.getElementById('todoMatrix');
+            if (!container) return;
+            var todos = getTodos();
+            var groups = { q1: [], q2: [], q3: [], q4: [] };
+            todos.forEach(function(t) { groups[prioOf(t)].push(t); });
+            var meta = {
+                q1: { title: '重要且紧急', tip: '立即做 · 优先处理' },
+                q2: { title: '重要不紧急', tip: '计划做 · 提前安排' },
+                q3: { title: '不重要但紧急', tip: '快速做 / 可委托' },
+                q4: { title: '不重要不紧急', tip: '少做 / 尽量不做' }
+            };
+            var order = ['q1', 'q2', 'q3', 'q4'];
+            var html = '<div class="todo-quadrant-grid">';
+            order.forEach(function(q) {
+                html += '<div class="todo-quadrant ' + q + '">';
+                html += '<h4><span class="q-icon ' + q + '"></span>' + meta[q].title + '</h4>';
+                html += '<div class="q-tip">' + meta[q].tip + '（' + groups[q].length + '）</div>';
+                if (groups[q].length === 0) {
+                    html += '<div class="q-empty">— 暂无 —</div>';
+                } else {
+                    groups[q].forEach(function(t) {
+                        var done = t.completed ? 'done' : '';
+                        html += '<div class="quadrant-item" data-id="' + t.id + '">';
+                        html += '<input type="checkbox" class="q-ck" ' + (t.completed ? 'checked' : '') + ' />';
+                        html += '<span class="q-text ' + done + '">' + t.text + '</span>';
+                        html += '<span class="q-del" onclick="deleteTodo(\'' + t.id + '\')">✕</span>';
+                        html += '</div>';
+                    });
+                }
+                html += '</div>';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+
+            container.querySelectorAll('.q-ck').forEach(function(cb) {
+                cb.addEventListener('change', function() {
+                    var item = this.closest('.quadrant-item');
+                    toggleTodo(item.getAttribute('data-id'), this.checked);
+                });
+            });
+        }
+
+        function isTodoMatrixView() {
+            var active = document.querySelector('#todoViewTabs button.active');
+            return active && active.getAttribute('data-todo-view') === 'matrix';
+        }
+
         function setupTodoEventListeners() {
             document.getElementById('todoAddBtn').addEventListener('click', function() {
                 var input = document.getElementById('todoInput');
                 var deadline = document.getElementById('todoDeadline');
+                var prioSel = document.getElementById('todoPriority');
                 var text = input.value.trim();
                 if (!text) { showToast('⚠️ 请输入待办内容'); return; }
                 var todos = getTodos();
@@ -4374,6 +4628,7 @@
                     id: genId(),
                     text: text,
                     completed: false,
+                    priority: prioSel ? prioSel.value : 'q2',
                     deadline: deadline.value || '',
                     createdAt: new Date().toISOString()
                 });
@@ -4381,6 +4636,7 @@
                 input.value = '';
                 deadline.value = today;
                 renderTodos();
+                if (isTodoMatrixView()) renderTodoMatrix();
                 showToast('✅ 待办已添加');
             });
             document.getElementById('todoInput').addEventListener('keydown', function(e) {
@@ -4395,6 +4651,7 @@
                 todo.completed = completed;
                 setTodos(todos);
                 renderTodos();
+                if (isTodoMatrixView()) renderTodoMatrix();
             }
         }
 
@@ -4404,8 +4661,146 @@
             todos = todos.filter(function(t) { return t.id !== id; });
             setTodos(todos);
             renderTodos();
+            if (isTodoMatrixView()) renderTodoMatrix();
             showToast('🗑️ 待办已删除');
         };
+
+        function setupTodoViewTabs() {
+            var tabs = document.getElementById('todoViewTabs');
+            if (!tabs) return;
+            tabs.querySelectorAll('button').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    tabs.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    var view = btn.getAttribute('data-todo-view');
+                    var listEl = document.getElementById('todoList');
+                    var matrixEl = document.getElementById('todoMatrix');
+                    if (view === 'matrix') {
+                        listEl.style.display = 'none';
+                        matrixEl.style.display = 'block';
+                        renderTodoMatrix();
+                    } else {
+                        matrixEl.style.display = 'none';
+                        listEl.style.display = 'block';
+                        renderTodos();
+                    }
+                });
+            });
+        }
+
+        // ----- 番茄时钟 -----
+        var POMO = {
+            work: { secs: 25 * 60, label: '专注', isBreak: false },
+            short: { secs: 5 * 60, label: '短休', isBreak: true },
+            long: { secs: 15 * 60, label: '长休', isBreak: true }
+        };
+        var pomoState = { mode: 'work', remaining: POMO.work.secs, running: false, timer: null, count: 0 };
+
+        function pomoFormat(s) {
+            var m = Math.floor(s / 60), ss = s % 60;
+            return String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+        }
+        function pomoUpdateDisplay() {
+            var disp = document.getElementById('pomoDisplay');
+            if (!disp) return;
+            disp.innerText = pomoFormat(pomoState.remaining);
+            disp.classList.toggle('break', POMO[pomoState.mode].isBreak);
+        }
+        function pomoLoadCount() {
+            var d = new Date();
+            var key = 'pomo_count_' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            pomoState.count = parseInt(Storage.get(key) || '0', 10) || 0;
+            var el = document.getElementById('pomoCount');
+            if (el) el.innerText = pomoState.count;
+        }
+        function pomoSaveCount() {
+            var d = new Date();
+            var key = 'pomo_count_' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            Storage.set(key, pomoState.count);
+            var el = document.getElementById('pomoCount');
+            if (el) el.innerText = pomoState.count;
+        }
+        function pomoTick() {
+            if (pomoState.remaining > 0) {
+                pomoState.remaining--;
+                pomoUpdateDisplay();
+            }
+            if (pomoState.remaining <= 0) {
+                clearInterval(pomoState.timer);
+                pomoState.running = false;
+                document.getElementById('pomoStart').style.display = '';
+                document.getElementById('pomoPause').style.display = 'none';
+                var finished = POMO[pomoState.mode];
+                if (!finished.isBreak) {
+                    pomoState.count++;
+                    pomoSaveCount();
+                    showToast('🍅 完成一个番茄！休息一下吧');
+                } else {
+                    showToast('☕ 休息结束，继续加油！');
+                }
+                pomoBeep();
+                pomoState.remaining = finished.secs;
+                pomoUpdateDisplay();
+            }
+        }
+        function pomoBeep() {
+            try {
+                var Ctx = window.AudioContext || window.webkitAudioContext;
+                if (!Ctx) return;
+                var ac = new Ctx();
+                var o = ac.createOscillator(), g = ac.createGain();
+                o.connect(g); g.connect(ac.destination);
+                o.type = 'sine'; o.frequency.value = 880;
+                g.gain.setValueAtTime(0.001, ac.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.3, ac.currentTime + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.6);
+                o.start(); o.stop(ac.currentTime + 0.6);
+            } catch (e) {}
+        }
+        function setupPomodoro() {
+            pomoLoadCount();
+            pomoUpdateDisplay();
+            var modes = document.getElementById('pomoModes');
+            if (modes) {
+                modes.querySelectorAll('button').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        if (pomoState.running) { clearInterval(pomoState.timer); pomoState.running = false; }
+                        modes.querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
+                        btn.classList.add('active');
+                        pomoState.mode = btn.getAttribute('data-pomo-mode');
+                        pomoState.remaining = POMO[pomoState.mode].secs;
+                        document.getElementById('pomoStart').style.display = '';
+                        document.getElementById('pomoPause').style.display = 'none';
+                        pomoUpdateDisplay();
+                    });
+                });
+            }
+            var startBtn = document.getElementById('pomoStart');
+            var pauseBtn = document.getElementById('pomoPause');
+            var resetBtn = document.getElementById('pomoReset');
+            if (startBtn) startBtn.addEventListener('click', function() {
+                if (pomoState.running) return;
+                pomoState.running = true;
+                startBtn.style.display = 'none';
+                pauseBtn.style.display = '';
+                pomoState.timer = setInterval(pomoTick, 1000);
+            });
+            if (pauseBtn) pauseBtn.addEventListener('click', function() {
+                if (!pomoState.running) return;
+                clearInterval(pomoState.timer);
+                pomoState.running = false;
+                pauseBtn.style.display = 'none';
+                startBtn.style.display = '';
+            });
+            if (resetBtn) resetBtn.addEventListener('click', function() {
+                if (pomoState.running) { clearInterval(pomoState.timer); pomoState.running = false; }
+                pomoState.remaining = POMO[pomoState.mode].secs;
+                startBtn.style.display = '';
+                pauseBtn.style.display = 'none';
+                pomoUpdateDisplay();
+                showToast('⟲ 已重置');
+            });
+        }
 
         // ================================================================
         //  快捷键
