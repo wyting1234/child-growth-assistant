@@ -1710,7 +1710,23 @@
             padding: 8px 10px;
             border: 1px solid var(--border);
             border-radius: 8px;
+            font-size: 14px;        }
+        /* ===== 作业记录 ===== */
+        .hw-paste {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
             font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            box-sizing: border-box;
+            background: #fcfcfd;
+        }
+        .hw-paste:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
         }
     </style>
 </head>
@@ -1880,28 +1896,25 @@
     </div>
 
     <!-- 日记 → 总览待办 快捷录入弹窗 -->
-    <div class="modal-overlay" id="diaryTodoModal">
-        <div class="modal-box" style="max-width:480px;">
+    <div class="modal-overlay" id="diaryHomeworkModal">
+        <div class="modal-box" style="max-width:520px;">
             <div class="modal-title">
-                <span>📝 添加到总览待办</span>
-                <button class="modal-close" onclick="closeDiaryTodoModal()">&times;</button>
+                <span>📚 添加到作业记录</span>
+                <button class="modal-close" onclick="closeDiaryHomeworkModal()">&times;</button>
             </div>
             <div class="diary-todo-form">
-                <p style="color:var(--gray);font-size:13px;margin:0 0 10px;">已自动带入日记中选中的文字，也可手动修改。</p>
-                <textarea id="diaryTodoText" rows="3" placeholder="待办内容"></textarea>
+                <p style="color:var(--gray);font-size:13px;margin:0 0 10px;">已自动带入日记中选中的文字，也可手动修改或粘贴微信群内容。</p>
+                <textarea id="diaryHwText" rows="3" placeholder="作业内容 / 待办事项，可粘贴微信群通知"></textarea>
                 <div class="diary-todo-row">
-                    <select id="diaryTodoPriority">
-                        <option value="q1">重要且紧急</option>
-                        <option value="q2" selected>重要不紧急</option>
-                        <option value="q3">不重要但紧急</option>
-                        <option value="q4">不重要不紧急</option>
-                    </select>
-                    <input type="date" id="diaryTodoDeadline" />
-                    <input type="time" id="diaryTodoDeadlineTime" />
+                    <input type="datetime-local" id="diaryHwInfoTime" title="信息时间：微信群通知发出的时间" />
+                    <input type="text" id="diaryHwSubject" placeholder="科目，如：语文 / 数学" />
+                </div>
+                <div class="diary-todo-row">
+                    <input type="date" id="diaryHwDue" placeholder="截止日期（可选）" />
                 </div>
                 <div style="display:flex;gap:10px;margin-top:14px;">
-                    <button class="btn btn-primary" onclick="addDiaryTodo()" style="flex:1;">确认添加</button>
-                    <button class="btn" onclick="closeDiaryTodoModal()" style="flex:1;">取消</button>
+                    <button class="btn btn-primary" onclick="addDiaryHomework()" style="flex:1;">确认添加</button>
+                    <button class="btn" onclick="closeDiaryHomeworkModal()" style="flex:1;">取消</button>
                 </div>
             </div>
         </div>
@@ -1924,6 +1937,7 @@
                 <a href="javascript:;" data-target="review">📝 周期复盘</a>
                 <a href="javascript:;" data-target="archive">📂 成长档案</a>
                 <a href="javascript:;" data-target="diary">🌱 成长日记</a>
+                <a href="javascript:;" data-target="homework">📚 作业记录</a>
                 <a href="javascript:;" data-target="indicator">📋 指标库</a>
                 <a href="javascript:;" class="sync-nav-btn" id="syncNavBtn" title="云端数据同步">☁️ 云同步<span class="sync-dot" id="syncDot"></span></a>
             </nav>
@@ -2221,6 +2235,27 @@
             </div>
         </div>
 
+        <!-- 8. 作业记录 -->
+        <div class="module" id="homework">
+            <div class="card">
+                <div class="card-title">📚 作业记录 · 粘贴家长群通知</div>
+                <div class="diary-form">
+                    <div class="diary-form-row">
+                        <input type="datetime-local" id="hwInfoTime" title="信息时间：微信群里通知发出的时间" />
+                        <input type="text" id="hwSubject" placeholder="科目，如：语文 / 数学" />
+                    </div>
+                    <div class="diary-form-row">
+                        <input type="date" id="hwDue" placeholder="截止日期（可选）" />
+                        <button class="btn btn-primary" id="hwAddBtn" style="flex:0 0 auto;white-space:nowrap;">+ 添加作业记录</button>
+                    </div>
+                    <textarea id="hwContent" rows="4" class="hw-paste" placeholder="在此粘贴家长群 / 微信群里的作业通知内容，系统会保留换行…"></textarea>
+                </div>
+                <div id="hwList">
+                    <div class="empty-state">暂无作业记录，粘贴一条群通知试试</div>
+                </div>
+            </div>
+        </div>
+
     </div>
     <!-- ===== container 结束 ===== -->
 
@@ -2241,7 +2276,7 @@
             _ACCOUNT_KEY: 'child_account_current',
             _LIST_KEY: 'child_account_list',
             // 需要按账户隔离的记录类键（daily_* 覆盖每日打卡/临时/签到动态键）
-            _ISOLATED: /^(time_records|todos|timer_state_sm|growth_week_review|growth_month_review|growth_milestone|growth_month_days|growth_diary|daily_)/,
+            _ISOLATED: /^(time_records|todos|timer_state_sm|growth_week_review|growth_month_review|growth_milestone|growth_month_days|growth_diary|growth_homework|daily_)/,
             cur: function() {
                 try { return localStorage.getItem(Storage._ACCOUNT_KEY) || ''; } catch (e) { return ''; }
             },
@@ -2305,6 +2340,7 @@
                     if (target === 'daily') { loadDailyTasks();
                         updateSummary(); }
                     if (target === 'diary') renderDiaries();
+                    if (target === 'homework') renderHomeworks();
                 });
             });
         });
@@ -2315,6 +2351,13 @@
         var now = new Date();
         var today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate())
         .padStart(2, '0');
+
+        // 返回本地时间，格式 YYYY-MM-DDTHH:MM，可直接用于 datetime-local 输入
+        function nowLocal() {
+            var d = new Date();
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+            return d.toISOString().slice(0, 16);
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             var dateInput = document.getElementById('daily-date');
@@ -2420,6 +2463,7 @@
             setupTodoEventListeners();
             setupTodoViewTabs();
             setupDiaryEventListeners();
+            setupHomeworkEventListeners();
             setupPomodoro();
             setupFilterTabs();
             setupRecordModal();
@@ -4886,7 +4930,6 @@
         // ----- 成长日记 -----
         function getDiaries() { return Storage.get('growth_diary') || []; }
         function setDiaries(list) { Storage.set('growth_diary', list); }
-        var _currentDiaryTodoId = null;
 
         function renderDiaries() {
             var list = getDiaries();
@@ -4910,7 +4953,7 @@
                 html += '</div></div>';
                 html += '<div class="diary-content">' + esc(d.content || '').replace(/\n/g, '<br>') + '</div>';
                 html += '<div class="diary-actions">';
-                html += '<button class="btn btn-primary btn-sm" onclick="openDiaryTodoModal(\'' + d.id + '\')">📝 加入待办</button>';
+                html += '<button class="btn btn-primary btn-sm" onclick="openDiaryHomeworkModal(\'' + d.id + '\')">📚 加入作业记录</button>';
                 html += '<button class="btn btn-sm" onclick="deleteDiary(\'' + d.id + '\')">🗑️ 删除</button>';
                 html += '</div></div>';
             });
@@ -4954,52 +4997,120 @@
             showToast('🗑️ 日记已删除');
         };
 
-        window.openDiaryTodoModal = function(id) {
+        // ----- 作业记录 -----
+        function getHomeworks() { return Storage.get('growth_homework') || []; }
+        function setHomeworks(list) { Storage.set('growth_homework', list); }
+
+        function renderHomeworks() {
+            var list = getHomeworks();
+            var container = document.getElementById('hwList');
+            if (!container) return;
+            if (list.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无作业记录，粘贴一条群通知试试</div>';
+                return;
+            }
+            var sorted = list.slice().sort(function(a, b) {
+                return new Date(b.infoTime || 0) - new Date(a.infoTime || 0);
+            });
+            var html = '';
+            sorted.forEach(function(h) {
+                var infoTime = h.infoTime ? '🕒 ' + esc(h.infoTime).replace('T', ' ') : '';
+                var subject = h.subject ? '📖 ' + esc(h.subject) : '';
+                var due = h.due ? '⏰ 截止 ' + esc(h.due) : '';
+                html += '<div class="diary-item" data-id="' + h.id + '">';
+                html += '<div class="diary-item-meta" style="margin-bottom:8px;">';
+                if (infoTime) html += '<span>' + infoTime + '</span>';
+                if (subject) html += '<span>' + subject + '</span>';
+                if (due) html += '<span>' + due + '</span>';
+                html += '</div>';
+                html += '<div class="diary-content">' + esc(h.content || '').replace(/\n/g, '<br>') + '</div>';
+                html += '<div class="diary-actions">';
+                html += '<button class="btn btn-sm" onclick="deleteHomework(\'' + h.id + '\')">🗑️ 删除</button>';
+                html += '</div></div>';
+            });
+            container.innerHTML = html;
+        }
+
+        function addHomework() {
+            var infoEl = document.getElementById('hwInfoTime');
+            var subjEl = document.getElementById('hwSubject');
+            var dueEl = document.getElementById('hwDue');
+            var contentEl = document.getElementById('hwContent');
+            var content = (contentEl ? contentEl.value : '').trim();
+            if (!content) { showToast('⚠️ 请粘贴 / 填写作业内容'); return; }
+            var list = getHomeworks();
+            list.push({
+                id: genId(),
+                infoTime: infoEl ? infoEl.value || '' : '',
+                subject: subjEl ? subjEl.value.trim() : '',
+                due: dueEl ? dueEl.value || '' : '',
+                content: content,
+                createdAt: new Date().toISOString()
+            });
+            setHomeworks(list);
+            if (contentEl) contentEl.value = '';
+            if (subjEl) subjEl.value = '';
+            if (dueEl) dueEl.value = '';
+            if (infoEl) infoEl.value = '';
+            renderHomeworks();
+            showToast('✅ 作业记录已添加');
+        }
+
+        window.deleteHomework = function(id) {
+            if (!confirm('确定删除这条作业记录吗？')) return;
+            var list = getHomeworks().filter(function(h) { return h.id !== id; });
+            setHomeworks(list);
+            renderHomeworks();
+            showToast('🗑️ 作业记录已删除');
+        };
+
+        var _currentDiaryHwId = null;
+
+        window.openDiaryHomeworkModal = function(id) {
             var diary = getDiaries().find(function(d) { return d.id === id; });
             if (!diary) return;
-            _currentDiaryTodoId = id;
+            _currentDiaryHwId = id;
             var selected = '';
             try { selected = window.getSelection().toString().trim(); } catch (e) {}
             var text = selected || diary.content || diary.title || '';
-            var textEl = document.getElementById('diaryTodoText');
-            var prioEl = document.getElementById('diaryTodoPriority');
-            var dlEl = document.getElementById('diaryTodoDeadline');
-            var dlTimeEl = document.getElementById('diaryTodoDeadlineTime');
+            var textEl = document.getElementById('diaryHwText');
+            var infoEl = document.getElementById('diaryHwInfoTime');
+            var subjEl = document.getElementById('diaryHwSubject');
+            var dueEl = document.getElementById('diaryHwDue');
             if (textEl) textEl.value = text;
-            if (prioEl) prioEl.value = 'q2';
-            if (dlEl) dlEl.value = today;
-            if (dlTimeEl) dlTimeEl.value = '';
-            var modal = document.getElementById('diaryTodoModal');
+            if (infoEl) infoEl.value = nowLocal();
+            if (subjEl) subjEl.value = '';
+            if (dueEl) dueEl.value = '';
+            var modal = document.getElementById('diaryHomeworkModal');
             if (modal) modal.classList.add('show');
         };
 
-        window.closeDiaryTodoModal = function() {
-            var modal = document.getElementById('diaryTodoModal');
+        window.closeDiaryHomeworkModal = function() {
+            var modal = document.getElementById('diaryHomeworkModal');
             if (modal) modal.classList.remove('show');
-            _currentDiaryTodoId = null;
+            _currentDiaryHwId = null;
         };
 
-        window.addDiaryTodo = function() {
-            var textEl = document.getElementById('diaryTodoText');
-            var prioEl = document.getElementById('diaryTodoPriority');
-            var dlEl = document.getElementById('diaryTodoDeadline');
-            var dlTimeEl = document.getElementById('diaryTodoDeadlineTime');
+        window.addDiaryHomework = function() {
+            var textEl = document.getElementById('diaryHwText');
+            var infoEl = document.getElementById('diaryHwInfoTime');
+            var subjEl = document.getElementById('diaryHwSubject');
+            var dueEl = document.getElementById('diaryHwDue');
             var text = (textEl ? textEl.value : '').trim();
-            if (!text) { showToast('⚠️ 请输入待办内容'); return; }
-            var todos = getTodos();
-            todos.push({
+            if (!text) { showToast('⚠️ 请输入作业内容'); return; }
+            var list = getHomeworks();
+            list.push({
                 id: genId(),
-                text: text,
-                completed: false,
-                priority: prioEl ? prioEl.value : 'q2',
-                deadline: dlEl ? dlEl.value || '' : '',
-                deadlineTime: dlTimeEl ? dlTimeEl.value || '' : '',
-                createdAt: new Date().toISOString(),
-                fromDiary: _currentDiaryTodoId
+                infoTime: infoEl ? infoEl.value || '' : '',
+                subject: subjEl ? subjEl.value.trim() : '',
+                due: dueEl ? dueEl.value || '' : '',
+                content: text,
+                fromDiary: _currentDiaryHwId,
+                createdAt: new Date().toISOString()
             });
-            setTodos(todos);
-            closeDiaryTodoModal();
-            showToast('✅ 已添加到总览待办');
+            setHomeworks(list);
+            closeDiaryHomeworkModal();
+            showToast('✅ 已添加到作业记录');
         };
 
         function setupDiaryEventListeners() {
@@ -5007,10 +5118,23 @@
             if (dateEl) dateEl.value = today;
             var addBtn = document.getElementById('diaryAddBtn');
             if (addBtn) addBtn.addEventListener('click', addDiary);
-            var modal = document.getElementById('diaryTodoModal');
+            var modal = document.getElementById('diaryHomeworkModal');
             if (modal) {
                 modal.addEventListener('click', function(e) {
-                    if (e.target === modal) closeDiaryTodoModal();
+                    if (e.target === modal) closeDiaryHomeworkModal();
+                });
+            }
+        }
+
+        function setupHomeworkEventListeners() {
+            var infoEl = document.getElementById('hwInfoTime');
+            if (infoEl) infoEl.value = nowLocal();
+            var addBtn = document.getElementById('hwAddBtn');
+            if (addBtn) addBtn.addEventListener('click', addHomework);
+            var modal = document.getElementById('diaryHomeworkModal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) closeDiaryHomeworkModal();
                 });
             }
         }
