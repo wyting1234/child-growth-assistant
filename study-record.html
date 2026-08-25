@@ -1,0 +1,2344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📚 学习记录</title>
+    <style>
+        /* ===== 全局重置 ===== */
+        * { margin:0; padding:0; box-sizing:border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+        body { background:#f5f7fb; color:#1e293b; min-height:100vh; display:flex; flex-direction:column; }
+        .navbar { background:#fff; padding:0.6rem 2rem; box-shadow:0 2px 8px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; border-bottom:1px solid #e9edf4; position:sticky; top:0; z-index:100; }
+        .navbar .brand { font-size:1.2rem; font-weight:700; color:#0f2b4a; display:flex; align-items:center; gap:0.5rem; }
+        .navbar .brand span { background:#2563eb; color:white; font-size:0.7rem; padding:0.2rem 0.6rem; border-radius:20px; font-weight:500; }
+        .nav-links { display:flex; flex-wrap:wrap; gap:0.2rem; align-items:center; }
+        .nav-links button { background:transparent; border:none; padding:0.4rem 1rem; font-size:0.9rem; font-weight:500; color:#64748b; border-radius:8px; cursor:pointer; transition:all 0.2s; }
+        .nav-links button:hover { background:#f1f5f9; color:#0f2b4a; }
+        .nav-links button.active { background:#2563eb; color:white; box-shadow:0 2px 6px rgba(37,99,235,0.25); }
+        .nav-links .user-btn { background:#7c3aed; color:white; border-radius:20px; padding:0.2rem 1rem; font-size:0.85rem; }
+        .nav-links .user-btn:hover { background:#6d28d9; color:white; }
+
+        .container { flex:1; padding:1.5rem 2rem; max-width:1400px; margin:0 auto; width:100%; }
+        .page-section { display:none; animation:fadeUp 0.3s ease; }
+        .page-section.active { display:block; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+        .card { background:white; border-radius:16px; padding:1.5rem; box-shadow:0 2px 12px rgba(0,0,0,0.05); margin-bottom:1.5rem; border:1px solid #edf2f7; }
+        .card h2 { font-size:1.3rem; margin-bottom:1rem; }
+        .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+
+        .btn { background:#2563eb; color:white; border:none; padding:0.3rem 0.9rem; border-radius:8px; font-weight:500; cursor:pointer; transition:background 0.2s; font-size:0.85rem; white-space:nowrap; display:inline-flex; align-items:center; gap:0.25rem; }
+        .btn:hover { background:#1d4ed8; }
+        .btn.outline { background:transparent; border:1px solid #d1d9e6; color:#1e293b; }
+        .btn.outline:hover { background:#f1f5f9; }
+        .btn.small { padding:0.15rem 0.6rem; font-size:0.75rem; }
+        .btn.green { background:#16a34a; }
+        .btn.green:hover { background:#15803d; }
+        .btn.red { background:#dc2626; }
+        .btn.red:hover { background:#b91c1c; }
+        .btn.purple { background:#7c3aed; }
+        .btn.purple:hover { background:#6d28d9; }
+        .btn.icon-btn { width:32px; height:32px; padding:0; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:1rem; background:#f1f5f9; color:#1e293b; border:1px solid #d1d9e6; transition:all 0.15s; cursor:pointer; }
+        .btn.icon-btn:hover { background:#e2e8f0; border-color:#94a3b8; }
+        .btn.icon-btn.active { background:#2563eb; color:white; border-color:#2563eb; }
+        .btn.icon-btn.active:hover { background:#1d4ed8; }
+        .btn.icon-btn.purple { background:#7c3aed; color:white; border-color:#7c3aed; }
+        .btn.icon-btn.purple:hover { background:#6d28d9; }
+
+        .flex-row { display:flex; gap:0.6rem; flex-wrap:wrap; align-items:center; }
+        .mt-1 { margin-top:0.8rem; }
+        .mb-1 { margin-bottom:0.8rem; }
+        .text-muted { color:#64748b; font-size:0.9rem; }
+        .text-center { text-align:center; }
+        .tag { display:inline-block; padding:0.2rem 0.8rem; border-radius:20px; font-size:0.75rem; font-weight:500; background:#e9edf4; color:#475569; }
+        .tag.blue { background:#dbeafe; color:#1d4ed8; }
+        .tag.red { background:#fee2e2; color:#dc2626; }
+
+        /* 浮动选择器 */
+        .subject-float { position:fixed; bottom:2rem; right:2rem; z-index:200; display:flex; flex-direction:column; align-items:flex-end; gap:0.5rem; }
+        .subject-float .float-btn { width:56px; height:56px; border-radius:50%; background:#2563eb; color:white; font-size:1.8rem; border:none; box-shadow:0 4px 16px rgba(37,99,235,0.4); cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; }
+        .subject-float .float-btn:hover { transform:scale(1.05); background:#1d4ed8; }
+        .subject-float .float-label { background:white; padding:0.3rem 1rem; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,0.1); font-size:0.9rem; font-weight:600; border:1px solid #e9edf4; }
+        .subject-popup { display:none; position:fixed; bottom:6rem; right:2rem; width:340px; max-height:70vh; background:white; border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.15); border:1px solid #e9edf4; padding:1.2rem; overflow-y:auto; z-index:201; opacity:0; transform:scale(0.95); transition:opacity 0.2s ease, transform 0.2s ease; pointer-events:none; }
+        .subject-popup.open { display:block; opacity:1; transform:scale(1); pointer-events:auto; }
+        .subject-popup .popup-title { font-weight:700; margin-bottom:0.8rem; display:flex; justify-content:space-between; align-items:center; }
+        .subject-popup select, .subject-popup input { width:100%; padding:0.4rem; border:1px solid #d1d9e6; border-radius:8px; font-size:0.9rem; margin-bottom:0.5rem; }
+        .subject-popup .subj-list { list-style:none; padding:0; }
+        .subject-popup .subj-list li { padding:0.4rem 0.6rem; border-radius:6px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+        .subject-popup .subj-list li:hover { background:#f1f5f9; }
+        .subject-popup .subj-list li.active { background:#dbeafe; color:#1d4ed8; font-weight:600; }
+        .subject-popup .subj-list li .del { color:#94a3b8; cursor:pointer; font-size:0.8rem; padding:0 0.3rem; }
+        .subject-popup .subj-list li .del:hover { color:#dc2626; }
+        .subject-popup .add-row { display:flex; gap:0.4rem; margin-top:0.5rem; }
+        .subject-popup .add-row input { flex:1; margin-bottom:0; }
+
+        /* 管理树 */
+        .manage-tree { margin-top:0.2rem; }
+        .manage-node { margin-bottom:0.2rem; }
+        .manage-node .node-row { display:flex; align-items:center; gap:0.4rem; padding:0.3rem 0.4rem; border-radius:6px; transition:background 0.15s; cursor:default; flex-wrap:wrap; }
+        .manage-node .node-row:hover { background:#f1f5f9; }
+        .manage-node .node-icon { font-size:1rem; width:1.6rem; text-align:center; flex-shrink:0; }
+        .manage-node .node-name { font-weight:600; font-size:0.95rem; flex:1; min-width:80px; }
+        .manage-node .node-actions { display:flex; gap:0.2rem; flex-wrap:wrap; }
+        .manage-node .node-actions .btn { font-size:0.7rem; padding:0.05rem 0.5rem; }
+        .manage-node .node-children { margin-left:1.8rem; padding-left:0.6rem; border-left:2px solid #dbeafe; }
+        .manage-node .node-children.collapsed { display:none; }
+        .manage-node .add-row-inline { display:flex; gap:0.3rem; margin:0.2rem 0 0.3rem 0; flex-wrap:wrap; align-items:center; }
+        .manage-node .add-row-inline input { padding:0.2rem 0.4rem; border:1px solid #d1d9e6; border-radius:6px; font-size:0.8rem; flex:1; min-width:100px; }
+        .manage-node .add-row-inline .btn { font-size:0.7rem; padding:0.1rem 0.6rem; }
+        .manage-node .empty-hint { color:#94a3b8; font-size:0.8rem; padding:0.2rem 0; font-style:italic; }
+
+        /* 面包屑 */
+        .breadcrumb { display:flex; flex-wrap:wrap; gap:0.4rem; align-items:center; margin-bottom:1rem; font-size:0.95rem; }
+        .breadcrumb .crumb { color:#2563eb; cursor:pointer; font-weight:600; padding:0.2rem 0.5rem; border-radius:6px; transition:background 0.15s; }
+        .breadcrumb .crumb:hover { background:#eff6ff; }
+        .breadcrumb .crumb.current { color:#0f2b4a; cursor:default; }
+        .breadcrumb .sep { color:#94a3b8; }
+
+        /* 单元要求 */
+        .unit-req { background:#f8fafc; border-left:4px solid #2563eb; border-radius:12px; padding:1rem 1.2rem; margin-bottom:1rem; }
+        .unit-req h3 { margin:0 0 0.5rem; font-size:1.05rem; color:#0f2b4a; }
+        .unit-req textarea { min-height:90px; }
+
+        /* 列表卡片 */
+        .list-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr)); gap:1rem; }
+        .item-card { background:white; border:1px solid #edf2f7; border-radius:14px; padding:1rem 1.2rem; box-shadow:0 2px 10px rgba(0,0,0,0.04); cursor:pointer; transition:all .2s; position:relative; }
+        .item-card:hover { box-shadow:0 4px 16px rgba(37,99,235,0.12); transform:translateY(-2px); border-color:#bfdbfe; }
+        .item-card .ic-title { font-weight:700; font-size:1.05rem; color:#0f2b4a; display:flex; align-items:center; gap:0.4rem; padding-right:2.6rem; }
+        .item-card .ic-meta { font-size:0.82rem; color:#64748b; margin-top:0.4rem; }
+        .item-card .ic-actions { position:absolute; top:0.6rem; right:0.7rem; }
+        .item-card .ic-progress { height:6px; background:#e9edf4; border-radius:4px; margin-top:0.6rem; overflow:hidden; }
+        .item-card .ic-progress .fill { height:100%; background:#2563eb; }
+
+        /* 切片 */
+        .slice-bar { display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center; margin-bottom:1rem; }
+        .slice-chip { padding:0.4rem 1rem; border-radius:20px; border:1px solid #d1d9e6; background:white; cursor:pointer; font-weight:600; font-size:0.9rem; color:#475569; transition:all .15s; user-select:none; }
+        .slice-chip:hover { border-color:#2563eb; color:#2563eb; }
+        .slice-chip.active { background:#2563eb; border-color:#2563eb; color:white; box-shadow:0 2px 8px rgba(37,99,235,0.3); }
+        .slice-mode { margin-left:auto; display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; color:#64748b; }
+        .slice-mode button { padding:0.25rem 0.7rem; border-radius:8px; border:1px solid #d1d9e6; background:white; cursor:pointer; font-weight:600; font-size:0.8rem; color:#475569; }
+        .slice-mode button.active { background:#0f2b4a; color:white; border-color:#0f2b4a; }
+        .slice-mode button.select-all { background:#e9edf4; border-color:#94a3b8; color:#1e293b; }
+        .slice-mode button.select-all:hover { background:#d1d9e6; }
+
+        /* 阶段面板 */
+        .phase-panel { background:#fafcff; border:1px solid #e9edf4; border-radius:10px; padding:0.8rem 1rem; margin-bottom:0.8rem; }
+        .phase-panel .phase-label { font-weight:700; font-size:0.95rem; color:#0f2b4a; margin-bottom:0.4rem; display:flex; align-items:center; gap:0.4rem; }
+        .phase-panel textarea { min-height:70px; width:100%; padding:0.4rem; border:1px solid #d1d9e6; border-radius:6px; font-size:0.9rem; resize:vertical; }
+        .phase-panel .phase-meta { font-size:0.7rem; color:#94a3b8; text-align:right; margin-top:0.2rem; }
+        .phase-panel .phase-actions { display:flex; gap:0.3rem; margin-top:0.4rem; flex-wrap:wrap; }
+
+        /* 知识卡列表 */
+        .phase-card-list { margin-top:0.8rem; border-top:1px dashed #d1d9e6; padding-top:0.6rem; }
+        .card-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.6rem; padding:0.2rem 0.2rem 0.4rem 0.2rem; border-bottom:1px solid #eef2f6; }
+        .card-toolbar .card-count { font-weight:600; font-size:0.9rem; color:#0f2b4a; display:flex; align-items:center; gap:0.3rem; }
+        .card-toolbar .card-actions { display:flex; align-items:center; gap:0.3rem; }
+        .card-toolbar .card-actions .btn.icon-btn { width:34px; height:34px; font-size:1rem; }
+
+        .cards-container { display:flex; flex-wrap:wrap; gap:0.6rem; min-height:60px; padding:0.2rem 0; }
+        .cards-container.list-view { flex-direction:column; }
+        .cards-container.list-view .card-item-mini { width:100%; }
+        .cards-container.grid-view { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); }
+        .cards-container.grid-view .card-item-mini { border-left:none; border:1px solid #e9edf4; flex-direction:column; align-items:stretch; padding:0.6rem; border-radius:10px; background:white; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+        .cards-container.grid-view .card-item-mini .card-a { margin-left:0; margin-top:0.2rem; }
+
+        .card-item-mini { background:#f8fafc; border-radius:8px; padding:0.5rem 0.7rem; border-left:3px solid #2563eb; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.3rem; transition:background 0.15s; }
+        .card-item-mini:hover { background:#f1f5f9; }
+        .card-item-mini .card-q { font-weight:500; font-size:0.9rem; }
+        .card-item-mini .card-a { color:#475569; font-size:0.85rem; margin-left:0.5rem; }
+        .card-item-mini .card-meta { font-size:0.7rem; color:#94a3b8; display:flex; align-items:center; gap:0.3rem; }
+        .card-item-mini .del-card { color:#94a3b8; cursor:pointer; font-size:0.8rem; padding:0 0.2rem; transition:color 0.15s; }
+        .card-item-mini .del-card:hover { color:#dc2626; }
+        .cards-container.grid-view .card-item-mini .card-meta { margin-top:0.2rem; }
+
+        .add-card-form { display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.6rem; padding-top:0.6rem; border-top:1px solid #eef2f6; align-items:center; }
+        .add-card-form input { padding:0.3rem 0.6rem; border:1px solid #d1d9e6; border-radius:6px; font-size:0.85rem; flex:1; min-width:100px; background:#fafcff; transition:border 0.15s; }
+        .add-card-form input:focus { border-color:#2563eb; outline:none; background:white; }
+        .add-card-form .btn { font-size:0.8rem; padding:0.2rem 0.8rem; }
+
+        /* 模态框 */
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:400; justify-content:center; align-items:center; }
+        .modal-overlay.open { display:flex; }
+        .modal-box { background:white; border-radius:16px; padding:1.8rem; max-width:620px; width:94%; max-height:90vh; overflow-y:auto; box-shadow:0 8px 40px rgba(0,0,0,0.3); }
+        .modal-box .modal-title { font-size:1.3rem; font-weight:700; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e9edf4; padding-bottom:0.6rem; }
+        .modal-box .modal-title .close-btn { background:none; border:none; font-size:1.8rem; cursor:pointer; color:#94a3b8; }
+        .modal-box .modal-title .close-btn:hover { color:#dc2626; }
+        .form-group { margin-bottom:0.8rem; display:flex; flex-wrap:wrap; align-items:center; gap:0.4rem; }
+        .form-group label { font-weight:500; font-size:0.9rem; min-width:70px; }
+        .form-group input, .form-group select, .form-group textarea { padding:0.4rem; border:1px solid #d1d9e6; border-radius:6px; font-size:0.9rem; flex:1; min-width:120px; }
+        .form-group textarea { min-height:70px; resize:vertical; }
+        .mastery-slider { display:flex; align-items:center; gap:0.5rem; flex:1; }
+        .mastery-slider input[type="range"] { flex:1; min-width:80px; }
+
+        /* 选项管理 */
+        .option-manager { margin-left:70px; margin-top:0.2rem; border:1px solid #e9edf4; border-radius:8px; padding:0.6rem; background:#fafcff; }
+        .option-manager .option-label { font-weight:600; font-size:0.85rem; color:#0f2b4a; margin-bottom:0.4rem; display:flex; align-items:center; gap:0.3rem; }
+        .option-manager .option-label .badge { font-size:0.65rem; background:#dbeafe; color:#1d4ed8; padding:0.05rem 0.5rem; border-radius:10px; font-weight:500; }
+        .option-manager .option-input-row { display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap; }
+        .option-manager .option-input-row input { flex:1; min-width:100px; padding:0.3rem 0.5rem; border:1px solid #d1d9e6; border-radius:6px; font-size:0.85rem; }
+        .option-manager .option-input-row input:focus { border-color:#2563eb; outline:none; }
+        .option-manager .option-list { display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.4rem; }
+        .option-tag { background:#e9edf4; border-radius:16px; padding:0.2rem 0.8rem; font-size:0.85rem; cursor:pointer; display:flex; align-items:center; gap:0.3rem; border:2px solid transparent; transition:all 0.15s; user-select:none; }
+        .option-tag:hover { background:#dbeafe; }
+        .option-tag.selected { background:#2563eb; color:white; border-color:#1d4ed8; }
+        .option-tag .del-opt { color:#94a3b8; cursor:pointer; font-weight:bold; margin-left:0.2rem; }
+        .option-tag .del-opt:hover { color:#dc2626; }
+        .option-tag .opt-label { font-weight:600; margin-right:0.1rem; }
+        #answerDisplay { font-weight:600; color:#2563eb; padding:0.2rem 0.6rem; background:#eff6ff; border-radius:4px; flex:1; min-height:2.2rem; display:flex; align-items:center; }
+
+        /* 错题 & 日志 */
+        .error-item, .log-item { padding:0.6rem 0.8rem; border-bottom:1px solid #f1f5f9; display:flex; flex-wrap:wrap; gap:0.4rem; align-items:flex-start; }
+        .error-item .date, .log-item .date { font-weight:600; color:#2563eb; min-width:80px; }
+        .error-item .error-detail { flex:1; }
+        .error-item .error-detail .field { margin-right:0.8rem; }
+        .error-item .error-detail .field strong { color:#0f2b4a; }
+
+        /* 理论 */
+        .theory-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:1.2rem; margin-bottom:1.5rem; }
+        .theory-card { background:white; border-radius:14px; padding:1.2rem; border:1px solid #edf2f7; box-shadow:0 2px 8px rgba(0,0,0,0.04); transition:all 0.2s; }
+        .theory-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.08); }
+        .theory-card .theory-header { display:flex; align-items:center; gap:0.5rem; margin-bottom:0.3rem; }
+        .theory-card .theory-icon { font-size:1.6rem; }
+        .theory-card .theory-name { font-weight:700; font-size:1.1rem; }
+        .theory-card .theory-core { color:#475569; font-size:0.9rem; padding:0.3rem 0; }
+        .theory-card .theory-toggle { background:transparent; border:none; color:#2563eb; cursor:pointer; font-weight:600; font-size:0.85rem; padding:0.2rem 0; }
+        .theory-card .theory-toggle:hover { color:#1d4ed8; }
+        .theory-card .theory-body.open { display:block !important; }
+        .concept-item { display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding:0.15rem 0; }
+        .concept-item .label { font-weight:600; }
+        .concept-item .desc { color:#475569; }
+
+        .card-item { background:white; border:1px solid #edf2f7; border-radius:12px; padding:1rem 1.2rem; margin-bottom:0.8rem; box-shadow:0 1px 4px rgba(0,0,0,0.04); transition:box-shadow 0.15s; }
+        .card-item:hover { box-shadow:0 2px 12px rgba(0,0,0,0.07); }
+        .card-item .header { display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.4rem; align-items:flex-start; }
+        .card-item .question { font-weight:600; font-size:1rem; }
+        .card-item .mastery { font-size:0.85rem; color:#64748b; white-space:nowrap; }
+
+        .quick-add-card .form-row { display:flex; flex-wrap:wrap; gap:0.4rem; align-items:center; }
+        .quick-add-card .form-row input, .quick-add-card .form-row select { padding:0.3rem 0.5rem; border:1px solid #d1d9e6; border-radius:6px; font-size:0.85rem; flex:1; min-width:80px; }
+
+        /* 学员管理 */
+        .user-list { list-style:none; padding:0; margin:0.5rem 0; }
+        .user-list li { display:flex; justify-content:space-between; align-items:center; padding:0.4rem 0.6rem; border-bottom:1px solid #f1f5f9; }
+        .user-list li .name { font-weight:500; }
+        .user-list li .badge { background:#dbeafe; color:#1d4ed8; font-size:0.7rem; padding:0.05rem 0.5rem; border-radius:10px; }
+        .user-list li .actions { display:flex; gap:0.3rem; }
+        .user-list li .actions button { font-size:0.7rem; padding:0.05rem 0.5rem; }
+
+        /* 仪表盘学期选择 */
+        .dash-semester-row { background:#f8fafc; border-radius:12px; padding:0.5rem 1rem; margin-bottom:1rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+        .dash-semester-row label { font-weight:600; color:#0f2b4a; }
+        .dash-semester-row select { padding:0.3rem 0.6rem; border:1px solid #d1d9e6; border-radius:8px; font-size:0.9rem; background:white; min-width:150px; }
+
+        /* 筛选栏并排 */
+        .filter-bar { background:#f8fafc; border-radius:12px; padding:0.4rem 1rem; margin-bottom:1.2rem; display:flex; flex-wrap:nowrap; align-items:center; gap:0.6rem 1rem; overflow-x:auto; }
+        .filter-bar .filter-item { display:flex; align-items:center; gap:0.3rem; flex-shrink:0; }
+        .filter-bar .filter-item label { font-weight:500; font-size:0.8rem; color:#475569; white-space:nowrap; }
+        .filter-bar .filter-item select { padding:0.2rem 0.5rem; border:1px solid #d1d9e6; border-radius:6px; font-size:0.85rem; background:white; min-width:80px; }
+        .filter-bar .action-group { display:flex; gap:0.3rem; margin-left:auto; flex-shrink:0; }
+
+        @media (max-width:768px) {
+            .navbar { flex-direction:column; align-items:stretch; padding:0.6rem 1rem; }
+            .nav-links { justify-content:center; }
+            .container { padding:1rem; }
+            .grid-2 { grid-template-columns:1fr; }
+            .subject-popup { width:90%; right:5%; bottom:5rem; }
+            .filter-bar { flex-wrap:wrap; }
+            .modal-box { width:95%; padding:1rem; }
+            .option-manager { margin-left:0; }
+            .card-toolbar { flex-direction:column; align-items:stretch; gap:0.4rem; }
+            .card-toolbar .card-actions { justify-content:flex-start; }
+            .cards-container.grid-view { grid-template-columns:1fr; }
+            .add-card-form input { min-width:80px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="brand">📚 学习记录 <span>v21.0</span></div>
+        <div class="nav-links">
+            <button class="active" data-page="dashboard">📊 仪表盘</button>
+            <button data-page="theory">🧠 学习理论</button>
+            <button data-page="subject">📖 科目学习</button>
+            <button data-page="cards">🃏 知识卡</button>
+            <button data-page="errors">❌ 错题本</button>
+            <button data-page="logs">📝 学习日志</button>
+            <button class="user-btn" id="userManagerBtn">👤 学员管理</button>
+        </div>
+    </nav>
+
+    <!-- 浮动选择器 -->
+    <div class="subject-float" id="subjectFloat">
+        <div class="float-label" id="floatLabel">未选择</div>
+        <button class="float-btn" id="floatBtn">📚</button>
+    </div>
+    <div class="subject-popup" id="subjectPopup">
+        <div class="popup-title">
+            <span>📚 选择年级·科目</span>
+            <button class="btn small outline" id="closePopupBtn">✕</button>
+        </div>
+        <div class="flex-row" style="gap:0.4rem;">
+            <select id="semesterSelect" style="flex:1;"></select>
+            <button class="btn small" id="addSemesterBtn">+</button>
+            <button class="btn small red" id="delSemesterBtn">-</button>
+        </div>
+        <ul class="subj-list" id="popupSubjectList"></ul>
+        <div class="add-row">
+            <input type="text" id="newSubjectInput" placeholder="新科目名称">
+            <button class="btn small" id="addSubjectBtn">添加</button>
+        </div>
+    </div>
+
+    <!-- 管理模态框 -->
+    <div class="modal-overlay" id="manageModal">
+        <div class="modal-box">
+            <div class="modal-title">
+                <span>📂 内容管理（科目·单元·课）</span>
+                <button class="close-btn" id="closeModalBtn">✕</button>
+            </div>
+            <div id="manageTree" class="manage-tree"></div>
+            <div style="margin-top:1rem; border-top:1px solid #e9edf4; padding-top:0.8rem;">
+                <div class="add-row">
+                    <input type="text" id="manageAddInput" placeholder="添加新科目名称">
+                    <button class="btn small" id="manageAddSubjectBtn">添加科目</button>
+                </div>
+                <div style="font-size:0.8rem;color:#64748b;margin-top:0.3rem;">💡 点击科目/单元旁的「展开」查看下级。</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 学员管理模态框 -->
+    <div class="modal-overlay" id="userManagerModal">
+        <div class="modal-box" style="max-width:480px;">
+            <div class="modal-title">
+                <span>👤 学员管理</span>
+                <button class="close-btn" id="closeUserModalBtn">✕</button>
+            </div>
+            <div style="margin-bottom:0.8rem;">
+                <div class="flex-row">
+                    <input type="text" id="newUserName" placeholder="输入学员姓名" style="flex:1;">
+                    <button class="btn green" id="addUserBtn">添加学员</button>
+                </div>
+            </div>
+            <ul class="user-list" id="userList"></ul>
+            <div style="font-size:0.8rem;color:#64748b;margin-top:0.5rem;">💡 点击学员姓名可切换，删除按钮仅对非当前学员有效。</div>
+        </div>
+    </div>
+
+    <!-- 制作知识卡模态框 -->
+    <div class="modal-overlay" id="cardMakerModal" onclick="if(event.target===this) closeMakerModal();">
+        <div class="modal-box" id="makerModalBox">
+            <div class="modal-title">
+                <span>📝 制作知识卡</span>
+                <button class="close-btn" onclick="closeMakerModal();">✕</button>
+            </div>
+            <div id="makerForm">
+                <div class="form-group" style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:0.4rem; flex:1;">
+                        <label style="min-width:auto;">阶段</label>
+                        <span id="makerPhaseDisplay" style="font-weight:600; padding:0.2rem 0.6rem; background:#f1f5f9; border-radius:4px;"></span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:0.4rem; flex:1;">
+                        <label style="min-width:auto;">类型</label>
+                        <select id="makerType" style="flex:1;" onchange="onTypeChange();">
+                            <option value="judge">判断</option>
+                            <option value="single">单选</option>
+                            <option value="multi">多选</option>
+                            <option value="essay">问答</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group"><label>问题</label><input type="text" id="makerQuestion" placeholder="输入问题"></div>
+                <div id="optionArea" style="display:none;">
+                    <div class="option-manager">
+                        <div class="option-label">
+                            <span>📌 选项</span>
+                            <span class="badge" id="optionTypeBadge">单选</span>
+                        </div>
+                        <div class="option-input-row">
+                            <input type="text" id="optionInput" placeholder="输入选项文字" style="flex:2;">
+                            <button class="btn small green" id="addOptionBtn" onclick="addOption();">添加选项</button>
+                        </div>
+                        <div class="option-list" id="optionList"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>答案</label>
+                    <div id="answerDisplay">未选择</div>
+                </div>
+                <div class="form-group"><label>难度</label>
+                    <select id="makerDifficulty"><option value="1">⭐</option><option value="2">⭐⭐</option><option value="3" selected>⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="5">⭐⭐⭐⭐⭐</option></select>
+                </div>
+                <div class="form-group"><label>掌握度</label>
+                    <div class="mastery-slider"><input type="range" id="makerMastery" min="0" max="5" value="0" oninput="document.getElementById('makerMasteryLabel').textContent=this.value+'星';"><span id="makerMasteryLabel">0星</span></div>
+                </div>
+                <div class="form-group"><label>联想</label><input type="text" id="makerAssociation" placeholder="联想内容"></div>
+                <div class="form-group"><label>处理方式</label>
+                    <select id="makerAction"><option value="continue">继续练习</option><option value="textbook">回看课本</option><option value="research">查资料</option><option value="review">复习巩固</option></select>
+                </div>
+                <div class="form-group"><label>处理原因</label><input type="text" id="makerReason" placeholder="为什么需要这样处理"></div>
+                <div class="flex-row" style="justify-content:flex-end; margin-top:1rem;">
+                    <button class="btn green" onclick="generateCard();">✅ 生成知识卡</button>
+                    <button class="btn outline" onclick="closeMakerModal();">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 仪表盘 -->
+        <div id="page-dashboard" class="page-section active">
+            <h1 style="margin-bottom:0.8rem;">📊 学习仪表盘</h1>
+            <!-- 学期选择器 -->
+            <div class="dash-semester-row">
+                <label for="dashSemesterSelect">📅 选择学期：</label>
+                <select id="dashSemesterSelect"></select>
+                <span style="font-size:0.85rem;color:#64748b;">切换后自动跳转到该学期第一个科目</span>
+            </div>
+            <div class="grid-2">
+                <div class="card"><h3>📌 当前学习</h3><div id="dash-current" class="text-muted">未选择</div></div>
+                <div class="card"><h3>🃏 待复习卡片</h3><div id="dash-today-cards">0</div></div>
+                <div class="card"><h3>📝 总知识卡</h3><div id="dash-total-cards">0</div></div>
+                <div class="card"><h3>📈 整体进度</h3><div id="dash-progress-text">0%</div><div style="height:8px;background:#e9edf4;border-radius:4px;overflow:hidden;"><div id="dash-progress-bar" style="height:100%;width:0%;background:#2563eb;"></div></div></div>
+            </div>
+            <div class="card"><h2>📋 今日任务</h2><ul id="dash-tasks" style="list-style:none;padding:0;"></ul></div>
+        </div>
+
+        <!-- 学习理论 -->
+        <div id="page-theory" class="page-section">
+            <h1 style="margin-bottom:0.5rem;">🧠 学习理论体系</h1>
+            <p style="color:#64748b;margin-bottom:1.5rem;">六大学习理论支撑「预习→学习→作业→复习→专项」闭环</p>
+            <div class="theory-grid" id="theory-grid"></div>
+            <div class="card"><h2>🔗 理论与阶段对应</h2><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.9rem;"><thead><tr style="border-bottom:2px solid #e9edf4;"><th style="text-align:left;padding:0.4rem;">理论</th><th style="text-align:left;padding:0.4rem;">核心贡献</th><th style="text-align:left;padding:0.4rem;">对应阶段</th></tr></thead><tbody id="theory-mapping"></tbody></table></div></div>
+        </div>
+
+        <!-- 科目学习 -->
+        <div id="page-subject" class="page-section">
+            <h1 style="margin-bottom:1.2rem;" id="subjectPageTitle">📖 科目学习</h1>
+            <div class="filter-bar" id="filterBar">
+                <div class="filter-item"><label>科目</label><select id="filterSubject"></select></div>
+                <div class="filter-item"><label>单元</label><select id="filterUnit"></select></div>
+                <div class="filter-item"><label>课</label><select id="filterLesson"><option value="">（全部）</option></select></div>
+                <div class="action-group">
+                    <button class="btn small outline" id="manageBtn">📂 管理</button>
+                    <button class="btn small" id="filterApplyBtn">筛选</button>
+                    <button class="btn small outline" id="filterClearBtn">清除</button>
+                </div>
+            </div>
+            <div id="subjectContent"></div>
+        </div>
+
+        <!-- 知识卡管理 -->
+        <div id="page-cards" class="page-section">
+            <h1 style="margin-bottom:1.2rem;">🃏 知识卡管理</h1>
+            <div class="flex-row mb-1" style="flex-wrap:wrap;gap:0.4rem;">
+                <select id="cardSemesterFilter" style="width:auto;min-width:100px;"></select>
+                <select id="cardSubjectFilter" style="width:auto;min-width:100px;"></select>
+                <select id="cardTypeFilter" style="width:auto;min-width:100px;">
+                    <option value="">全部类型</option>
+                    <option value="judge">判断</option>
+                    <option value="single">单选</option>
+                    <option value="multi">多选</option>
+                    <option value="essay">问答</option>
+                </select>
+                <select id="cardDifficultyFilter" style="width:auto;min-width:100px;">
+                    <option value="">全部难度</option>
+                    <option value="1">⭐</option><option value="2">⭐⭐</option>
+                    <option value="3">⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="5">⭐⭐⭐⭐⭐</option>
+                </select>
+                <select id="cardRoundFilter" style="width:auto;min-width:100px;">
+                    <option value="">全部轮次</option>
+                    <option value="1">第1轮</option><option value="2">第2轮</option>
+                    <option value="3">第3轮</option><option value="4">第4轮</option>
+                    <option value="5">第5轮</option><option value="6">第6轮</option>
+                    <option value="7">第7轮</option>
+                </select>
+                <select id="cardMasteryFilter" style="width:auto;min-width:100px;">
+                    <option value="">全部掌握度</option>
+                    <option value="0">0星</option><option value="1">1星</option>
+                    <option value="2">2星</option><option value="3">3星</option>
+                    <option value="4">4星</option><option value="5">5星</option>
+                </select>
+                <button class="btn" id="cardFilterApply">筛选</button>
+                <button class="btn green" id="oneClickReviewBtn" style="margin-left:0.5rem;">⚡ 一键复习</button>
+                <span style="margin-left:auto;font-size:0.9rem;" id="cardCountInfo">0 张</span>
+            </div>
+            <div id="cardsContainer"></div>
+            <div class="card quick-add-card">
+                <h3>➕ 快速新建知识卡</h3>
+                <div class="form-row">
+                    <input type="text" id="newCardQuestion" placeholder="问题" style="flex:2;min-width:150px;">
+                    <input type="text" id="newCardAnswer" placeholder="答案" style="flex:2;min-width:150px;">
+                    <select id="newCardSemester" style="width:auto;min-width:100px;"></select>
+                    <select id="newCardSubject" style="width:auto;min-width:100px;"></select>
+                    <select id="newCardType" style="width:auto;min-width:80px;">
+                        <option value="judge">判断</option>
+                        <option value="single">单选</option>
+                        <option value="multi">多选</option>
+                        <option value="essay" selected>问答</option>
+                    </select>
+                    <input type="text" id="newCardAssociation" placeholder="联想" style="flex:1;min-width:100px;">
+                    <select id="newCardDifficulty" style="width:auto;min-width:80px;">
+                        <option value="1">⭐</option><option value="2">⭐⭐</option>
+                        <option value="3" selected>⭐⭐⭐</option>
+                        <option value="4">⭐⭐⭐⭐</option><option value="5">⭐⭐⭐⭐⭐</option>
+                    </select>
+                    <button class="btn" id="newCardBtn">添加</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 错题本 -->
+        <div id="page-errors" class="page-section">
+            <h1 style="margin-bottom:1.2rem;">❌ 错题本</h1>
+            <div class="flex-row mb-1">
+                <select id="errorSemesterFilter" style="width:auto;min-width:100px;"></select>
+                <select id="errorSubjectFilter" style="width:auto;min-width:100px;"></select>
+            </div>
+            <div id="errorsContainer"></div>
+            <div class="card">
+                <h3>➕ 添加错题</h3>
+                <div class="form-group"><label>题目</label><input type="text" id="errorTitle" placeholder="题目简述" style="flex:2;"></div>
+                <div class="form-group"><label>错误答案</label><input type="text" id="errorWrong" placeholder="你写的错误答案"></div>
+                <div class="form-group"><label>正确答案</label><input type="text" id="errorCorrect" placeholder="正确答案"></div>
+                <div class="form-group"><label>错误原因分析</label><textarea id="errorReason" rows="2" placeholder="分析错误原因..."></textarea></div>
+                <div class="form-group"><label>知识点</label><input type="text" id="errorKnowledge" placeholder="涉及知识点"></div>
+                <div class="form-group"><label>题型</label><input type="text" id="errorType" placeholder="如：选择题、填空题"></div>
+                <div class="flex-row">
+                    <select id="errorSemester" style="width:auto;min-width:100px;"></select>
+                    <select id="errorSubject" style="width:auto;min-width:100px;"></select>
+                    <button class="btn" id="errorAddBtn">添加错题</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学习日志 -->
+        <div id="page-logs" class="page-section">
+            <h1 style="margin-bottom:1.2rem;">📝 学习日志</h1>
+            <div class="flex-row mb-1">
+                <select id="logSemesterFilter" style="width:auto;min-width:100px;"></select>
+                <select id="logSubjectFilter" style="width:auto;min-width:100px;"></select>
+            </div>
+            <div id="logsContainer"></div>
+            <div class="card">
+                <h3>📌 记录今日日志</h3>
+                <textarea id="logContent" rows="3" placeholder="今天学了什么？收获、反思..."></textarea>
+                <div class="flex-row mt-1">
+                    <select id="logSemester" style="width:auto;min-width:100px;"></select>
+                    <select id="logSubject" style="width:auto;min-width:100px;"></select>
+                    <button class="btn" id="logSaveBtn">保存日志</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        // 数据层：多学员支持
+        // ================================================================
+        const SUBJECTS = ['语文', '数学', '英语', '道德与法治', '科学'];
+
+        function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+        function today() { return new Date().toISOString().split('T')[0]; }
+
+        function generateDefaultUnits(subject, grade, semester) {
+            const count = (grade <= 6) ? 6 : 8;
+            const units = [];
+            for (let i = 1; i <= count; i++) {
+                const unitName = (subject === '数学') ? `第${i}章` : `第${i}单元`;
+                units.push({
+                    id: genId(),
+                    name: unitName,
+                    subModules: [{
+                        name: "单元学习",
+                        phases: {
+                            overview: { content: '', updated: '' },
+                            preview: { content: '', updated: '' },
+                            learn: { content: '', updated: '' },
+                            homework: { content: '', updated: '' },
+                            review: { content: '', updated: '' },
+                            special: { content: '', updated: '' }
+                        }
+                    }]
+                });
+            }
+            return units;
+        }
+
+        function generatePresetData() {
+            const allSemesters = [];
+            const gradeNames = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
+            const semTypes = ['上', '下'];
+            gradeNames.forEach((gName, gIdx) => {
+                const grade = gIdx + 1;
+                semTypes.forEach((sType, sIdx) => {
+                    const semName = `${grade}年级${sType}`;
+                    const semId = `sem_${grade}_${sIdx}`;
+                    const subjects = SUBJECTS.map(subj => ({
+                        id: genId(),
+                        name: subj,
+                        units: generateDefaultUnits(subj, grade, sType)
+                    }));
+                    allSemesters.push({ id: semId, name: semName, subjects });
+                });
+            });
+            allSemesters.sort((a, b) => {
+                const ga = parseInt(a.name.match(/\d+/)[0]);
+                const gb = parseInt(b.name.match(/\d+/)[0]);
+                if (ga !== gb) return ga - gb;
+                return a.name.includes('上') ? -1 : 1;
+            });
+            return allSemesters;
+        }
+
+        function normalizeData(data) {
+            (data.semesters || []).forEach(sem => {
+                sem.subjects.forEach(subj => {
+                    subj.units.forEach(unit => {
+                        if (!unit.subModules || unit.subModules.length === 0) {
+                            const phases = { overview: { content: '' }, preview: { content: '' },
+                                learn: { content: '' }, homework: { content: '' }, review: { content: '' },
+                                special: { content: '' } };
+                            unit.subModules = [{ name: '单元学习', phases }];
+                        }
+                        unit.subModules.forEach(sub => {
+                            if (!sub.phases || typeof sub.phases !== 'object') {
+                                sub.phases = { overview: { content: '' }, preview: { content: '' },
+                                    learn: { content: '' }, homework: { content: '' }, review: { content: '' },
+                                    special: { content: '' } };
+                            }
+                        });
+                    });
+                });
+            });
+            (data.cards || []).forEach(c => { if (!c.options) c.options = []; });
+            // 错题字段兼容
+            (data.errors || []).forEach(e => {
+                if (!e.wrongAnswer) e.wrongAnswer = '';
+                if (!e.correctAnswer) e.correctAnswer = '';
+                if (!e.analysis) e.analysis = '';
+                if (!e.knowledgePoint) e.knowledgePoint = '';
+                if (!e.questionType) e.questionType = '';
+            });
+            return data;
+        }
+
+        // ---------- 学员管理 ----------
+        function getUsers() {
+            let users = JSON.parse(localStorage.getItem('studyUsers_v21')) || [];
+            if (users.length === 0) {
+                const defaultData = {
+                    semesters: generatePresetData(),
+                    cards: [],
+                    errors: [],
+                    logs: [],
+                    currentSemesterId: null,
+                    currentSubjectId: null,
+                    currentUnitId: null,
+                    currentLessonIdx: null,
+                    selectedSlices: [],
+                    sliceMode: 'single'
+                };
+                users.push({
+                    id: genId(),
+                    name: '默认学员',
+                    data: defaultData
+                });
+                localStorage.setItem('studyUsers_v21', JSON.stringify(users));
+            }
+            return users;
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem('studyUsers_v21', JSON.stringify(users));
+        }
+
+        function getCurrentUserId() {
+            return localStorage.getItem('studyCurrentUserId_v21') || null;
+        }
+
+        function setCurrentUserId(id) {
+            localStorage.setItem('studyCurrentUserId_v21', id);
+        }
+
+        function getCurrentUserData() {
+            const users = getUsers();
+            const id = getCurrentUserId();
+            let user = users.find(u => u.id === id);
+            if (!user && users.length) {
+                user = users[0];
+                setCurrentUserId(user.id);
+            }
+            if (!user) {
+                const defaultData = {
+                    semesters: generatePresetData(),
+                    cards: [],
+                    errors: [],
+                    logs: [],
+                    currentSemesterId: null,
+                    currentSubjectId: null,
+                    currentUnitId: null,
+                    currentLessonIdx: null,
+                    selectedSlices: [],
+                    sliceMode: 'single'
+                };
+                user = { id: genId(), name: '默认学员', data: defaultData };
+                users.push(user);
+                saveUsers(users);
+                setCurrentUserId(user.id);
+            }
+            if (!user.data) user.data = { semesters: [], cards: [], errors: [], logs: [] };
+            if (!user.data.semesters) user.data.semesters = generatePresetData();
+            if (!user.data.cards) user.data.cards = [];
+            if (!user.data.errors) user.data.errors = [];
+            if (!user.data.logs) user.data.logs = [];
+            if (!user.data.currentSemesterId) user.data.currentSemesterId = null;
+            if (!user.data.currentSubjectId) user.data.currentSubjectId = null;
+            if (!user.data.currentUnitId) user.data.currentUnitId = null;
+            if (!user.data.currentLessonIdx) user.data.currentLessonIdx = null;
+            if (!user.data.selectedSlices) user.data.selectedSlices = [];
+            if (!user.data.sliceMode) user.data.sliceMode = 'single';
+            normalizeData(user.data);
+            return user.data;
+        }
+
+        function saveCurrentUserData(data) {
+            const users = getUsers();
+            const id = getCurrentUserId();
+            const user = users.find(u => u.id === id);
+            if (user) {
+                user.data = data;
+                saveUsers(users);
+            } else if (users.length) {
+                users[0].data = data;
+                setCurrentUserId(users[0].id);
+                saveUsers(users);
+            }
+        }
+
+        // ---------- 全局数据 ----------
+        let appData = getCurrentUserData();
+
+        let currentSemesterId = appData.currentSemesterId || null;
+        let currentSubjectId = appData.currentSubjectId || null;
+        let currentUnitId = appData.currentUnitId || null;
+        let currentLessonIdx = appData.currentLessonIdx !== undefined ? appData.currentLessonIdx : null;
+        let selectedSlices = appData.selectedSlices || [];
+        let sliceMode = appData.sliceMode || 'single';
+
+        // 自动选择第一个学期和科目
+        if (!currentSemesterId && appData.semesters.length) {
+            currentSemesterId = appData.semesters[0].id;
+            appData.currentSemesterId = currentSemesterId;
+        }
+        if (currentSemesterId) {
+            const sem = appData.semesters.find(s => s.id === currentSemesterId);
+            if (sem && sem.subjects.length) {
+                if (!currentSubjectId || !sem.subjects.some(s => s.id === currentSubjectId)) {
+                    currentSubjectId = sem.subjects[0].id;
+                    appData.currentSubjectId = currentSubjectId;
+                }
+            }
+        }
+
+        // 工具函数
+        function getCurrentSemester() { return appData.semesters.find(s => s.id === currentSemesterId); }
+
+        function getCurrentSubject() {
+            const sem = getCurrentSemester();
+            if (!sem) return null;
+            return sem.subjects.find(s => s.id === currentSubjectId) || null;
+        }
+
+        function getCurrentUnit() {
+            const subj = getCurrentSubject();
+            if (!subj || !currentUnitId) return null;
+            return subj.units.find(u => u.id === currentUnitId) || null;
+        }
+
+        function getCurrentLesson() {
+            const unit = getCurrentUnit();
+            if (!unit || currentLessonIdx === null) return null;
+            return unit.subModules[currentLessonIdx] || null;
+        }
+
+        function getFullLabel(semId, subjId) {
+            const sem = appData.semesters.find(s => s.id === semId);
+            if (!sem) return '';
+            const subj = sem.subjects.find(s => s.id === subjId);
+            if (!subj) return '';
+            return `${sem.name} - ${subj.name}`;
+        }
+
+        function calcUnitProgress(unit) {
+            if (!unit.subModules || !unit.subModules.length) return 0;
+            let total = 0,
+                done = 0;
+            const keys = ['overview', 'preview', 'learn', 'homework', 'review', 'special'];
+            unit.subModules.forEach(sub => {
+                keys.forEach(k => {
+                    total++;
+                    if (sub.phases && sub.phases[k] && sub.phases[k].content && sub.phases[k].content.trim() !==
+                        '') done++;
+                });
+            });
+            return total === 0 ? 0 : Math.round(done / total * 100);
+        }
+
+        function calcSubjectProgress(subject) {
+            let total = 0,
+                done = 0;
+            const keys = ['overview', 'preview', 'learn', 'homework', 'review', 'special'];
+            subject.units.forEach(unit => {
+                unit.subModules.forEach(sub => {
+                    keys.forEach(p => {
+                        total++;
+                        if (sub.phases && sub.phases[p] && sub.phases[p].content && sub.phases[p].content
+                            .trim() !== '') done++;
+                    });
+                });
+            });
+            return total === 0 ? 0 : Math.round(done / total * 100);
+        }
+
+        function getTodayReviewCards() { const d = today(); return appData.cards.filter(c => c.mastery < 5 && c.nextReview <=
+                d); }
+
+        function getSemesterOptions() { return appData.semesters.map(s =>
+            `<option value="${s.id}">${s.name}</option>`).join(''); }
+
+        function getSubjectOptions(semId) {
+            const sem = appData.semesters.find(s => s.id === semId);
+            if (!sem) return '';
+            return sem.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+        }
+
+        const LESSON_SLICES = [
+            { key: 'overview', label: '总览', phases: ['overview'] },
+            { key: 'preview', label: '预习', phases: ['preview'] },
+            { key: 'learn', label: '学习', phases: ['learn'] },
+            { key: 'practice', label: '练习', phases: ['homework'] },
+            { key: 'review', label: '复习', phases: ['review'] },
+            { key: 'special', label: '专项', phases: ['special'] }
+        ];
+        const PHASE_LABELS = { overview: '总览', preview: '预习', learn: '学习', homework: '练习', review: '复习',
+            special: '专项' };
+
+        // ================================================================
+        // 渲染函数
+        // ================================================================
+        function renderDashboard() {
+            // 更新品牌名
+            const users = getUsers();
+            const currentId = getCurrentUserId();
+            const user = users.find(u => u.id === currentId);
+            const name = user ? user.name : '默认学员';
+            document.querySelector('.brand').innerHTML = `📚 ${name}学习记录 <span>v21.0</span>`;
+
+            // 填充学期选择器
+            const dashSelect = document.getElementById('dashSemesterSelect');
+            dashSelect.innerHTML = getSemesterOptions();
+            if (currentSemesterId) dashSelect.value = currentSemesterId;
+            dashSelect.onchange = function() {
+                currentSemesterId = this.value;
+                const sem = getCurrentSemester();
+                currentSubjectId = sem && sem.subjects.length ? sem.subjects[0].id : null;
+                currentUnitId = null;
+                currentLessonIdx = null;
+                selectedSlices = [];
+                saveAndRender();
+            };
+
+            const sem = getCurrentSemester(),
+                subj = getCurrentSubject();
+            const label = (sem && subj) ? `${sem.name} - ${subj.name}` : '未选择';
+            document.getElementById('dash-current').textContent = label;
+            if (subj) {
+                const prog = calcSubjectProgress(subj);
+                document.getElementById('dash-progress-text').textContent = prog + '%';
+                document.getElementById('dash-progress-bar').style.width = prog + '%';
+            } else {
+                document.getElementById('dash-progress-text').textContent = '0%';
+                document.getElementById('dash-progress-bar').style.width = '0%';
+            }
+            const todayCards = getTodayReviewCards();
+            document.getElementById('dash-today-cards').textContent = todayCards.length;
+            document.getElementById('dash-total-cards').textContent = appData.cards.length;
+            const tasks = document.getElementById('dash-tasks');
+            tasks.innerHTML = '';
+            if (todayCards.length) {
+                const li = document.createElement('li');
+                li.style.padding = '0.4rem 0';
+                li.innerHTML = `🔄 复习 <strong>${todayCards.length}</strong> 张知识卡`;
+                tasks.appendChild(li);
+            } else {
+                tasks.innerHTML = '<li>✅ 今日无待复习卡片</li>';
+            }
+            if (!subj) tasks.innerHTML += '<li>📌 请通过浮动按钮或仪表盘学期选择器选择年级。</li>';
+        }
+
+        const theoryData = [
+            { icon: '🧠', name: '认知主义', core: '学习是信息加工的过程', concepts: [
+                    ['信息加工', '感觉→工作→长时记忆'],
+                    ['认知负荷', '控制复杂度'],
+                    ['图式', '知识关联']
+                ], guide: ['番茄工作法', '思维导图', '间隔重复'], tags: ['预习', '学习', '复习'] },
+            { icon: '🏗️', name: '建构主义', core: '主动建构知识', concepts: [
+                    ['主动建构', '解决问题'],
+                    ['最近发展区', '略高于当前'],
+                    ['情境学习', '真实应用']
+                ], guide: ['核心问题驱动', '项目实践', '联系已有知识'], tags: ['学习', '专项'] },
+            { icon: '🔔', name: '行为主义', core: '刺激-反应联结', concepts: [
+                    ['强化', '及时反馈'],
+                    ['练习', '重复'],
+                    ['小步递进', '分解步骤']
+                ], guide: ['立即核对答案', '错题本', '闪卡'], tags: ['练习', '错题本'] },
+            { icon: '🪞', name: '元认知', core: '反思调控学习', concepts: [
+                    ['计划', '制定目标'],
+                    ['监控', '自我提问'],
+                    ['评估', '反思调整']
+                ], guide: ['学习日志', '定期评估', '自我提问'], tags: ['全部', '日志'] },
+            { icon: '🎯', name: '刻意练习', core: '有目的、有反馈、边缘区', concepts: [
+                    ['明确目标', '可衡量'],
+                    ['专注', '避免分心'],
+                    ['反馈', '即时'],
+                    ['舒适区外', '挑战']
+                ], guide: ['专项训练', '设定目标', '寻求反馈'], tags: ['专项'] },
+            { icon: '📉', name: '遗忘曲线', core: '及时复习对抗遗忘', concepts: [
+                    ['复习节点', '20min,1h,9h,1d,2d,6d,31d']
+                ], guide: ['知识卡打卡', '自动计算', '掌握度间隔'], tags: ['复习', '知识卡'] }
+        ];
+
+        function renderTheory() {
+            const grid = document.getElementById('theory-grid');
+            grid.innerHTML = '';
+            theoryData.forEach(t => {
+                const card = document.createElement('div');
+                card.className = 'theory-card';
+                const conceptsHtml = t.concepts.map(c =>
+                    `<div class="concept-item"><span class="label">${c[0]}</span><span class="desc">${c[1]}</span></div>`
+                    ).join('');
+                const guideHtml = t.guide.map(g => `<li>${g}</li>`).join('');
+                const tagsHtml = t.tags.map(tg => `<span class="tag blue">${tg}</span>`).join(' ');
+                card.innerHTML = `
+                    <div class="theory-header"><span class="theory-icon">${t.icon}</span><span class="theory-name">${t.name}</span></div>
+                    <div class="theory-core">${t.core}</div>
+                    <button class="theory-toggle" onclick="this.nextElementSibling.classList.toggle('open'); this.textContent=this.nextElementSibling.classList.contains('open')?'🙈 收起 ▴':'📖 展开 ▾';">📖 展开 ▾</button>
+                    <div class="theory-body" style="display:none; margin-top:0.8rem; padding-top:0.8rem; border-top:1px solid #e9edf4;">
+                        <h4 style="margin:0.4rem 0 0.2rem;">📌 关键概念</h4><div style="display:grid;grid-template-columns:1fr 1fr;gap:0.2rem 1rem;">${conceptsHtml}</div>
+                        <h4 style="margin:0.6rem 0 0.2rem;">💡 实践指导</h4><ul style="padding-left:1.2rem;color:#475569;">${guideHtml}</ul>
+                        <div style="margin-top:0.4rem;">${tagsHtml}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            const mapping = [
+                ['认知主义', '信息加工、认知负荷', '预习、学习、复习'],
+                ['建构主义', '主动建构、最近发展区', '学习、专项'],
+                ['行为主义', '强化、练习', '练习、错题本'],
+                ['元认知', '计划、监控', '全部、日志'],
+                ['刻意练习', '目标、反馈', '专项'],
+                ['遗忘曲线', '间隔重复', '复习、知识卡']
+            ];
+            document.getElementById('theory-mapping').innerHTML = mapping.map(row =>
+                `<tr><td style="padding:0.3rem 0.4rem;">${row[0]}</td><td style="padding:0.3rem 0.4rem;">${row[1]}</td><td style="padding:0.3rem 0.4rem;">${row[2]}</td></tr>`
+                ).join('');
+        }
+
+        // ===== 管理模态框 =====
+        function renderManageModal() {
+            const container = document.getElementById('manageTree');
+            const sem = getCurrentSemester();
+            if (!sem) { container.innerHTML = '<div class="text-muted">请先选择学期</div>'; return; }
+            let html = '';
+            sem.subjects.forEach(subj => {
+                const subjId = subj.id;
+                html += `<div class="manage-node" data-node="subject" data-id="${subjId}">
+                    <div class="node-row">
+                        <span class="node-icon">📘</span>
+                        <span class="node-name">${subj.name}</span>
+                        <div class="node-actions">
+                            <button class="btn small outline node-expand" onclick="toggleChildren('subj-${subjId}');">展开</button>
+                            <button class="btn small outline" onclick="renameSubject('${subjId}');">重命名</button>
+                            <button class="btn small red" onclick="deleteSubject('${subjId}');">删除</button>
+                        </div>
+                    </div>
+                    <div class="node-children collapsed" id="children-subj-${subjId}">
+                        <div class="add-row-inline">
+                            <input type="text" class="add-unit-input" placeholder="新单元名称" id="unitInput_${subjId}">
+                            <button class="btn small green" onclick="addUnit('${subjId}');">➕ 添加单元</button>
+                        </div>
+                        ${(subj.units || []).map(u => {
+                            const unitId = u.id;
+                            const p = calcUnitProgress(u);
+                            return `<div class="manage-node" data-node="unit" data-id="${unitId}" style="margin-left:0.4rem;">
+                                <div class="node-row">
+                                    <span class="node-icon">📂</span>
+                                    <span class="node-name">${u.name} <span style="font-size:0.7rem;color:#94a3b8;">(${(u.subModules||[]).length}课, ${p}%)</span></span>
+                                    <div class="node-actions">
+                                        <button class="btn small outline node-expand" onclick="toggleChildren('unit-${unitId}');">展开</button>
+                                        <button class="btn small outline" onclick="renameUnit('${unitId}','${subjId}');">重命名</button>
+                                        <button class="btn small red" onclick="deleteUnit('${unitId}','${subjId}');">删除</button>
+                                    </div>
+                                </div>
+                                <div class="node-children collapsed" id="children-unit-${unitId}">
+                                    <div class="add-row-inline">
+                                        <input type="text" class="add-lesson-input" placeholder="新课名称" id="lessonInput_${unitId}">
+                                        <button class="btn small green" onclick="addLesson('${unitId}');">➕ 添加课</button>
+                                    </div>
+                                    ${(u.subModules || []).map((lesson, idx) => `
+                                        <div class="manage-node" data-node="lesson" style="margin-left:0.4rem;">
+                                            <div class="node-row">
+                                                <span class="node-icon">📄</span>
+                                                <span class="node-name">${lesson.name}</span>
+                                                <div class="node-actions">
+                                                    <button class="btn small outline" onclick="renameLesson('${unitId}',${idx});">重命名</button>
+                                                    <button class="btn small red" onclick="deleteLesson('${unitId}',${idx});">删除</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                    ${(u.subModules||[]).length === 0 ? '<div class="empty-hint">暂无课，请添加</div>' : ''}
+                                </div>
+                            </div>`;
+                        }).join('')}
+                        ${(subj.units||[]).length === 0 ? '<div class="empty-hint">暂无单元，请添加</div>' : ''}
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+            document.querySelectorAll('.node-children').forEach(el => el.classList.add('collapsed'));
+            document.querySelectorAll('.node-children[id^="children-subj-"]').forEach(el => el.classList.remove('collapsed'));
+            document.querySelectorAll('.node-expand[data-type="subject"]').forEach(btn => btn.textContent = '收起');
+        }
+
+        // 管理操作（全局）
+        window.toggleChildren = function(id) {
+            const el = document.getElementById('children-' + id);
+            if (el) {
+                el.classList.toggle('collapsed');
+                const btn = el.parentElement.querySelector('.node-expand');
+                if (btn) btn.textContent = el.classList.contains('collapsed') ? '展开' : '收起';
+            }
+        };
+        window.renameSubject = function(id) {
+            const sem = getCurrentSemester();
+            const subj = sem.subjects.find(s => s.id === id);
+            if (!subj) return;
+            const newName = prompt('重命名科目：', subj.name);
+            if (newName && newName.trim()) { subj.name = newName.trim();
+                saveAndRender(); }
+        };
+        window.deleteSubject = function(id) {
+            if (!confirm('删除此科目及其所有内容？')) return;
+            const sem = getCurrentSemester();
+            sem.subjects = sem.subjects.filter(s => s.id !== id);
+            appData.cards = appData.cards.filter(c => c.subjectId !== id);
+            if (currentSubjectId === id) { currentSubjectId = sem.subjects.length ? sem.subjects[0].id : null; }
+            saveAndRender();
+            renderManageModal();
+        };
+        window.addUnit = function(subjId) {
+            const sem = getCurrentSemester();
+            const subj = sem.subjects.find(s => s.id === subjId);
+            if (!subj) return;
+            const input = document.getElementById('unitInput_' + subjId);
+            const name = input.value.trim();
+            if (!name) { alert('请输入单元名称'); return; }
+            if (!subj.units) subj.units = [];
+            subj.units.push({
+                id: genId(),
+                name: name,
+                subModules: [{ name: '单元学习', phases: { overview: { content: '' }, preview: { content: '' },
+                        learn: { content: '' }, homework: { content: '' }, review: { content: '' },
+                        special: { content: '' } } }]
+            });
+            input.value = '';
+            saveAndRender();
+            renderManageModal();
+        };
+        window.renameUnit = function(unitId, subjId) {
+            const sem = getCurrentSemester();
+            const subj = sem.subjects.find(s => s.id === subjId);
+            if (!subj) return;
+            const unit = subj.units.find(u => u.id === unitId);
+            if (!unit) return;
+            const newName = prompt('重命名单元：', unit.name);
+            if (newName && newName.trim()) { unit.name = newName.trim();
+                saveAndRender();
+                renderManageModal(); }
+        };
+        window.deleteUnit = function(unitId, subjId) {
+            if (!confirm('删除此单元及其所有课？')) return;
+            const sem = getCurrentSemester();
+            const subj = sem.subjects.find(s => s.id === subjId);
+            if (!subj) return;
+            subj.units = subj.units.filter(u => u.id !== unitId);
+            appData.cards = appData.cards.filter(c => c.unitId !== unitId);
+            if (currentUnitId === unitId) { currentUnitId = null;
+                currentLessonIdx = null; }
+            saveAndRender();
+            renderManageModal();
+        };
+        window.addLesson = function(unitId) {
+            const subj = getCurrentSubject();
+            if (!subj) { alert('请先选择科目'); return; }
+            const unit = subj.units.find(u => u.id === unitId);
+            if (!unit) return;
+            const input = document.getElementById('lessonInput_' + unitId);
+            const name = input.value.trim();
+            if (!name) { alert('请输入课名称'); return; }
+            if (!unit.subModules) unit.subModules = [];
+            unit.subModules.push({
+                name: name,
+                phases: { overview: { content: '' }, preview: { content: '' }, learn: { content: '' },
+                    homework: { content: '' }, review: { content: '' }, special: { content: '' } }
+            });
+            input.value = '';
+            saveAndRender();
+            renderManageModal();
+        };
+        window.renameLesson = function(unitId, idx) {
+            const subj = getCurrentSubject();
+            if (!subj) return;
+            const unit = subj.units.find(u => u.id === unitId);
+            if (!unit || !unit.subModules || !unit.subModules[idx]) return;
+            const newName = prompt('重命名课：', unit.subModules[idx].name);
+            if (newName && newName.trim()) { unit.subModules[idx].name = newName.trim();
+                saveAndRender();
+                renderManageModal(); }
+        };
+        window.deleteLesson = function(unitId, idx) {
+            const subj = getCurrentSubject();
+            if (!subj) return;
+            const unit = subj.units.find(u => u.id === unitId);
+            if (!unit || !unit.subModules || !unit.subModules[idx]) return;
+            if (!confirm('删除此课？')) return;
+            unit.subModules.splice(idx, 1);
+            if (currentUnitId === unitId && currentLessonIdx === idx) currentLessonIdx = null;
+            else if (currentUnitId === unitId && currentLessonIdx > idx) currentLessonIdx--;
+            saveAndRender();
+            renderManageModal();
+        };
+
+        // ================================================================
+        // 科目学习渲染（阶段面板无“制作知识卡”按钮）
+        // ================================================================
+        function updateFilterOptions() {
+            const sem = getCurrentSemester();
+            const subj = getCurrentSubject();
+            if (!sem || !subj) {
+                document.getElementById('filterSubject').innerHTML = '';
+                document.getElementById('filterUnit').innerHTML = '<option value="">（全部单元）</option>';
+                document.getElementById('filterLesson').innerHTML = '<option value="">（全部课）</option>';
+                return;
+            }
+            const subjectSelect = document.getElementById('filterSubject');
+            subjectSelect.innerHTML = sem.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            subjectSelect.value = subj.id;
+            currentSubjectId = subj.id;
+
+            const unitSelect = document.getElementById('filterUnit');
+            unitSelect.innerHTML = '<option value="">（全部单元）</option>' + subj.units.map(u =>
+                `<option value="${u.id}">${u.name}</option>`).join('');
+            unitSelect.value = currentUnitId || '';
+
+            const lessonSelect = document.getElementById('filterLesson');
+            lessonSelect.innerHTML = '<option value="">（全部课）</option>';
+            const unit = getCurrentUnit();
+            if (unit && unit.subModules) {
+                unit.subModules.forEach((sub, idx) => {
+                    lessonSelect.innerHTML += `<option value="${idx}">${sub.name}</option>`;
+                });
+            }
+            lessonSelect.value = (currentLessonIdx !== null && currentLessonIdx !== undefined) ? String(currentLessonIdx) :
+            '';
+        }
+
+        function renderSubjectContent() {
+            const container = document.getElementById('subjectContent');
+            const sem = getCurrentSemester();
+            updateFilterOptions();
+            const subj = getCurrentSubject();
+            if (!sem || !subj) {
+                container.innerHTML =
+                    `<div class="card text-muted text-center" style="padding:3rem;">请通过浮动按钮选择年级，并在筛选栏中选择科目</div>`;
+                document.getElementById('subjectPageTitle').textContent = '📖 科目学习';
+                return;
+            }
+            document.getElementById('subjectPageTitle').textContent = `📖 ${sem.name} - ${subj.name}`;
+
+            const unit = getCurrentUnit();
+            const lesson = getCurrentLesson();
+            const breadcrumb = `<div class="breadcrumb">
+                <span class="crumb ${currentUnitId ? '' : 'current'}" onclick="navigateTo('subject');">📘 ${subj.name}</span>
+                ${unit ? `<span class="sep">›</span><span class="crumb ${currentLessonIdx===null?'current':''}" onclick="navigateTo('unit');">📂 ${unit.name}</span>` : ''}
+                ${lesson ? `<span class="sep">›</span><span class="crumb current">📌 ${lesson.name}</span>` : ''}
+            </div>`;
+
+            if (!currentUnitId) {
+                let html = breadcrumb;
+                html += `<div class="flex-row mb-1"><button class="btn" onclick="addUnitInline();">＋ 添加单元</button></div>`;
+                if ((subj.units || []).length === 0) {
+                    html += `<div class="card text-muted text-center">暂无单元，请点击「添加单元」或通过「管理」按钮添加。</div>`;
+                } else {
+                    html += `<div class="list-grid">`;
+                    subj.units.forEach(u => {
+                        const p = calcUnitProgress(u);
+                        html += `<div class="item-card" onclick="selectUnit('${u.id}');">
+                            <div class="ic-title">📂 ${u.name}</div>
+                            <div class="ic-meta">${(u.subModules||[]).length} 课 · 总进度 ${p}%</div>
+                            <div class="ic-progress"><div class="fill" style="width:${p}%"></div></div>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                }
+                container.innerHTML = html;
+                return;
+            }
+
+            if (currentLessonIdx === null) {
+                let html = breadcrumb;
+                html += `<div class="unit-req">
+                    <h3>📋 单元学习要求</h3>
+                    <textarea id="unitDetailInput" placeholder="填写本单元的学习要求...">${unit.detail || ''}</textarea>
+                    <div class="flex-row mt-1">
+                        <button class="btn small" onclick="saveUnitReq();">💾 保存要求</button>
+                        <button class="btn small red" onclick="deleteCurrentUnit();">🗑 删除单元</button>
+                    </div>
+                </div>`;
+                html += `<h3 style="margin:1.4rem 0 0.8rem;">📚 课列表（点击进入）</h3>`;
+                html += `<div class="flex-row mb-1"><button class="btn" onclick="addLessonInline();">＋ 添加课</button></div>`;
+                if ((unit.subModules || []).length === 0) {
+                    html += `<div class="card text-muted text-center">暂无课，请添加。</div>`;
+                } else {
+                    html += `<div class="list-grid">`;
+                    unit.subModules.forEach((sub, idx) => {
+                        const keys = ['overview', 'preview', 'learn', 'homework', 'review', 'special'];
+                        let t = 0,
+                            d = 0;
+                        keys.forEach(k => { t++; if (sub.phases && sub.phases[k] && sub.phases[k].content && sub
+                                .phases[k].content.trim() !== '') d++; });
+                        const p = t ? Math.round(d / t * 100) : 0;
+                        html += `<div class="item-card" onclick="selectLesson(${idx});">
+                            <div class="ic-actions"><button class="btn small outline" onclick="event.stopPropagation();deleteCurrentLesson(${idx});">删除</button></div>
+                            <div class="ic-title">📌 ${sub.name}</div>
+                            <div class="ic-meta">本课进度 ${p}%</div>
+                            <div class="ic-progress"><div class="fill" style="width:${p}%"></div></div>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                }
+                container.innerHTML = html;
+                return;
+            }
+
+            // ===== 课视图 =====
+            let html = breadcrumb;
+            html += `<div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.8rem;flex-wrap:wrap;">
+                <button class="btn small outline" onclick="renameCurrentLesson();">✎ 重命名课</button>
+                <span class="text-muted" style="font-size:0.85rem;">点击切片查看内容，可「单选」或「复选」</span>
+            </div>`;
+
+            const chips = LESSON_SLICES.map(s =>
+                `<span class="slice-chip ${selectedSlices.includes(s.key)?'active':''}" onclick="toggleSlice('${s.key}');">${s.label}</span>`
+                ).join('');
+            html += `<div class="slice-bar">
+                ${chips}
+                <div class="slice-mode">
+                    <span>选择模式：</span>
+                    <button data-mode="single" class="${sliceMode==='single'?'active':''}" onclick="setSliceMode('single');">单选</button>
+                    <button data-mode="multi" class="${sliceMode==='multi'?'active':''}" onclick="setSliceMode('multi');">复选</button>
+                    <button class="select-all" onclick="toggleAllSlices();">${selectedSlices.length === LESSON_SLICES.length ? '取消全选' : '全选'}</button>
+                </div>
+            </div>`;
+
+            if (selectedSlices.length === 0) {
+                html +=
+                    `<div class="card text-muted text-center" style="padding:2.5rem;">👆 默认不展示内容，请点击上方切片查看对应内容</div>`;
+            } else {
+                const ordered = [...selectedSlices].sort((a, b) => LESSON_SLICES.findIndex(s => s.key === a) - LESSON_SLICES
+                    .findIndex(s => s.key === b));
+                ordered.forEach(key => {
+                    const slice = LESSON_SLICES.find(s => s.key === key);
+                    html += `<div style="font-weight:700;color:#0f2b4a;margin:0.8rem 0 0.4rem;font-size:1rem;">▸ ${slice.label}</div>`;
+                    slice.phases.forEach(p => {
+                        const ph = (lesson.phases && lesson.phases[p]) || { content: '', updated: '' };
+                        const c = ph.content || '';
+                        const phaseCards = appData.cards.filter(card =>
+                            card.semesterId === currentSemesterId &&
+                            card.subjectId === currentSubjectId &&
+                            card.unitId === currentUnitId &&
+                            card.subIdx === currentLessonIdx &&
+                            card.phase === p
+                        );
+
+                        html += `<div class="phase-panel" data-phase="${p}">
+                            <div class="phase-label">${PHASE_LABELS[p]} ${c.trim() ? '' : '<span style="background:#fee2e2;color:#dc2626;font-size:0.65rem;padding:0.05rem 0.4rem;border-radius:10px;">未填写</span>'}</div>
+                            <textarea data-phase="${p}" placeholder="记录${PHASE_LABELS[p]}内容...">${c.replace(/</g,'&lt;')}</textarea>
+                            <div class="phase-meta">${ph.updated ? ('最后更新：' + ph.updated) : ''}</div>
+                            <div class="phase-actions">
+                                <button class="btn small green" onclick="savePhase('${p}');">💾 保存</button>
+                                <!-- 已删除 “制作知识卡” 按钮 -->
+                            </div>
+                            <div class="phase-card-list">
+                                <div class="card-toolbar">
+                                    <span class="card-count">📌 本阶段卡片 (${phaseCards.length})</span>
+                                    <div class="card-actions">
+                                        <button class="btn icon-btn ${phaseCards.length ? 'active' : ''}" onclick="switchView('${p}','list');" title="列表视图">📋</button>
+                                        <button class="btn icon-btn" onclick="switchView('${p}','grid');" title="宫格视图">📇</button>
+                                        <button class="btn icon-btn purple" onclick="openMakerModal('${p}');" title="制作知识卡">📝</button>
+                                    </div>
+                                </div>
+                                <div class="cards-container list-view" id="cards-${p}">
+                                    ${phaseCards.map(card => {
+                                        let optHtml = '';
+                                        if (card.options && card.options.length) {
+                                            optHtml = `<div class="card-meta">选项：${card.options.join(' | ')}</div>`;
+                                        }
+                                        return `<div class="card-item-mini">
+                                            <span class="card-q">${card.question}</span>
+                                            <span class="card-a">— ${card.answer}</span>
+                                            ${optHtml}
+                                            <span class="del-card" onclick="deleteCard('${card.id}');">✕</span>
+                                        </div>`;
+                                    }).join('')}
+                                </div>
+                                <div class="add-card-form">
+                                    <input type="text" class="add-card-question" placeholder="问题">
+                                    <input type="text" class="add-card-answer" placeholder="答案">
+                                    <button class="btn small green" onclick="addSimpleCard('${p}');">➕ 添加卡片</button>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                });
+            }
+            container.innerHTML = html;
+        }
+
+        // ===== 导航 & 操作 =====
+        window.navigateTo = function(level) {
+            if (level === 'subject') { currentUnitId = null;
+                currentLessonIdx = null;
+                selectedSlices = []; } else if (level === 'unit') { currentLessonIdx = null;
+                selectedSlices = []; }
+            saveAndRender();
+        };
+        window.selectUnit = function(unitId) { currentUnitId = unitId;
+            currentLessonIdx = null;
+            selectedSlices = [];
+            saveAndRender(); };
+        window.selectLesson = function(idx) { currentLessonIdx = idx;
+            selectedSlices = [];
+            saveAndRender(); };
+        window.addUnitInline = function() {
+            const name = prompt('请输入新单元名称：');
+            if (name && name.trim()) {
+                const subj = getCurrentSubject();
+                if (!subj) return;
+                if (!subj.units) subj.units = [];
+                subj.units.push({
+                    id: genId(),
+                    name: name.trim(),
+                    subModules: [{ name: '单元学习', phases: { overview: { content: '' }, preview: { content: '' },
+                            learn: { content: '' }, homework: { content: '' }, review: { content: '' },
+                            special: { content: '' } } }]
+                });
+                saveAndRender();
+            }
+        };
+        window.addLessonInline = function() {
+            const unit = getCurrentUnit();
+            if (!unit) return;
+            if (!unit.subModules) unit.subModules = [];
+            const name = prompt('请输入新课名称：', '第' + (unit.subModules.length + 1) + '课');
+            if (name && name.trim()) {
+                unit.subModules.push({
+                    name: name.trim(),
+                    phases: { overview: { content: '' }, preview: { content: '' }, learn: { content: '' },
+                        homework: { content: '' }, review: { content: '' }, special: { content: '' } }
+                });
+                saveAndRender();
+            }
+        };
+        window.deleteCurrentUnit = function() {
+            if (!confirm('删除此单元及其全部课？')) return;
+            const subj = getCurrentSubject();
+            if (!subj) return;
+            subj.units = subj.units.filter(u => u.id !== currentUnitId);
+            appData.cards = appData.cards.filter(c => c.unitId !== currentUnitId);
+            currentUnitId = null;
+            currentLessonIdx = null;
+            saveAndRender();
+        };
+        window.deleteCurrentLesson = function(idx) {
+            const unit = getCurrentUnit();
+            if (!unit || !unit.subModules || unit.subModules.length <= 1) { alert('至少保留一课'); return; }
+            if (!confirm('删除此课？')) return;
+            unit.subModules.splice(idx, 1);
+            if (currentLessonIdx === idx) currentLessonIdx = null;
+            else if (currentLessonIdx > idx) currentLessonIdx--;
+            saveAndRender();
+        };
+        window.renameCurrentLesson = function() {
+            const lesson = getCurrentLesson();
+            if (!lesson) return;
+            const n = prompt('重命名课：', lesson.name);
+            if (n && n.trim()) { lesson.name = n.trim();
+                saveAndRender(); }
+        };
+        window.saveUnitReq = function() {
+            const unit = getCurrentUnit();
+            if (!unit) return;
+            const ta = document.getElementById('unitDetailInput');
+            if (ta) { unit.detail = ta.value;
+                saveAndRender(); }
+        };
+        window.savePhase = function(phase) {
+            const lesson = getCurrentLesson();
+            if (!lesson) return;
+            const panel = document.querySelector(`.phase-panel[data-phase="${phase}"]`);
+            if (!panel) return;
+            const ta = panel.querySelector('textarea');
+            if (!ta) return;
+            if (!lesson.phases) lesson.phases = {};
+            if (!lesson.phases[phase]) lesson.phases[phase] = {};
+            lesson.phases[phase].content = ta.value;
+            lesson.phases[phase].updated = new Date().toLocaleString();
+            saveAndRender();
+        };
+        window.toggleSlice = function(key) {
+            if (sliceMode === 'multi') {
+                if (selectedSlices.includes(key)) selectedSlices = selectedSlices.filter(k => k !== key);
+                else selectedSlices.push(key);
+            } else {
+                if (selectedSlices.length === 1 && selectedSlices[0] === key) selectedSlices = [];
+                else selectedSlices = [key];
+            }
+            saveAndRender();
+        };
+        window.toggleAllSlices = function() {
+            const allKeys = LESSON_SLICES.map(s => s.key);
+            if (selectedSlices.length === allKeys.length) {
+                selectedSlices = [];
+            } else {
+                selectedSlices = allKeys.slice();
+            }
+            saveAndRender();
+        };
+        window.setSliceMode = function(mode) {
+            sliceMode = mode;
+            if (mode === 'single' && selectedSlices.length > 1) {
+                selectedSlices = selectedSlices.slice(0, 1);
+            }
+            saveAndRender();
+        };
+        window.switchView = function(phase, view) {
+            const container = document.getElementById('cards-' + phase);
+            if (!container) return;
+            container.className = 'cards-container ' + (view === 'list' ? 'list-view' : 'grid-view');
+            const parent = container.closest('.phase-card-list');
+            if (parent) {
+                const btns = parent.querySelectorAll('.card-actions .btn.icon-btn');
+                btns.forEach(b => {
+                    b.classList.remove('active');
+                    if ((view === 'list' && b.textContent.trim() === '📋') ||
+                        (view === 'grid' && b.textContent.trim() === '📇')) {
+                        b.classList.add('active');
+                    }
+                });
+            }
+        };
+        window.addSimpleCard = function(phase) {
+            const panel = document.querySelector(`.phase-panel[data-phase="${phase}"]`);
+            if (!panel) return;
+            const qInput = panel.querySelector('.add-card-question');
+            const aInput = panel.querySelector('.add-card-answer');
+            const q = qInput.value.trim();
+            const a = aInput.value.trim();
+            if (!q || !a) { alert('请填写问题和答案'); return; }
+            appData.cards.push({
+                id: genId(),
+                semesterId: currentSemesterId,
+                subjectId: currentSubjectId,
+                unitId: currentUnitId,
+                subIdx: currentLessonIdx,
+                phase: phase,
+                question: q,
+                answer: a,
+                options: [],
+                cardType: 'essay',
+                association: '',
+                difficulty: 3,
+                mastery: 0,
+                action: 'continue',
+                actionReason: '',
+                nextReview: today(),
+                reviewCount: 0,
+                created: new Date().toLocaleString()
+            });
+            saveAndRender();
+            qInput.value = '';
+            aInput.value = '';
+        };
+        window.deleteCard = function(cardId) {
+            if (!confirm('删除此卡片？')) return;
+            appData.cards = appData.cards.filter(c => c.id !== cardId);
+            saveAndRender();
+        };
+
+        // ================================================================
+        // 制作知识卡弹窗（完整保留）
+        // ================================================================
+        let makerPhase = '';
+
+        window.openMakerModal = function(phase) {
+            makerPhase = phase;
+            document.getElementById('makerPhaseDisplay').textContent = PHASE_LABELS[phase] || phase;
+            document.getElementById('makerQuestion').value = '';
+            document.getElementById('makerType').value = 'judge';
+            document.getElementById('makerDifficulty').value = '3';
+            document.getElementById('makerMastery').value = '0';
+            document.getElementById('makerMasteryLabel').textContent = '0星';
+            document.getElementById('makerAssociation').value = '';
+            document.getElementById('makerAction').value = 'continue';
+            document.getElementById('makerReason').value = '';
+            document.getElementById('optionList').innerHTML = '';
+            document.getElementById('optionArea').style.display = 'none';
+            document.getElementById('answerDisplay').textContent = '未选择';
+            document.getElementById('cardMakerModal').classList.add('open');
+            onTypeChange();
+        };
+
+        window.closeMakerModal = function() {
+            document.getElementById('cardMakerModal').classList.remove('open');
+        };
+
+        window.onTypeChange = function() {
+            const type = document.getElementById('makerType').value;
+            const optionArea = document.getElementById('optionArea');
+            const list = document.getElementById('optionList');
+            const badge = document.getElementById('optionTypeBadge');
+            const addBtn = document.getElementById('addOptionBtn');
+
+            list.innerHTML = '';
+            document.getElementById('answerDisplay').textContent = '未选择';
+
+            if (type === 'judge') {
+                optionArea.style.display = 'block';
+                badge.textContent = '判断（固定）';
+                addBtn.disabled = true;
+                addBtn.style.opacity = '0.5';
+                addBtn.style.cursor = 'not-allowed';
+                ['正确', '错误'].forEach((text, index) => {
+                    const tag = document.createElement('span');
+                    tag.className = 'option-tag';
+                    const label = String.fromCharCode(65 + index);
+                    tag.innerHTML =
+                        `<span class="opt-label">${label}.</span> ${text} <span class="del-opt" style="display:none;">✕</span>`;
+                    tag.dataset.label = label;
+                    tag.dataset.value = text;
+                    tag.onclick = function(e) {
+                        if (e.target.classList.contains('del-opt')) return;
+                        const parent = this.parentElement;
+                        parent.querySelectorAll('.option-tag').forEach(t => t.classList.remove('selected'));
+                        this.classList.add('selected');
+                        document.getElementById('answerDisplay').textContent = this.textContent.trim();
+                    };
+                    list.appendChild(tag);
+                });
+                list.querySelectorAll('.option-tag').forEach(t => t.classList.remove('selected'));
+                document.getElementById('answerDisplay').textContent = '未选择';
+            } else if (type === 'single' || type === 'multi') {
+                optionArea.style.display = 'block';
+                badge.textContent = type === 'single' ? '单选' : '多选';
+                addBtn.disabled = false;
+                addBtn.style.opacity = '1';
+                addBtn.style.cursor = 'pointer';
+            } else {
+                optionArea.style.display = 'none';
+            }
+        };
+
+        window.addOption = function() {
+            const type = document.getElementById('makerType').value;
+            if (type === 'judge') { alert('判断类型无需添加选项'); return; }
+            const input = document.getElementById('optionInput');
+            const val = input.value.trim();
+            if (!val) { alert('请输入选项内容'); return; }
+            const list = document.getElementById('optionList');
+            const count = list.querySelectorAll('.option-tag').length;
+            const label = String.fromCharCode(65 + count);
+            const tag = document.createElement('span');
+            tag.className = 'option-tag';
+            tag.innerHTML =
+                `<span class="opt-label">${label}.</span> ${val} <span class="del-opt" onclick="event.stopPropagation();removeOption(this);">✕</span>`;
+            tag.dataset.label = label;
+            tag.onclick = function(e) {
+                if (e.target.classList.contains('del-opt')) return;
+                const type = document.getElementById('makerType').value;
+                if (type === 'single') {
+                    this.parentElement.querySelectorAll('.option-tag').forEach(t => t.classList.remove('selected'));
+                    this.classList.add('selected');
+                    document.getElementById('answerDisplay').textContent = '已选：' + this.dataset.label;
+                } else if (type === 'multi') {
+                    this.classList.toggle('selected');
+                    const selected = this.parentElement.querySelectorAll('.option-tag.selected');
+                    const labels = Array.from(selected).map(el => el.dataset.label).join('、');
+                    document.getElementById('answerDisplay').textContent = '已选：' + (labels || '无');
+                }
+            };
+            list.appendChild(tag);
+            input.value = '';
+            document.getElementById('answerDisplay').textContent = '未选择';
+        };
+
+        window.removeOption = function(el) {
+            const tag = el.parentElement;
+            if (tag.classList.contains('selected')) {
+                document.getElementById('answerDisplay').textContent = '未选择';
+            }
+            tag.remove();
+            const list = document.getElementById('optionList');
+            const tags = list.querySelectorAll('.option-tag');
+            tags.forEach((t, idx) => {
+                const newLabel = String.fromCharCode(65 + idx);
+                t.dataset.label = newLabel;
+                const labelSpan = t.querySelector('.opt-label');
+                if (labelSpan) labelSpan.textContent = newLabel + '.';
+            });
+        };
+
+        window.generateCard = function() {
+            const phase = makerPhase;
+            if (!phase) { alert('阶段丢失，请重试'); return; }
+            const q = document.getElementById('makerQuestion').value.trim();
+            if (!q) { alert('请填写问题'); return; }
+            const type = document.getElementById('makerType').value;
+            let answer = '';
+            let options = [];
+
+            if (type === 'judge') {
+                const list = document.getElementById('optionList');
+                const selected = list.querySelector('.option-tag.selected');
+                if (!selected) { alert('请选择正确或错误'); return; }
+                answer = selected.textContent.trim();
+                options = ['正确', '错误'];
+            } else if (type === 'single' || type === 'multi') {
+                const list = document.getElementById('optionList');
+                const tags = list.querySelectorAll('.option-tag');
+                if (tags.length === 0) { alert('请添加至少一个选项'); return; }
+                options = Array.from(tags).map(el => el.textContent.replace(/^[A-Z]\.\s*/, '').replace('✕', '').trim());
+                const selected = list.querySelectorAll('.option-tag.selected');
+                if (selected.length === 0) { alert('请选择答案'); return; }
+                if (type === 'single') {
+                    answer = selected[0].dataset.label;
+                } else {
+                    answer = Array.from(selected).map(el => el.dataset.label).join('、');
+                }
+            } else {
+                answer = prompt('请输入答案：');
+                if (answer === null) return;
+                answer = answer.trim();
+                if (!answer) { alert('请填写答案'); return; }
+            }
+
+            const difficulty = parseInt(document.getElementById('makerDifficulty').value);
+            const mastery = parseInt(document.getElementById('makerMastery').value);
+            const association = document.getElementById('makerAssociation').value.trim();
+            const action = document.getElementById('makerAction').value;
+            const reason = document.getElementById('makerReason').value.trim();
+
+            appData.cards.push({
+                id: genId(),
+                semesterId: currentSemesterId,
+                subjectId: currentSubjectId,
+                unitId: currentUnitId,
+                subIdx: currentLessonIdx,
+                phase: phase,
+                question: q,
+                answer: answer,
+                options: options,
+                cardType: type,
+                association: association,
+                difficulty: difficulty,
+                mastery: mastery,
+                action: action,
+                actionReason: reason,
+                nextReview: today(),
+                reviewCount: 0,
+                created: new Date().toLocaleString()
+            });
+            saveAndRender();
+            closeMakerModal();
+            alert('✅ 知识卡已生成！');
+        };
+
+        // ================================================================
+        // 知识卡管理页面（默认选中当前学期）
+        // ================================================================
+        function renderCardsPage() {
+            updateSelects();
+
+            // 默认选中当前学期和科目
+            const semFilter = document.getElementById('cardSemesterFilter');
+            const subjFilter = document.getElementById('cardSubjectFilter');
+            if (currentSemesterId && semFilter.value !== currentSemesterId) {
+                semFilter.value = currentSemesterId;
+                // 更新科目下拉
+                const subjOptions = getSubjectOptions(currentSemesterId);
+                subjFilter.innerHTML = subjOptions;
+                if (currentSubjectId) subjFilter.value = currentSubjectId;
+            }
+            if (currentSubjectId && subjFilter.value !== currentSubjectId) {
+                subjFilter.value = currentSubjectId;
+            }
+
+            const semId = semFilter.value;
+            const subjId = subjFilter.value;
+            const type = document.getElementById('cardTypeFilter').value;
+            const diff = document.getElementById('cardDifficultyFilter').value;
+            const round = document.getElementById('cardRoundFilter').value;
+            const masteryFilter = document.getElementById('cardMasteryFilter').value;
+
+            let cards = [...appData.cards];
+            if (semId) cards = cards.filter(c => c.semesterId === semId);
+            if (subjId) cards = cards.filter(c => c.subjectId === subjId);
+            if (type) cards = cards.filter(c => c.cardType === type);
+            if (diff) cards = cards.filter(c => c.difficulty === parseInt(diff));
+            if (round) { const r = parseInt(round);
+                cards = cards.filter(c => c.reviewCount + 1 === r); }
+            if (masteryFilter !== '') cards = cards.filter(c => c.mastery === parseInt(masteryFilter));
+
+            cards.sort((a, b) => a.nextReview.localeCompare(b.nextReview));
+            document.getElementById('cardCountInfo').textContent = `${cards.length} 张`;
+
+            const container = document.getElementById('cardsContainer');
+            if (cards.length === 0) {
+                container.innerHTML = '<div class="card text-muted text-center">暂无知识卡</div>';
+                return;
+            }
+            container.innerHTML = '';
+            const todayStr = today();
+            const typeMap = { judge: '判断', single: '单选', multi: '多选', essay: '问答' };
+            const actionMap = { continue: '继续练习', textbook: '回看课本', research: '查资料', review: '复习巩固' };
+
+            cards.forEach(card => {
+                const label = getFullLabel(card.semesterId, card.subjectId);
+                const isToday = card.nextReview <= todayStr && card.mastery < 5;
+                const stars = '⭐'.repeat(card.mastery) + '☆'.repeat(5 - card.mastery);
+                const roundNum = card.reviewCount + 1;
+                const div = document.createElement('div');
+                div.className = 'card-item';
+                let optHtml = '';
+                if (card.options && card.options.length) {
+                    optHtml = `<div style="font-size:0.8rem;color:#475569;margin-top:0.2rem;">选项：${card.options.join(' | ')}</div>`;
+                }
+                div.innerHTML = `
+                    <div class="header">
+                        <span class="question">${card.question}</span>
+                        <span class="mastery">掌握 ${stars} (${card.mastery}/5) ${isToday ? '🔔' : ''}</span>
+                    </div>
+                    <div style="font-size:0.8rem;color:#64748b;margin-top:0.2rem;">
+                        ${label} | 类型：${typeMap[card.cardType] || card.cardType} | 难度：${'⭐'.repeat(card.difficulty)} | 轮次：第${roundNum}轮
+                        <br>下次复习：${card.nextReview} | 复习次数：${card.reviewCount}
+                        ${card.association ? `| 联想：${card.association}` : ''}
+                        ${card.action ? `| 处理：${actionMap[card.action] || card.action}` : ''}
+                        ${card.actionReason ? `（${card.actionReason}）` : ''}
+                        <span class="tag ${isToday ? 'red' : 'blue'}" style="margin-left:0.5rem;">${isToday ? '待复习' : '已安排'}</span>
+                    </div>
+                    ${optHtml}
+                    <div style="margin-top:0.3rem;font-size:0.85rem;background:#f1f5f9;padding:0.4rem;border-radius:4px;"><strong>答案：</strong>${card.answer}</div>
+                    <div class="flex-row mt-1">
+                        <button class="btn small" onclick="reviewCard('${card.id}');">✅ 打卡复习</button>
+                        <button class="btn small red" onclick="deleteCard('${card.id}');">删除</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        window.reviewCard = function(cardId) {
+            const c = appData.cards.find(ca => ca.id === cardId);
+            if (!c) return;
+            if (c.mastery < 5) c.mastery++;
+            c.reviewCount++;
+            const intervals = [0, 1, 2, 4, 7, 14];
+            const idx = Math.min(c.mastery, 5);
+            const days = intervals[idx] || 7;
+            const d = new Date();
+            d.setDate(d.getDate() + days);
+            c.nextReview = d.toISOString().split('T')[0];
+            saveAndRender();
+        };
+
+        window.oneClickReview = function() {
+            const todayCards = getTodayReviewCards();
+            if (todayCards.length === 0) { alert('🎉 今日没有需要复习的知识卡！'); return; }
+            if (!confirm(`今日有 ${todayCards.length} 张卡片待复习，全部打卡？`)) return;
+            todayCards.forEach(c => {
+                if (c.mastery < 5) c.mastery++;
+                c.reviewCount++;
+                const intervals = [0, 1, 2, 4, 7, 14];
+                const idx = Math.min(c.mastery, 5);
+                const days = intervals[idx] || 7;
+                const d = new Date();
+                d.setDate(d.getDate() + days);
+                c.nextReview = d.toISOString().split('T')[0];
+            });
+            saveAndRender();
+            alert('✅ 全部打卡完成！');
+        };
+
+        // ================================================================
+        // 错题本（默认选中当前学期，丰富字段）
+        // ================================================================
+        function renderErrorsPage() {
+            const container = document.getElementById('errorsContainer');
+            const semFilter = document.getElementById('errorSemesterFilter');
+            const subjFilter = document.getElementById('errorSubjectFilter');
+
+            // 默认选中当前学期和科目
+            if (currentSemesterId && semFilter.value !== currentSemesterId) {
+                semFilter.value = currentSemesterId;
+                const subjOptions = getSubjectOptions(currentSemesterId);
+                subjFilter.innerHTML = subjOptions;
+                if (currentSubjectId) subjFilter.value = currentSubjectId;
+            }
+            if (currentSubjectId && subjFilter.value !== currentSubjectId) {
+                subjFilter.value = currentSubjectId;
+            }
+
+            const semId = semFilter.value;
+            const subjId = subjFilter.value;
+            let errors = [...appData.errors];
+            if (semId) errors = errors.filter(e => e.semesterId === semId);
+            if (subjId) errors = errors.filter(e => e.subjectId === subjId);
+
+            if (errors.length === 0) {
+                container.innerHTML = '<div class="card text-muted text-center">暂无错题</div>';
+                return;
+            }
+            container.innerHTML = errors.map(e => {
+                const label = getFullLabel(e.semesterId, e.subjectId);
+                return `<div class="error-item">
+                    <div class="error-detail">
+                        <div><strong>题目：</strong>${e.title}</div>
+                        <div><span class="field"><strong>错误答案：</strong>${e.wrongAnswer || '—'}</span>
+                             <span class="field"><strong>正确答案：</strong>${e.correctAnswer || '—'}</span></div>
+                        <div><strong>错误原因分析：</strong>${e.analysis || '—'}</div>
+                        <div><span class="field"><strong>知识点：</strong>${e.knowledgePoint || '—'}</span>
+                             <span class="field"><strong>题型：</strong>${e.questionType || '—'}</span></div>
+                        <div style="font-size:0.8rem;color:#64748b;">${label}</div>
+                    </div>
+                    <button class="btn small outline" onclick="deleteError('${e.id}')">删除</button>
+                </div>`;
+            }).join('');
+        }
+
+        window.deleteError = function(id) { appData.errors = appData.errors.filter(e => e.id !== id);
+            saveAndRender(); };
+
+        // ================================================================
+        // 学习日志
+        // ================================================================
+        function renderLogsPage() {
+            const container = document.getElementById('logsContainer');
+            const semId = document.getElementById('logSemesterFilter').value;
+            const subjId = document.getElementById('logSubjectFilter').value;
+            let logs = [...appData.logs];
+            if (semId) logs = logs.filter(l => l.semesterId === semId);
+            if (subjId) logs = logs.filter(l => l.subjectId === subjId);
+            if (logs.length === 0) {
+                container.innerHTML = '<div class="card text-muted text-center">暂无日志</div>';
+                return;
+            }
+            const sorted = logs.sort((a, b) => b.date.localeCompare(a.date));
+            container.innerHTML = sorted.map(log => {
+                const label = getFullLabel(log.semesterId, log.subjectId);
+                return `<div class="log-item"><span class="date">${log.date}</span> [${label}] ${log.content}</div>`;
+            }).join('');
+        }
+
+        // ================================================================
+        // 更新下拉框
+        // ================================================================
+        function updateSelects() {
+            const semOptions = getSemesterOptions();
+            const semIds = ['semesterSelect', 'cardSemesterFilter', 'newCardSemester', 'errorSemesterFilter',
+                'errorSemester', 'logSemesterFilter', 'logSemester', 'dashSemesterSelect'
+            ];
+            semIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const val = el.value;
+                    el.innerHTML = semOptions;
+                    if (val && appData.semesters.some(s => s.id === val)) el.value = val;
+                    else if (currentSemesterId) el.value = currentSemesterId;
+                }
+            });
+            const semId = document.getElementById('semesterSelect')?.value || currentSemesterId;
+            const subjOptions = getSubjectOptions(semId);
+            const subjIds = ['cardSubjectFilter', 'newCardSubject', 'errorSubjectFilter', 'errorSubject',
+                'logSubjectFilter', 'logSubject', 'filterSubject'
+            ];
+            subjIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.tagName === 'SELECT') {
+                    const val = el.value;
+                    el.innerHTML = subjOptions;
+                    if (val && getCurrentSemester()?.subjects.some(s => s.id === val)) el.value = val;
+                    else if (currentSubjectId) el.value = currentSubjectId;
+                }
+            });
+        }
+
+        // ================================================================
+        // 浮动选择器
+        // ================================================================
+        function renderFloat() {
+            const sem = getCurrentSemester();
+            const subj = getCurrentSubject();
+            const label = (sem && subj) ? `${sem.name} - ${subj.name}` : '未选择';
+            document.getElementById('floatLabel').textContent = label;
+            const popup = document.getElementById('subjectPopup');
+            const semSelect = document.getElementById('semesterSelect');
+            semSelect.innerHTML = getSemesterOptions();
+            semSelect.value = currentSemesterId || '';
+            const list = document.getElementById('popupSubjectList');
+            const semObj = getCurrentSemester();
+            list.innerHTML = '';
+            if (semObj) {
+                semObj.subjects.forEach(s => {
+                    const li = document.createElement('li');
+                    li.className = (s.id === currentSubjectId) ? 'active' : '';
+                    li.innerHTML = `<span>${s.name}</span><span class="del" onclick="deleteSubjectFromPopup('${s.id}');">✕</span>`;
+                    li.addEventListener('click', function(e) {
+                        if (e.target.classList.contains('del')) return;
+                        currentSubjectId = s.id;
+                        currentUnitId = null;
+                        currentLessonIdx = null;
+                        selectedSlices = [];
+                        saveAndRender();
+                        popup.classList.remove('open');
+                    });
+                    list.appendChild(li);
+                });
+            }
+            updateSelects();
+        }
+        window.deleteSubjectFromPopup = function(id) {
+            const sem = getCurrentSemester();
+            if (!sem) return;
+            if (!confirm(`删除科目“${sem.subjects.find(s=>s.id===id)?.name}”？`)) return;
+            sem.subjects = sem.subjects.filter(s => s.id !== id);
+            appData.cards = appData.cards.filter(c => c.subjectId !== id);
+            if (currentSubjectId === id) { currentSubjectId = sem.subjects.length ? sem.subjects[0].id : null; }
+            saveAndRender();
+        };
+
+        // ================================================================
+        // 学员管理界面
+        // ================================================================
+        function renderUserManager() {
+            const users = getUsers();
+            const currentId = getCurrentUserId();
+            const list = document.getElementById('userList');
+            list.innerHTML = '';
+            users.forEach(u => {
+                const li = document.createElement('li');
+                const isCurrent = u.id === currentId;
+                li.innerHTML = `
+                    <span class="name">${u.name} ${isCurrent ? '<span class="badge">当前</span>' : ''}</span>
+                    <div class="actions">
+                        ${!isCurrent ? `<button class="btn small" onclick="switchUser('${u.id}')">切换</button>` : ''}
+                        ${users.length > 1 ? `<button class="btn small red" onclick="deleteUser('${u.id}')">删除</button>` : ''}
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        window.switchUser = function(userId) {
+            if (!confirm('切换学员将保存当前数据，确定切换？')) return;
+            saveCurrentUserData(appData);
+            setCurrentUserId(userId);
+            appData = getCurrentUserData();
+            currentSemesterId = appData.currentSemesterId || null;
+            currentSubjectId = appData.currentSubjectId || null;
+            currentUnitId = appData.currentUnitId || null;
+            currentLessonIdx = appData.currentLessonIdx !== undefined ? appData.currentLessonIdx : null;
+            selectedSlices = appData.selectedSlices || [];
+            sliceMode = appData.sliceMode || 'single';
+            if (!currentSemesterId && appData.semesters.length) {
+                currentSemesterId = appData.semesters[0].id;
+                appData.currentSemesterId = currentSemesterId;
+            }
+            if (currentSemesterId) {
+                const sem = appData.semesters.find(s => s.id === currentSemesterId);
+                if (sem && sem.subjects.length) {
+                    if (!currentSubjectId || !sem.subjects.some(s => s.id === currentSubjectId)) {
+                        currentSubjectId = sem.subjects[0].id;
+                        appData.currentSubjectId = currentSubjectId;
+                    }
+                }
+            }
+            renderAll();
+            document.getElementById('userManagerModal').classList.remove('open');
+        };
+
+        window.deleteUser = function(userId) {
+            if (!confirm('删除此学员及其所有数据？此操作不可恢复！')) return;
+            let users = getUsers();
+            if (users.length <= 1) { alert('至少保留一个学员'); return; }
+            users = users.filter(u => u.id !== userId);
+            saveUsers(users);
+            if (userId === getCurrentUserId()) {
+                setCurrentUserId(users[0].id);
+                appData = getCurrentUserData();
+                currentSemesterId = appData.currentSemesterId || null;
+                currentSubjectId = appData.currentSubjectId || null;
+                currentUnitId = appData.currentUnitId || null;
+                currentLessonIdx = appData.currentLessonIdx !== undefined ? appData.currentLessonIdx : null;
+                selectedSlices = appData.selectedSlices || [];
+                sliceMode = appData.sliceMode || 'single';
+                if (!currentSemesterId && appData.semesters.length) {
+                    currentSemesterId = appData.semesters[0].id;
+                    appData.currentSemesterId = currentSemesterId;
+                }
+                if (currentSemesterId) {
+                    const sem = appData.semesters.find(s => s.id === currentSemesterId);
+                    if (sem && sem.subjects.length) {
+                        if (!currentSubjectId || !sem.subjects.some(s => s.id === currentSubjectId)) {
+                            currentSubjectId = sem.subjects[0].id;
+                            appData.currentSubjectId = currentSubjectId;
+                        }
+                    }
+                }
+                renderAll();
+            }
+            renderUserManager();
+        };
+
+        // ================================================================
+        // 保存 & 渲染
+        // ================================================================
+        function saveAndRender() {
+            appData.currentSemesterId = currentSemesterId;
+            appData.currentSubjectId = currentSubjectId;
+            appData.currentUnitId = currentUnitId;
+            appData.currentLessonIdx = currentLessonIdx;
+            appData.selectedSlices = selectedSlices;
+            appData.sliceMode = sliceMode;
+            saveCurrentUserData(appData);
+            renderAll();
+        }
+
+        function renderAll() {
+            renderDashboard();
+            renderTheory();
+            renderFloat();
+            updateFilterOptions();
+            renderSubjectContent();
+            renderCardsPage();
+            renderErrorsPage();
+            renderLogsPage();
+            updateSelects();
+
+            // 学员管理事件
+            document.getElementById('userManagerBtn').onclick = function() {
+                renderUserManager();
+                document.getElementById('userManagerModal').classList.add('open');
+            };
+            document.getElementById('closeUserModalBtn').onclick = function() {
+                document.getElementById('userManagerModal').classList.remove('open');
+            };
+            document.getElementById('userManagerModal').onclick = function(e) {
+                if (e.target === this) this.classList.remove('open');
+            };
+            document.getElementById('addUserBtn').onclick = function() {
+                const nameInput = document.getElementById('newUserName');
+                const name = nameInput.value.trim();
+                if (!name) { alert('请输入学员姓名'); return; }
+                const users = getUsers();
+                if (users.some(u => u.name === name)) { alert('该学员已存在'); return; }
+                const newData = {
+                    semesters: generatePresetData(),
+                    cards: [],
+                    errors: [],
+                    logs: [],
+                    currentSemesterId: null,
+                    currentSubjectId: null,
+                    currentUnitId: null,
+                    currentLessonIdx: null,
+                    selectedSlices: [],
+                    sliceMode: 'single'
+                };
+                users.push({ id: genId(), name: name, data: newData });
+                saveUsers(users);
+                setCurrentUserId(users[users.length - 1].id);
+                appData = getCurrentUserData();
+                currentSemesterId = appData.currentSemesterId || null;
+                currentSubjectId = appData.currentSubjectId || null;
+                currentUnitId = appData.currentUnitId || null;
+                currentLessonIdx = appData.currentLessonIdx !== undefined ? appData.currentLessonIdx : null;
+                selectedSlices = appData.selectedSlices || [];
+                sliceMode = appData.sliceMode || 'single';
+                if (!currentSemesterId && appData.semesters.length) {
+                    currentSemesterId = appData.semesters[0].id;
+                    appData.currentSemesterId = currentSemesterId;
+                }
+                if (currentSemesterId) {
+                    const sem = appData.semesters.find(s => s.id === currentSemesterId);
+                    if (sem && sem.subjects.length) {
+                        if (!currentSubjectId || !sem.subjects.some(s => s.id === currentSubjectId)) {
+                            currentSubjectId = sem.subjects[0].id;
+                            appData.currentSubjectId = currentSubjectId;
+                        }
+                    }
+                }
+                nameInput.value = '';
+                renderAll();
+                renderUserManager();
+                alert('学员已添加并切换！');
+            };
+
+            // 浮动选择器
+            document.getElementById('floatBtn').onclick = function() {
+                document.getElementById('subjectPopup').classList.toggle('open');
+                if (document.getElementById('subjectPopup').classList.contains('open')) renderFloat();
+            };
+            document.getElementById('closePopupBtn').onclick = function() {
+                document.getElementById('subjectPopup').classList.remove('open');
+            };
+            document.getElementById('semesterSelect').onchange = function() {
+                currentSemesterId = this.value;
+                const sem = getCurrentSemester();
+                currentSubjectId = sem && sem.subjects.length ? sem.subjects[0].id : null;
+                currentUnitId = null;
+                currentLessonIdx = null;
+                selectedSlices = [];
+                saveAndRender();
+                document.getElementById('subjectPopup').classList.remove('open');
+            };
+            document.getElementById('addSemesterBtn').onclick = function() {
+                const name = prompt('请输入年级学期（如“五年级上”）：');
+                if (name && name.trim()) {
+                    appData.semesters.push({
+                        id: genId(),
+                        name: name.trim(),
+                        subjects: SUBJECTS.map(n => ({ id: genId(), name: n, units: [] }))
+                    });
+                    currentSemesterId = appData.semesters[appData.semesters.length - 1].id;
+                    const sem = getCurrentSemester();
+                    currentSubjectId = sem && sem.subjects.length ? sem.subjects[0].id : null;
+                    saveAndRender();
+                    document.getElementById('subjectPopup').classList.remove('open');
+                }
+            };
+            document.getElementById('delSemesterBtn').onclick = function() {
+                if (appData.semesters.length <= 1) { alert('至少保留一个学期'); return; }
+                if (!confirm('删除当前学期及其所有数据？')) return;
+                const semId = currentSemesterId;
+                appData.cards = appData.cards.filter(c => c.semesterId !== semId);
+                appData.errors = appData.errors.filter(e => e.semesterId !== semId);
+                appData.logs = appData.logs.filter(l => l.semesterId !== semId);
+                appData.semesters = appData.semesters.filter(s => s.id !== semId);
+                currentSemesterId = appData.semesters[0].id;
+                const sem = getCurrentSemester();
+                currentSubjectId = sem && sem.subjects.length ? sem.subjects[0].id : null;
+                saveAndRender();
+                document.getElementById('subjectPopup').classList.remove('open');
+            };
+            document.getElementById('addSubjectBtn').onclick = function() {
+                const input = document.getElementById('newSubjectInput');
+                const name = input.value.trim();
+                if (!name) { alert('请输入科目名称'); return; }
+                const sem = getCurrentSemester();
+                if (!sem) { alert('请先选择学期'); return; }
+                sem.subjects.push({ id: genId(), name: name, units: [] });
+                currentSubjectId = sem.subjects[sem.subjects.length - 1].id;
+                saveAndRender();
+                input.value = '';
+                document.getElementById('subjectPopup').classList.remove('open');
+            };
+
+            // 管理
+            document.getElementById('manageBtn').onclick = function() {
+                renderManageModal();
+                document.getElementById('manageModal').classList.add('open');
+            };
+            document.getElementById('closeModalBtn').onclick = function() {
+                document.getElementById('manageModal').classList.remove('open');
+            };
+            document.getElementById('manageModal').onclick = function(e) {
+                if (e.target === this) this.classList.remove('open');
+            };
+            document.getElementById('manageAddSubjectBtn').onclick = function() {
+                const input = document.getElementById('manageAddInput');
+                const name = input.value.trim();
+                if (!name) { alert('请输入科目名称'); return; }
+                const sem = getCurrentSemester();
+                if (!sem) { alert('请先选择学期'); return; }
+                sem.subjects.push({ id: genId(), name: name, units: [] });
+                input.value = '';
+                saveAndRender();
+                renderManageModal();
+            };
+
+            // 科目筛选
+            document.getElementById('filterApplyBtn').onclick = function() {
+                const u = document.getElementById('filterUnit').value;
+                const l = document.getElementById('filterLesson').value;
+                currentUnitId = u || null;
+                currentLessonIdx = (l !== '') ? parseInt(l) : null;
+                selectedSlices = [];
+                saveAndRender();
+            };
+            document.getElementById('filterClearBtn').onclick = function() {
+                document.getElementById('filterUnit').value = '';
+                document.getElementById('filterLesson').value = '';
+                currentUnitId = null;
+                currentLessonIdx = null;
+                selectedSlices = [];
+                saveAndRender();
+            };
+            document.getElementById('filterSubject').onchange = function() {
+                currentSubjectId = this.value;
+                currentUnitId = null;
+                currentLessonIdx = null;
+                selectedSlices = [];
+                saveAndRender();
+            };
+            document.getElementById('filterUnit').onchange = function() {
+                currentUnitId = this.value || null;
+                currentLessonIdx = null;
+                selectedSlices = [];
+                saveAndRender();
+            };
+            document.getElementById('filterLesson').onchange = function() {
+                const v = this.value;
+                currentLessonIdx = (v !== '') ? parseInt(v) : null;
+                selectedSlices = [];
+                saveAndRender();
+            };
+
+            // 知识卡
+            document.getElementById('cardFilterApply').onclick = function() { renderCardsPage(); };
+            document.getElementById('oneClickReviewBtn').onclick = function() { oneClickReview(); };
+            document.getElementById('newCardBtn').onclick = function() {
+                const q = document.getElementById('newCardQuestion').value.trim();
+                const a = document.getElementById('newCardAnswer').value.trim();
+                const semId = document.getElementById('newCardSemester').value;
+                const subjId = document.getElementById('newCardSubject').value;
+                const type = document.getElementById('newCardType').value;
+                const assoc = document.getElementById('newCardAssociation').value.trim();
+                const diff = parseInt(document.getElementById('newCardDifficulty').value);
+                if (!q || !a) { alert('请填写问题和答案'); return; }
+                if (!semId || !subjId) { alert('请选择学期和科目'); return; }
+                appData.cards.push({
+                    id: genId(),
+                    semesterId: semId,
+                    subjectId: subjId,
+                    unitId: '',
+                    subIdx: undefined,
+                    phase: '',
+                    question: q,
+                    answer: a,
+                    options: [],
+                    cardType: type,
+                    association: assoc,
+                    difficulty: diff,
+                    mastery: 0,
+                    action: 'continue',
+                    actionReason: '',
+                    nextReview: today(),
+                    reviewCount: 0,
+                    created: new Date().toLocaleString()
+                });
+                saveAndRender();
+                document.getElementById('newCardQuestion').value = '';
+                document.getElementById('newCardAnswer').value = '';
+                document.getElementById('newCardAssociation').value = '';
+                alert('知识卡添加成功！');
+            };
+
+            // 错题本
+            document.getElementById('errorAddBtn').onclick = function() {
+                const title = document.getElementById('errorTitle').value.trim();
+                const wrong = document.getElementById('errorWrong').value.trim();
+                const correct = document.getElementById('errorCorrect').value.trim();
+                const reason = document.getElementById('errorReason').value.trim();
+                const knowledge = document.getElementById('errorKnowledge').value.trim();
+                const type = document.getElementById('errorType').value.trim();
+                const semId = document.getElementById('errorSemester').value;
+                const subjId = document.getElementById('errorSubject').value;
+                if (!title) { alert('请填写题目'); return; }
+                if (!semId || !subjId) { alert('请选择学期和科目'); return; }
+                appData.errors.push({
+                    id: genId(),
+                    semesterId: semId,
+                    subjectId: subjId,
+                    title,
+                    wrongAnswer: wrong,
+                    correctAnswer: correct,
+                    analysis: reason,
+                    knowledgePoint: knowledge,
+                    questionType: type
+                });
+                saveAndRender();
+                document.getElementById('errorTitle').value = '';
+                document.getElementById('errorWrong').value = '';
+                document.getElementById('errorCorrect').value = '';
+                document.getElementById('errorReason').value = '';
+                document.getElementById('errorKnowledge').value = '';
+                document.getElementById('errorType').value = '';
+            };
+            document.getElementById('errorSemesterFilter').onchange = function() { renderErrorsPage(); };
+            document.getElementById('errorSubjectFilter').onchange = function() { renderErrorsPage(); };
+
+            // 日志
+            document.getElementById('logSaveBtn').onclick = function() {
+                const content = document.getElementById('logContent').value.trim();
+                const semId = document.getElementById('logSemester').value;
+                const subjId = document.getElementById('logSubject').value;
+                if (!content) { alert('请输入日志内容'); return; }
+                if (!semId || !subjId) { alert('请选择学期和科目'); return; }
+                appData.logs.push({ id: genId(), semesterId: semId, subjectId: subjId, date: today(), content });
+                saveAndRender();
+                document.getElementById('logContent').value = '';
+            };
+            document.getElementById('logSemesterFilter').onchange = function() { renderLogsPage(); };
+            document.getElementById('logSubjectFilter').onchange = function() { renderLogsPage(); };
+        }
+
+        // ================================================================
+        // 导航切换
+        // ================================================================
+        document.querySelectorAll('.nav-links button').forEach(btn => {
+            btn.onclick = function() {
+                document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const page = this.dataset.page;
+                document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+                document.getElementById('page-' + page).classList.add('active');
+                if (page === 'cards') renderCardsPage();
+                if (page === 'errors') renderErrorsPage();
+                if (page === 'logs') renderLogsPage();
+                if (page === 'subject') renderSubjectContent();
+            };
+        });
+
+        // ================================================================
+        // 初始化
+        // ================================================================
+        renderAll();
+        document.getElementById('subjectPopup').classList.remove('open');
+        console.log('📚 学习记录 v21.0 已加载 — 学员管理、仪表盘学期切换、错题本升级、默认学期');
+    </script>
+</body>
+</html>
