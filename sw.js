@@ -1,6 +1,6 @@
 /* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装） */
-const CACHE = 'child-growth-v1';
-const CORE = ['./', './index.html', './manifest.json'];
+const CACHE = 'child-growth-v2';
+const CORE = ['./', './index.html', './study-record.html', './manifest.json'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
@@ -26,7 +26,7 @@ self.addEventListener('activate', function (e) {
 self.addEventListener('fetch', function (e) {
   var url;
   try { url = new URL(e.request.url); } catch (err) { return; }
-  if (url.origin !== location.origin) return; // 跨域资源（如 CDN）不拦截
+  if (url.origin !== location.origin) return;
   if (e.request.method !== 'GET') return;
 
   e.respondWith(
