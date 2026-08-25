@@ -5318,10 +5318,7 @@
                         });
                     });
                 }
-                // 首次使用：还没有任何儿童账户时自动引导添加
-                if (accountList().length === 0) {
-                    setTimeout(openAccountModal, 500);
-                }
+                // 不再自动弹出「添加儿童」弹窗，避免进入首页即被打扰；用户可点击导航栏「选择儿童 / 添加儿童」按钮主动打开
             }
 
             if (document.readyState === 'loading') {
