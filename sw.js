@@ -1,5 +1,5 @@
 /* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装） */
-const CACHE = 'child-growth-v2';
+const CACHE = 'child-growth-v3';
 const CORE = ['./', './index.html', './study-record.html', './manifest.json'];
 
 self.addEventListener('install', function (e) {
@@ -29,6 +29,20 @@ self.addEventListener('fetch', function (e) {
   if (url.origin !== location.origin) return;
   if (e.request.method !== 'GET') return;
 
+  // HTML 页面导航请求：始终网络优先，不写入缓存，确保更新即时生效
+  var isHtml = e.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/');
+  if (isHtml) {
+    e.respondWith(
+      fetch(e.request).catch(function () {
+        return caches.match(e.request).then(function (m) {
+          return m || caches.match('./index.html');
+        });
+      })
+    );
+    return;
+  }
+
+  // 其他资源（manifest、图标等）：网络优先，缓存副本供离线回退
   e.respondWith(
     fetch(e.request).then(function (res) {
       if (res && res.status === 200) {
@@ -37,9 +51,7 @@ self.addEventListener('fetch', function (e) {
       }
       return res;
     }).catch(function () {
-      return caches.match(e.request).then(function (m) {
-        return m || caches.match('./index.html');
-      });
+      return caches.match(e.request);
     })
   );
 });
