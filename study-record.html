@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>📚 学习记录</title>
+    <title>📚 默认学员学习记录 · 儿童成长陪伴复盘系统</title>
     <style>
         /* ===== 全局重置 ===== */
         * { margin:0; padding:0; box-sizing:border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
@@ -265,6 +265,7 @@
             <button data-page="errors">❌ 错题本</button>
             <button data-page="logs">📝 学习日志</button>
             <button class="user-btn" id="userManagerBtn">👤 学员管理</button>
+            <button class="user-btn" id="backToMain" style="background: linear-gradient(135deg,#7c3aed,#2563eb);" title="返回儿童成长陪伴复盘系统">🏠 返回主系统</button>
         </div>
     </nav>
 
@@ -317,12 +318,17 @@
             </div>
             <div style="margin-bottom:0.8rem;">
                 <div class="flex-row">
-                    <input type="text" id="newUserName" placeholder="输入学员姓名" style="flex:1;">
-                    <button class="btn green" id="addUserBtn">添加学员</button>
+                    <input type="text" id="newUserName" placeholder="学员姓名" style="flex:1;">
+                    <input type="text" id="newUserGrade" placeholder="年级（如：三年级）" style="flex:1;">
+                    <button class="btn green" id="addUserBtn">添加</button>
                 </div>
             </div>
+            <div style="background:#eff6ff;border-left:3px solid #2563eb;padding:0.6rem 0.8rem;border-radius:6px;margin-bottom:0.6rem;font-size:0.82rem;color:#1e293b;">
+                🔗 <b>与主系统打通</b>：学员姓名与儿童成长陪伴复盘系统中的「儿童账户」一一对应，年级共享，切换学员即同步切换主系统的账户。
+                <br><button class="btn small purple" id="syncFromMainBtn" style="margin-top:0.4rem;">🔄 从主系统同步学员列表</button>
+            </div>
             <ul class="user-list" id="userList"></ul>
-            <div style="font-size:0.8rem;color:#64748b;margin-top:0.5rem;">💡 点击学员姓名可切换，删除按钮仅对非当前学员有效。</div>
+            <div style="font-size:0.8rem;color:#64748b;margin-top:0.5rem;">💡 学员名 = 主系统账户名；年级 = 主系统的年级设置。可点击「📘」修改年级。</div>
         </div>
     </div>
 
@@ -627,6 +633,41 @@
         }
 
         // ---------- 学员管理 ----------
+        // 与主系统打通：把学员名同步到 child_account_list（主系统的儿童账户）
+        function syncMainAccountList() {
+            try {
+                var mainList = JSON.parse(localStorage.getItem('child_account_list') || '[]');
+                if (Array.isArray(mainList)) {
+                    var users = getUsers();
+                    var changed = false;
+                    mainList.forEach(function(name) {
+                        if (!users.some(function(u) { return u.name === name; })) {
+                            users.push({
+                                id: genId(),
+                                name: name,
+                                data: {
+                                    semesters: generatePresetData(),
+                                    cards: [], errors: [], logs: [],
+                                    currentSemesterId: null, currentSubjectId: null,
+                                    currentUnitId: null, currentLessonIdx: null,
+                                    selectedSlices: [], sliceMode: 'single'
+                                }
+                            });
+                            changed = true;
+                        }
+                    });
+                    if (changed) saveUsers(users);
+                }
+                // 反向同步：把本页学员写回主系统（保留双向）
+                var localUsers = getUsers();
+                var merged = Array.isArray(mainList) ? mainList.slice() : [];
+                localUsers.forEach(function(u) {
+                    if (merged.indexOf(u.name) === -1) merged.push(u.name);
+                });
+                localStorage.setItem('child_account_list', JSON.stringify(merged));
+            } catch(e) {}
+        }
+
         function getUsers() {
             let users = JSON.parse(localStorage.getItem('studyUsers_v21')) || [];
             if (users.length === 0) {
@@ -649,6 +690,8 @@
                 });
                 localStorage.setItem('studyUsers_v21', JSON.stringify(users));
             }
+            // 启动时与主系统账户列表打通
+            syncMainAccountList();
             return users;
         }
 
@@ -657,6 +700,18 @@
         }
 
         function getCurrentUserId() {
+            // 优先使用主系统的当前账户名（如果已存在同名学员，则切换到该学员）
+            try {
+                var mainCur = localStorage.getItem('child_account_current');
+                if (mainCur) {
+                    var users = JSON.parse(localStorage.getItem('studyUsers_v21')) || [];
+                    var matched = users.find(function(u) { return u.name === mainCur; });
+                    if (matched) {
+                        localStorage.setItem('studyCurrentUserId_v21', matched.id);
+                        return matched.id;
+                    }
+                }
+            } catch(e) {}
             return localStorage.getItem('studyCurrentUserId_v21') || null;
         }
 
@@ -836,7 +891,10 @@
             const currentId = getCurrentUserId();
             const user = users.find(u => u.id === currentId);
             const name = user ? user.name : '默认学员';
-            document.querySelector('.brand').innerHTML = `📚 ${name}学习记录 <span>v21.0</span>`;
+            let grade = '';
+            try { grade = localStorage.getItem('child_account_meta::' + name) || ''; } catch(e) {}
+            const gradeTag = grade ? ` <span style="font-size:0.7rem;background:#dbeafe;color:#1d4ed8;padding:0.2rem 0.6rem;border-radius:20px;font-weight:600;">📘 ${grade}</span>` : '';
+            document.querySelector('.brand').innerHTML = `📚 ${name}学习记录 ${gradeTag} <span>v21.0</span>`;
 
             // 填充学期选择器
             const dashSelect = document.getElementById('dashSemesterSelect');
@@ -1949,12 +2007,21 @@
             const currentId = getCurrentUserId();
             const list = document.getElementById('userList');
             list.innerHTML = '';
+            // 显示当前主系统的账户，作为同步指示
+            let mainCur = '';
+            try { mainCur = localStorage.getItem('child_account_current') || ''; } catch(e) {}
             users.forEach(u => {
                 const li = document.createElement('li');
                 const isCurrent = u.id === currentId;
+                // 读取主系统年级（如果存在）
+                let grade = '';
+                try { grade = localStorage.getItem('child_account_meta::' + u.name) || ''; } catch(e) {}
+                const gradeTag = grade ? `<span style="font-size:0.7rem;background:#dbeafe;color:#1d4ed8;padding:0.1rem 0.5rem;border-radius:10px;margin-left:0.4rem;">📘 ${grade}</span>` : '';
+                const syncedTag = (mainCur && mainCur === u.name) ? '<span class="badge" style="background:#16a34a;">主系统</span>' : '';
                 li.innerHTML = `
-                    <span class="name">${u.name} ${isCurrent ? '<span class="badge">当前</span>' : ''}</span>
+                    <span class="name">${u.name} ${gradeTag} ${isCurrent ? '<span class="badge">当前</span>' : ''} ${syncedTag}</span>
                     <div class="actions">
+                        <button class="btn small outline" onclick="editUserGrade('${u.id}')" title="修改年级">📘</button>
                         ${!isCurrent ? `<button class="btn small" onclick="switchUser('${u.id}')">切换</button>` : ''}
                         ${users.length > 1 ? `<button class="btn small red" onclick="deleteUser('${u.id}')">删除</button>` : ''}
                     </div>
@@ -1963,10 +2030,29 @@
             });
         }
 
+        // 修改学员的年级（与主系统共享）
+        window.editUserGrade = function(userId) {
+            const users = getUsers();
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+            let curGrade = '';
+            try { curGrade = localStorage.getItem('child_account_meta::' + user.name) || ''; } catch(e) {}
+            const g = prompt('为「' + user.name + '」设置年级（如：三年级、四年级、初一 …）：', curGrade || '');
+            if (g !== null) {
+                try { if (g.trim()) localStorage.setItem('child_account_meta::' + user.name, g.trim()); } catch(e) {}
+                renderUserManager();
+                alert('年级已更新');
+            }
+        };
+
         window.switchUser = function(userId) {
             if (!confirm('切换学员将保存当前数据，确定切换？')) return;
             saveCurrentUserData(appData);
             setCurrentUserId(userId);
+            const users = getUsers();
+            const switched = users.find(u => u.id === userId);
+            // 与主系统打通：同步 child_account_current
+            try { if (switched) localStorage.setItem('child_account_current', switched.name); } catch(e) {}
             appData = getCurrentUserData();
             currentSemesterId = appData.currentSemesterId || null;
             currentSubjectId = appData.currentSubjectId || null;
@@ -2054,6 +2140,11 @@
                 renderUserManager();
                 document.getElementById('userManagerModal').classList.add('open');
             };
+            // 返回主系统（儿童成长陪伴复盘系统）
+            document.getElementById('backToMain').onclick = function() {
+                try { saveAndRender(); } catch(e) {}
+                window.location.href = './index.html';
+            };
             document.getElementById('closeUserModalBtn').onclick = function() {
                 document.getElementById('userManagerModal').classList.remove('open');
             };
@@ -2062,25 +2153,38 @@
             };
             document.getElementById('addUserBtn').onclick = function() {
                 const nameInput = document.getElementById('newUserName');
+                const gradeInput = document.getElementById('newUserGrade');
                 const name = nameInput.value.trim();
                 if (!name) { alert('请输入学员姓名'); return; }
                 const users = getUsers();
-                if (users.some(u => u.name === name)) { alert('该学员已存在'); return; }
-                const newData = {
-                    semesters: generatePresetData(),
-                    cards: [],
-                    errors: [],
-                    logs: [],
-                    currentSemesterId: null,
-                    currentSubjectId: null,
-                    currentUnitId: null,
-                    currentLessonIdx: null,
-                    selectedSlices: [],
-                    sliceMode: 'single'
-                };
-                users.push({ id: genId(), name: name, data: newData });
-                saveUsers(users);
-                setCurrentUserId(users[users.length - 1].id);
+                let existing = users.find(u => u.name === name);
+                if (existing) {
+                    setCurrentUserId(existing.id);
+                } else {
+                    const newData = {
+                        semesters: generatePresetData(),
+                        cards: [],
+                        errors: [],
+                        logs: [],
+                        currentSemesterId: null,
+                        currentSubjectId: null,
+                        currentUnitId: null,
+                        currentLessonIdx: null,
+                        selectedSlices: [],
+                        sliceMode: 'single'
+                    };
+                    users.push({ id: genId(), name: name, data: newData });
+                    saveUsers(users);
+                    setCurrentUserId(users[users.length - 1].id);
+                }
+                // 与主系统打通：把该姓名注册到 child_account_list，并把年级写入 child_account_meta::<name>
+                try {
+                    var accs = JSON.parse(localStorage.getItem('child_account_list') || '[]');
+                    if (accs.indexOf(name) === -1) { accs.push(name); localStorage.setItem('child_account_list', JSON.stringify(accs)); }
+                    if (gradeInput && gradeInput.value.trim()) {
+                        localStorage.setItem('child_account_meta::' + name, gradeInput.value.trim());
+                    }
+                } catch (e) {}
                 appData = getCurrentUserData();
                 currentSemesterId = appData.currentSemesterId || null;
                 currentSubjectId = appData.currentSubjectId || null;
@@ -2101,10 +2205,60 @@
                         }
                     }
                 }
+                try { localStorage.setItem('child_account_current', name); } catch (e) {}
                 nameInput.value = '';
+                if (gradeInput) gradeInput.value = '';
                 renderAll();
                 renderUserManager();
                 alert('学员已添加并切换！');
+            };
+
+            // 从主系统同步学员列表 / 年级信息
+            document.getElementById('syncFromMainBtn').onclick = function() {
+                try {
+                    var mainList = JSON.parse(localStorage.getItem('child_account_list') || '[]');
+                    if (!Array.isArray(mainList) || mainList.length === 0) {
+                        alert('主系统还没有儿童账户，请先在主系统中添加。');
+                        return;
+                    }
+                    var users = getUsers();
+                    var added = 0;
+                    mainList.forEach(function(name) {
+                        if (!users.some(function(u) { return u.name === name; })) {
+                            users.push({
+                                id: genId(),
+                                name: name,
+                                data: {
+                                    semesters: generatePresetData(),
+                                    cards: [], errors: [], logs: [],
+                                    currentSemesterId: null, currentSubjectId: null,
+                                    currentUnitId: null, currentLessonIdx: null,
+                                    selectedSlices: [], sliceMode: 'single'
+                                }
+                            });
+                            added++;
+                        }
+                    });
+                    if (added > 0) saveUsers(users);
+                    // 同步当前账户
+                    var cur = localStorage.getItem('child_account_current');
+                    if (cur) {
+                        var user = users.find(function(u) { return u.name === cur; });
+                        if (user) {
+                            setCurrentUserId(user.id);
+                            appData = getCurrentUserData();
+                            currentSemesterId = appData.currentSemesterId || null;
+                            currentSubjectId = appData.currentSubjectId || null;
+                            currentUnitId = appData.currentUnitId || null;
+                            currentLessonIdx = appData.currentLessonIdx !== undefined ? appData.currentLessonIdx : null;
+                            selectedSlices = appData.selectedSlices || [];
+                            sliceMode = appData.sliceMode || 'single';
+                            renderAll();
+                        }
+                    }
+                    renderUserManager();
+                    alert('已同步，新增 ' + added + ' 个学员；当前账户：' + (cur || '默认'));
+                } catch (e) { alert('同步失败：' + e.message); }
             };
 
             // 浮动选择器
