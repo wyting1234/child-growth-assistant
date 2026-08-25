@@ -889,6 +889,32 @@
         .quadrant-item .q-deadline.overdue { color: var(--danger); font-weight: 500; }
         .quadrant-item .q-del { cursor: pointer; color: var(--gray); }
         .quadrant-item .q-del:hover { color: var(--danger); }
+        /* ===== 待办编辑：点击进入编辑 ===== */
+        .todo-item .text { cursor: pointer; flex: 1; }
+        .todo-item .text:hover { background: #f8fafc; border-radius: 4px; padding: 2px 4px; }
+        .quadrant-item .q-text { cursor: pointer; flex: 1; }
+        .quadrant-item .q-text:hover { background: #f8fafc; border-radius: 4px; padding: 2px 4px; }
+        .todo-item .edit-hint { font-size: 10px; color: #94a3b8; margin-left: 4px; }
+        /* ===== 通用模态框 ===== */
+        .modal-mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; }
+        .modal-mask.show { display: flex; }
+        .modal-card { background: #fff; border-radius: 12px; padding: 20px 24px; width: min(420px, 92vw); box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .modal-card h3 { margin: 0 0 12px; font-size: 16px; color: var(--primary); display: flex; align-items: center; justify-content: space-between; }
+        .modal-card h3 .close-x { cursor: pointer; color: var(--gray); font-size: 22px; line-height: 1; background: none; border: none; }
+        .modal-card h3 .close-x:hover { color: var(--danger); }
+        .modal-card label { display: block; font-size: 12px; color: var(--gray); margin: 8px 0 4px; font-weight: 500; }
+        .modal-card input, .modal-card select, .modal-card textarea { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; box-sizing: border-box; }
+        .modal-card textarea { resize: vertical; min-height: 60px; }
+        .modal-card .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+        .modal-card .modal-btns button { padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; }
+        .modal-card .modal-btns .btn-cancel { background: #f1f5f9; color: var(--gray); }
+        .modal-card .modal-btns .btn-save { background: var(--primary); color: #fff; }
+        .modal-card .modal-btns .btn-save:hover { background: #1d4ed8; }
+        /* ===== 工具切换顶部胶囊 ===== */
+        .tool-switch { display: inline-flex; align-items: center; gap: 4px; padding: 4px; background: #fff; border: 1px solid var(--border); border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+        .tool-switch a { padding: 6px 14px; border-radius: 999px; text-decoration: none; font-size: 13px; color: var(--gray); font-weight: 600; transition: 0.2s; }
+        .tool-switch a.active { background: var(--primary); color: #fff; box-shadow: 0 2px 6px rgba(37,99,235,0.3); }
+        .tool-switch a:hover:not(.active) { background: #f1f5f9; color: var(--primary); }
         /* ===== 番茄时钟 ===== */
         .pomodoro {
             display: flex;
@@ -1895,7 +1921,34 @@
             </div>
             <div class="account-rows" id="accountRows"></div>
             <div style="display:flex; gap:8px; margin-top:14px; align-items:center;">
+                <input id="newAccountName" placeholder="儿童姓名" style="flex:1;min-width:120px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+                <input id="newAccountGrade" placeholder="年级（如：三年级）" style="flex:1;min-width:120px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
                 <button class="btn btn-primary" onclick="addAccount()" style="flex:1;">＋ 添加儿童</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 待办编辑弹窗 -->
+    <div class="modal-mask" id="todoEditModal" onclick="if(event.target===this)closeTodoEditModal()">
+        <div class="modal-card">
+            <h3>✏️ 编辑待办 <button class="close-x" onclick="closeTodoEditModal()">&times;</button></h3>
+            <input type="hidden" id="editTodoId" />
+            <label>待办内容</label>
+            <textarea id="editTodoText" placeholder="待办内容"></textarea>
+            <label>优先级</label>
+            <select id="editTodoPriority">
+                <option value="q1">🔥 重要且紧急</option>
+                <option value="q2">⭐ 重要不紧急</option>
+                <option value="q3">⏱ 不重要但紧急</option>
+                <option value="q4">🪶 不重要不紧急</option>
+            </select>
+            <label>截止日期</label>
+            <input type="date" id="editTodoDeadline" />
+            <label>截止时间（可选）</label>
+            <input type="time" id="editTodoDeadlineTime" />
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="closeTodoEditModal()">取消</button>
+                <button class="btn-save" onclick="saveTodoEdit()">💾 保存修改</button>
             </div>
         </div>
     </div>
@@ -1932,7 +1985,7 @@
             <div class="brand-area">
                 <div class="logo">🌱 儿童成长陪伴复盘系统</div>
                 <div class="brand-right">
-                    <button class="account-btn" id="accountBtn" title="切换儿童账户">👦 <span id="accountName">选择儿童</span> ▾</button>
+                    <button class="account-btn" id="accountBtn" title="切换儿童账户">👦 <span id="accountName">选择儿童</span><span id="accountGrade" style="margin-left:4px;font-size:11px;color:#2563eb;"></span> ▾</button>
                     <button class="nav-toggle" id="navToggle" title="展开菜单" aria-label="展开菜单">☰</button>
                 </div>
             </div>
@@ -1946,6 +1999,7 @@
                 <a href="javascript:;" data-target="homework">📚 作业记录</a>
                 <a href="javascript:;" data-target="indicator">📋 指标库</a>
                 <a href="javascript:;" class="sync-nav-btn" id="syncNavBtn" title="云端数据同步">☁️ 云同步<span class="sync-dot" id="syncDot"></span></a>
+                <a href="./study-record.html" class="tool-page-link" title="学习记录（默认学员）" style="background: linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;border-radius:20px;padding:6px 14px;margin-left:6px;font-size:12px;text-decoration:none;">📚 学习记录</a>
             </nav>
         </div>
     </header>
@@ -4803,7 +4857,7 @@
                 var badge = '<span class="todo-prio-badge ' + p.color + '">' + p.short + '</span>';
                 html += '<div class="todo-item" data-id="' + todo.id + '">';
                 html += '<input type="checkbox" class="ck" ' + (todo.completed ? 'checked' : '') + ' />';
-                html += '<span class="text ' + doneClass + '">' + todo.text + badge + '</span>';
+                html += '<span class="text ' + doneClass + '" onclick="openTodoEditModal(\'' + todo.id + '\')" title="点击编辑">' + todo.text + ' ' + badge + ' <span class="edit-hint">✏️ 点我编辑</span></span>';
                 html += deadlineHtml;
                 html += '<span class="del" onclick="deleteTodo(\'' + todo.id + '\')">✕</span>';
                 html += '</div>';
@@ -4848,7 +4902,7 @@
                         var dlHtml = dl ? '<br><small class="q-deadline ' + (overdue ? 'overdue' : '') + '">' + dl + '</small>' : '';
                         html += '<div class="quadrant-item" data-id="' + t.id + '">';
                         html += '<input type="checkbox" class="q-ck" ' + (t.completed ? 'checked' : '') + ' />';
-                        html += '<span class="q-text ' + done + '">' + t.text + dlHtml + '</span>';
+                        html += '<span class="q-text ' + done + '" onclick="openTodoEditModal(\'' + t.id + '\')" title="点击编辑">' + t.text + ' ✏️' + dlHtml + '</span>';
                         html += '<span class="q-del" onclick="deleteTodo(\'' + t.id + '\')">✕</span>';
                         html += '</div>';
                     });
@@ -4921,6 +4975,53 @@
             renderTodos();
             if (isTodoMatrixView()) renderTodoMatrix();
             showToast('🗑️ 待办已删除');
+        };
+
+        // ✅ 点击已形成的待办 → 重新进入编辑状态
+        window.openTodoEditModal = function(id) {
+            var todos = getTodos();
+            var todo = todos.find(function(t) { return t.id === id; });
+            if (!todo) return;
+            document.getElementById('editTodoId').value = id;
+            document.getElementById('editTodoText').value = todo.text || '';
+            document.getElementById('editTodoPriority').value = prioOf(todo);
+            document.getElementById('editTodoDeadline').value = todo.deadline || '';
+            document.getElementById('editTodoDeadlineTime').value = todo.deadlineTime || '';
+            var modal = document.getElementById('todoEditModal');
+            if (modal) {
+                modal.classList.add('show');
+                setTimeout(function() {
+                    var ta = document.getElementById('editTodoText');
+                    if (ta) { ta.focus(); ta.select(); }
+                }, 50);
+            }
+        };
+
+        window.closeTodoEditModal = function() {
+            var modal = document.getElementById('todoEditModal');
+            if (modal) modal.classList.remove('show');
+        };
+
+        window.saveTodoEdit = function() {
+            var id = document.getElementById('editTodoId').value;
+            var text = document.getElementById('editTodoText').value.trim();
+            if (!text) { showToast('⚠️ 待办内容不能为空'); return; }
+            var priority = document.getElementById('editTodoPriority').value;
+            var deadline = document.getElementById('editTodoDeadline').value;
+            var deadlineTime = document.getElementById('editTodoDeadlineTime').value;
+            var todos = getTodos();
+            var todo = todos.find(function(t) { return t.id === id; });
+            if (!todo) { showToast('⚠️ 待办不存在'); return; }
+            todo.text = text;
+            todo.priority = PRIO[priority] ? priority : 'q2';
+            todo.deadline = deadline || '';
+            todo.deadlineTime = deadlineTime || '';
+            todo.updatedAt = new Date().toISOString();
+            setTodos(todos);
+            closeTodoEditModal();
+            renderTodos();
+            if (isTodoMatrixView()) renderTodoMatrix();
+            showToast('✅ 待办已更新');
         };
 
         function setupTodoViewTabs() {
@@ -5752,6 +5853,11 @@
                 if (!el) return;
                 var c = curAccount();
                 el.textContent = c || '选择儿童';
+                var g = $('accountGrade');
+                if (g) {
+                    var grade = c ? (localStorage.getItem('child_account_meta::' + c) || '') : '';
+                    g.textContent = grade ? '[' + grade + ']' : '';
+                }
             }
 
             function openAccountModal() {
@@ -5769,6 +5875,14 @@
                 return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             }
 
+            // 获取儿童的年级（取自 child_account_meta::<name>）
+            function getAccountGrade(name) {
+                try { return localStorage.getItem('child_account_meta::' + name) || ''; } catch (e) { return ''; }
+            }
+            function setAccountGrade(name, grade) {
+                try { if (grade) localStorage.setItem('child_account_meta::' + name, grade); else localStorage.removeItem('child_account_meta::' + name); } catch (e) {}
+            }
+
             function renderAccountRows() {
                 var wrap = $('accountRows');
                 if (!wrap) return;
@@ -5780,17 +5894,30 @@
                 }
                 var html = '';
                 accs.forEach(function(n) {
+                    var g = getAccountGrade(n);
+                    var gradeTag = g ? '<span style="font-size:11px;background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:10px;margin-left:6px;">📘 ' + esc(g) + '</span>' : '';
                     html += '<div class="account-row">' +
                         '<span class="acc-ico">👦</span>' +
-                        '<span class="acc-name">' + esc(n) + '</span>' +
+                        '<span class="acc-name">' + esc(n) + gradeTag + '</span>' +
                         (n === c ? '<span class="acc-cur">当前</span>' : '') +
                         '<span class="acc-act">' +
+                        '<button onclick="editAccountGrade(\'' + esc(n).replace(/'/g, "\\'") + '\')" title="修改年级">📘</button>' +
                         (n === c ? '' : '<button onclick="switchAccount(\'' + esc(n).replace(/'/g, "\\'") + '\')">切换</button>') +
                         '<button class="acc-del" onclick="deleteAccount(\'' + esc(n).replace(/'/g, "\\'") + '\')">删除</button>' +
                         '</span></div>';
                 });
                 wrap.innerHTML = html;
             }
+
+            window.editAccountGrade = function(name) {
+                var cur = getAccountGrade(name);
+                var g = prompt('为「' + name + '」设置年级（如：三年级、四年级、五年级、初一 …）：', cur || '');
+                if (g !== null) {
+                    setAccountGrade(name, g.trim());
+                    renderAccountRows();
+                    showToast('📘 年级已更新');
+                }
+            };
 
             window.switchAccount = function(name) {
                 try { localStorage.setItem('child_account_current', name); } catch (e) {}
@@ -5799,14 +5926,20 @@
             };
 
             window.addAccount = function() {
-                var name = prompt('请输入儿童姓名：');
-                if (!name || !name.trim()) return;
-                name = name.trim();
+                var input = document.getElementById('newAccountName');
+                var gradeInput = document.getElementById('newAccountGrade');
+                var name = input ? input.value.trim() : '';
+                if (!name) { alert('请输入儿童姓名'); return; }
                 var accs = accountList();
                 if (accs.indexOf(name) > -1) { alert('该儿童已存在'); return; }
                 accs.push(name);
                 Storage.saveList(accs);
+                if (gradeInput && gradeInput.value.trim()) {
+                    setAccountGrade(name, gradeInput.value.trim());
+                }
                 try { localStorage.setItem('child_account_current', name); } catch (e) {}
+                if (input) input.value = '';
+                if (gradeInput) gradeInput.value = '';
                 showToast('✅ 已添加并切换到：' + name);
                 setTimeout(function() { location.reload(); }, 300);
             };
