@@ -251,9 +251,146 @@
             .cards-container.grid-view { grid-template-columns:1fr; }
             .add-card-form input { min-width:80px; }
         }
+
+        /* ============ 光阴の侧边栏（网页工具集） ============ */
+        .app-shell { display: flex; min-height: 100vh; }
+        .app-main { flex: 1; min-width: 0; padding: 0 2rem 0 300px; transition: padding-left .3s; }
+        body.sidebar-collapsed .app-main { padding-left: 2rem; }
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 280px;
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            color: #cbd5e1;
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            transition: transform .3s cubic-bezier(.4,0,.2,1), width .3s;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.08);
+        }
+        .sidebar.collapsed { transform: translateX(-100%); }
+        .sidebar-inner { flex: 1; overflow-y: auto; padding: 16px 0 24px 0; scrollbar-width: thin; scrollbar-color: #475569 transparent; }
+        .sidebar-inner::-webkit-scrollbar { width: 4px; }
+        .sidebar-inner::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .sidebar-header {
+            padding: 18px 18px 16px 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-header .logo-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; box-shadow: 0 4px 12px rgba(37,99,235,0.4); flex: none;
+        }
+        .sidebar-header .meta { flex: 1; min-width: 0; }
+        .sidebar-header .title { font-size: 16px; font-weight: 700; color: #f1f5f9; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sidebar-header .sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+        .sidebar-section { padding: 14px 14px 4px 14px; }
+        .sidebar-section-title {
+            font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px;
+            font-weight: 600; padding: 0 8px 8px 8px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .sidebar-section-title .manage-btn {
+            font-size: 11px; color: #94a3b8; background: rgba(255,255,255,0.08);
+            border: none; border-radius: 6px; padding: 3px 10px; cursor: pointer; text-transform: none; letter-spacing: 0;
+        }
+        .sidebar-section-title .manage-btn:hover { background: rgba(255,255,255,0.16); color: #f1f5f9; }
+        .sidebar-list { list-style: none; padding: 0; margin: 0; }
+        .sidebar-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px; border-radius: 10px; cursor: pointer;
+            transition: background .15s, color .15s;
+            color: #cbd5e1; font-size: 14px; user-select: none; position: relative;
+        }
+        .sidebar-item:hover { background: rgba(255,255,255,0.06); color: #f1f5f9; }
+        .sidebar-item.active {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #fff; font-weight: 600; box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+        }
+        .sidebar-item .drag-handle { font-size: 14px; color: #64748b; cursor: grab; flex: none; line-height: 1; user-select: none; }
+        .sidebar-item:hover .drag-handle { color: #cbd5e1; }
+        .sidebar-item .ico { font-size: 18px; flex: none; width: 24px; text-align: center; }
+        .sidebar-item .name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sidebar-item .badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; flex: none; background: rgba(255,255,255,0.1); color: #cbd5e1; }
+        .sidebar-item.active .badge { background: rgba(255,255,255,0.25); color: #fff; }
+        .sidebar-item .badge.has-data { background: rgba(99,102,241,0.18); color: #a5b4fc; }
+        .sidebar-item.active .badge.has-data { background: rgba(255,255,255,0.25); color: #fff; }
+        .sidebar-item .badge.no-data { background: rgba(100,116,139,0.2); color: #94a3b8; }
+        .sidebar-item.dragging { opacity: 0.5; border: 1px dashed #6366f1; }
+        .sidebar-item.drag-over { border-top: 2px solid #6366f1; }
+        .sidebar-footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; }
+        .sidebar-toggle {
+            position: fixed; left: 296px; top: 16px;
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #fff; border: none; border-radius: 50%; font-size: 16px; cursor: pointer;
+            box-shadow: 0 6px 18px rgba(99,102,241,0.45);
+            z-index: 550; display: flex; align-items: center; justify-content: center;
+            transition: transform .25s, left .3s, top .3s;
+        }
+        .sidebar-toggle:hover { transform: scale(1.06); }
+        .sidebar-toggle.collapsed-pos { left: 16px; top: 16px; }
+        .sidebar-mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 480; }
+        .sidebar-mask.show { display: block; }
+        .account-pill { padding: 6px 10px; background: rgba(255,255,255,0.06); border-radius: 999px; color: #cbd5e1; font-size: 11px; border: 1px solid rgba(255,255,255,0.06); }
+        .account-pill b { color: #f1f5f9; }
+        @media (max-width: 980px) {
+            .sidebar { width: min(210px, 46vw); transform: none !important; box-shadow: 4px 0 24px rgba(0,0,0,0.25); }
+            .sidebar.collapsed { transform: translateX(-105%) !important; }
+            .sidebar-header { padding: 12px 10px 10px 10px; }
+            .sidebar-header .logo-icon { width: 34px; height: 34px; font-size: 17px; border-radius: 9px; }
+            .sidebar-header .title { font-size: 13px; }
+            .sidebar-header .sub { font-size: 10px; }
+            .sidebar-section { padding: 10px 8px 2px 8px; }
+            .sidebar-section-title { font-size: 10px; padding: 0 6px 6px 6px; }
+            .sidebar-item { padding: 8px 8px; gap: 6px; font-size: 12px; }
+            .sidebar-item .ico { font-size: 14px; width: 18px; }
+            .sidebar-item .badge { font-size: 9px; padding: 1px 5px; }
+            .sidebar-item .drag-handle { font-size: 11px; }
+            .sidebar-footer { padding: 8px 10px; }
+            .sidebar-footer .account-pill { font-size: 10px; padding: 4px 8px; }
+            .sidebar-toggle, .sidebar-toggle.collapsed-pos { left: 8px !important; top: 8px !important; width: 32px; height: 32px; font-size: 14px; }
+            .app-main { padding-left: 8px; }
+            body.sidebar-collapsed .app-main { padding-left: 8px; }
+            .sidebar-mask.show { left: min(210px, 46vw); }
+        }
     </style>
 </head>
 <body>
+    <!-- ===== 光阴の侧边栏（网页工具集） ===== -->
+    <div class="sidebar-mask" id="sidebarMask"></div>
+    <aside class="sidebar" id="appSidebar">
+        <div class="sidebar-inner">
+            <div class="sidebar-header">
+                <div class="logo-icon">🌱</div>
+                <div class="meta">
+                    <div class="title">光阴の记事本</div>
+                    <div class="sub"><span id="sidebarToolCount">2</span> 个网页 · <span id="sidebarAccount">未选择</span></div>
+                </div>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">
+                    <span>网页工具</span>
+                    <button class="manage-btn" id="sidebarManageBtn" title="更多工具将陆续添加">＋ 管理</button>
+                </div>
+                <ul class="sidebar-list" id="sidebarTools"></ul>
+            </div>
+            <div class="sidebar-footer">
+                <span class="account-pill" id="sidebarAccountPill">📚 <b>--</b></span>
+                <span style="font-size:11px;color:#64748b;">v3.1</span>
+            </div>
+        </div>
+    </aside>
+    <button class="sidebar-toggle" id="sidebarToggle" title="展开/收起侧边栏" aria-label="展开侧边栏">☰</button>
+
+    <div class="app-shell">
+    <main class="app-main">
     <!-- 导航栏 -->
     <nav class="navbar">
         <div class="brand">📚 学习记录 <span>v21.0</span></div>
@@ -265,7 +402,6 @@
             <button data-page="errors">❌ 错题本</button>
             <button data-page="logs">📝 学习日志</button>
             <button class="user-btn" id="userManagerBtn">👤 学员管理</button>
-            <button class="user-btn" id="backToMain" style="background: linear-gradient(135deg,#7c3aed,#2563eb);" title="返回儿童成长陪伴复盘系统">🏠 返回主系统</button>
         </div>
     </nav>
 
@@ -2493,6 +2629,185 @@
         renderAll();
         document.getElementById('subjectPopup').classList.remove('open');
         console.log('📚 学习记录 v21.0 已加载 — 学员管理、仪表盘学期切换、错题本升级、默认学期');
+
+        // ================================================================
+        //  光阴の侧边栏（网页工具集，与儿童成长系统一致）
+        // ================================================================
+        (function() {
+            'use strict';
+
+            var TOOL_DEFS = [
+                { key: 'main',  ico: '🌱', name: '儿童成长系统', href: './index.html' },
+                { key: 'study', ico: '📚', name: '默认学员学习记录', href: './study-record.html' }
+            ];
+
+            function currentKey() {
+                var p = window.location.pathname.split('/').pop() || 'index.html';
+                if (p === 'study-record.html') return 'study';
+                return 'main';
+            }
+
+            function getOrder() {
+                try {
+                    var o = JSON.parse(localStorage.getItem('sidebar_order_v3') || 'null');
+                    if (Array.isArray(o) && o.length) return o;
+                } catch (e) {}
+                return TOOL_DEFS.map(function(t) { return t.key; });
+            }
+            function setOrder(o) {
+                try { localStorage.setItem('sidebar_order_v3', JSON.stringify(o)); } catch (e) {}
+            }
+            function isCollapsed() {
+                try {
+                    var v = localStorage.getItem('sidebar_collapsed_v3');
+                    if (v === null) return false;
+                    return v === '1';
+                } catch (e) { return false; }
+            }
+            function setCollapsed(v) {
+                try { localStorage.setItem('sidebar_collapsed_v3', v ? '1' : '0'); } catch (e) {}
+            }
+
+            function getToolDataCount(key) {
+                var total = 0;
+                try {
+                    if (key === 'main') {
+                        var acc = localStorage.getItem('child_account_current') || '';
+                        var rk = function(k) { return (acc && /^(time_records|todos|growth_diary|growth_homework|growth_milestone|growth_month_days|growth_week_review|growth_month_review|growth_goal)/.test(k)) ? (acc + '::' + k) : k; };
+                        ['time_records', 'todos', 'growth_diary', 'growth_homework', 'growth_milestone', 'growth_month_days'].forEach(function(k) {
+                            try {
+                                var v = JSON.parse(localStorage.getItem(rk(k)) || '[]');
+                                total += Array.isArray(v) ? v.length : 0;
+                            } catch (e) {}
+                        });
+                        ['growth_week_review', 'growth_month_review', 'growth_goal'].forEach(function(k) {
+                            try {
+                                var v = JSON.parse(localStorage.getItem(rk(k)) || 'null');
+                                if (v && Object.keys(v).length) total++;
+                            } catch (e) {}
+                        });
+                    } else if (key === 'study') {
+                        try { var u = JSON.parse(localStorage.getItem('studyUsers_v21') || '[]'); total = u.length; } catch (e) {}
+                    }
+                } catch (e) {}
+                return total;
+            }
+
+            function makeItemHTML(tool, isActive) {
+                var count = getToolDataCount(tool.key);
+                var badge = count > 0 ? '<span class="badge has-data">有数据</span>' : '<span class="badge no-data">未使用</span>';
+                return '<li class="sidebar-item' + (isActive ? ' active' : '') + '" data-tool="' + tool.key + '" data-href="' + tool.href + '">' +
+                    '<span class="drag-handle" title="拖动排序">⋮⋮</span>' +
+                    '<span class="ico">' + tool.ico + '</span>' +
+                    '<span class="name">' + tool.name + '</span>' +
+                    badge +
+                '</li>';
+            }
+
+            function render() {
+                var order = getOrder();
+                var map = {};
+                TOOL_DEFS.forEach(function(t) { map[t.key] = t; });
+
+                var toolsList = document.getElementById('sidebarTools');
+                if (toolsList) {
+                    var activeKey = currentKey();
+                    toolsList.innerHTML = order.filter(function(k) { return map[k]; }).map(function(k) {
+                        return makeItemHTML(map[k], k === activeKey);
+                    }).join('');
+                }
+
+                var countEl = document.getElementById('sidebarToolCount');
+                if (countEl) countEl.textContent = TOOL_DEFS.length;
+
+                var acc = '';
+                try { acc = localStorage.getItem('child_account_current') || ''; } catch (e) {}
+                var accEl = document.getElementById('sidebarAccount');
+                if (accEl) accEl.textContent = acc || '未选择';
+
+                var pillEl = document.getElementById('sidebarAccountPill');
+                if (pillEl) pillEl.innerHTML = acc ? '👦 <b>' + (acc.length > 6 ? acc.slice(0,6) + '…' : acc) + '</b>' : '📚 <b>未选择</b>';
+            }
+
+            function bindItemEvents() {
+                var toolsList = document.getElementById('sidebarTools');
+                if (!toolsList) return;
+                toolsList.addEventListener('click', function(e) {
+                    var item = e.target.closest('.sidebar-item');
+                    if (!item || item.querySelector('.drag-handle') === e.target) return;
+                    var href = item.getAttribute('data-href');
+                    if (href && window.location.pathname.split('/').pop() !== href.split('/').pop()) {
+                        window.location.href = href;
+                    } else {
+                        alert('当前就在此页面');
+                    }
+                });
+            }
+
+            function bindToggle() {
+                var sidebar = document.getElementById('appSidebar');
+                var toggle = document.getElementById('sidebarToggle');
+                var mask = document.getElementById('sidebarMask');
+                if (!sidebar || !toggle) return;
+
+                var isMobile = function() { return window.innerWidth <= 980; };
+
+                function apply(v) {
+                    if (v) {
+                        sidebar.classList.add('collapsed');
+                        document.body.classList.add('sidebar-collapsed');
+                        toggle.classList.add('collapsed-pos');
+                        if (mask) mask.classList.remove('show');
+                    } else {
+                        sidebar.classList.remove('collapsed');
+                        document.body.classList.remove('sidebar-collapsed');
+                        toggle.classList.remove('collapsed-pos');
+                        if (isMobile() && mask) mask.classList.add('show');
+                        else if (mask) mask.classList.remove('show');
+                    }
+                }
+
+                var firstTime = localStorage.getItem('sidebar_collapsed_v3') === null;
+                if (firstTime) apply(false);
+                else apply(isCollapsed());
+
+                toggle.addEventListener('click', function() {
+                    var willOpen = sidebar.classList.contains('collapsed');
+                    setCollapsed(!willOpen);
+                    apply(!willOpen);
+                });
+
+                if (mask) mask.addEventListener('click', function() {
+                    setCollapsed(true);
+                    apply(true);
+                });
+
+                if (isMobile()) {
+                    document.addEventListener('click', function(e) {
+                        var item = e.target.closest ? e.target.closest('.sidebar-item') : null;
+                        if (item) {
+                            setTimeout(function() {
+                                setCollapsed(true);
+                                apply(true);
+                            }, 120);
+                        }
+                    });
+                }
+            }
+
+            var manageBtn = document.getElementById('sidebarManageBtn');
+            if (manageBtn) manageBtn.addEventListener('click', function() {
+                alert('📌 当前 ' + TOOL_DEFS.length + ' 个网页工具，拖动 ⋮⋮ 可调整顺序');
+            });
+
+            function init() {
+                render();
+                bindItemEvents();
+                bindToggle();
+            }
+            init();
+        })();
     </script>
+    </main></div>
 </body>
 </html>
