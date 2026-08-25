@@ -2311,7 +2311,7 @@
             </div>
             <div class="sidebar-footer">
                 <button class="sidebar-sync-btn" id="sidebarCloudSyncBtn" title="数据云端同步">☁️ 云端同步</button>
-                <button class="sidebar-user-btn" id="sidebarUserManagerBtn" title="儿童账户管理">👤 学员管理</button>
+                <button class="sidebar-user-btn" id="sidebarUserManagerBtn" title="学员管理">👤 学员管理</button>
                 <span style="font-size:11px;color:#64748b;">v3.1</span>
             </div>
         </div>
@@ -6434,9 +6434,6 @@
                 try { acc = localStorage.getItem('child_account_current') || ''; } catch (e) {}
                 var accEl = document.getElementById('sidebarAccount');
                 if (accEl) accEl.textContent = acc || '未选择';
-
-                var pillEl = document.getElementById('sidebarAccountPill');
-                if (pillEl) pillEl.innerHTML = acc ? '👦 <b>' + (acc.length > 6 ? acc.slice(0,6) + '…' : acc) + '</b>' : '📚 <b>未选择</b>';
             }
 
             // 暴露刷新接口给其他模块
@@ -6574,6 +6571,21 @@
                 bindItemEvents();
                 bindDragSort();
                 bindToggle();
+                bindFooterActions();
+            }
+
+            // 侧边栏底部功能入口（始终显示）：云同步 / 学员管理
+            function bindFooterActions() {
+                var cloudSyncBtn = document.getElementById('sidebarCloudSyncBtn');
+                if (cloudSyncBtn) cloudSyncBtn.addEventListener('click', function() {
+                    var nav = document.getElementById('syncNavBtn');
+                    if (nav) nav.click();
+                });
+                var userMgrBtn = document.getElementById('sidebarUserManagerBtn');
+                if (userMgrBtn) userMgrBtn.addEventListener('click', function() {
+                    var acc = document.getElementById('accountBtn');
+                    if (acc) acc.click();
+                });
             }
 
             if (document.readyState === 'loading') {
