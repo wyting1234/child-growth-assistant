@@ -102,14 +102,14 @@
 
         /* ============ 光阴の侧边栏 ============ */
         .app-shell { display: flex; min-height: calc(100vh - 70px); }
-        .app-main { flex: 1; min-width: 0; padding: 0 20px 0 300px; transition: padding-left .3s; }
+        .app-main { flex: 1; min-width: 0; padding: 0 20px 0 440px; transition: padding-left .3s; }
         body.sidebar-collapsed .app-main { padding-left: 20px; }
         .sidebar {
             position: fixed;
             left: 0;
             top: 0;
             bottom: 0;
-            width: 280px;
+            width: 420px;
             background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
             color: #cbd5e1;
             z-index: 200;
@@ -274,11 +274,40 @@
             align-items: center;
             justify-content: space-between;
         }
+        .sidebar-sync-btn {
+            flex: 1;
+            background: rgba(14,165,233,0.15);
+            color: #7dd3fc;
+            border: 1px solid rgba(14,165,233,0.35);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+        .sidebar-sync-btn:hover { background: rgba(14,165,233,0.28); color: #fff; border-color: rgba(14,165,233,0.6); }
+        .sidebar-user-btn {
+            flex: 1;
+            background: rgba(124,58,237,0.15);
+            color: #c4b5fd;
+            border: 1px solid rgba(124,58,237,0.35);
+            border-radius: 8px;
+            padding: 8px 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+        .sidebar-user-btn:hover { background: rgba(124,58,237,0.28); color: #fff; border-color: rgba(124,58,237,0.6); }
         .sidebar-toggle {
             position: fixed;
-            left: 8px;
-            top: 50%;
-            transform: translateY(-50%);
+            left: 296px;
+            top: 86px;
             width: 36px;
             height: 36px;
             background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
@@ -288,16 +317,16 @@
             font-size: 16px;
             cursor: pointer;
             box-shadow: 0 6px 18px rgba(99,102,241,0.45);
-            z-index: 550;
+            z-index: 250;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: transform .25s, left .3s, top .3s;
         }
-        .sidebar-toggle:hover { transform: translateY(-50%) scale(1.06); }
-        .sidebar-toggle.collapsed-pos { left: 8px; top: 50%; }
-        .sidebar-toggle.shifted { left: 8px; }
-        .sidebar-toggle.collapsed-pos.shifted { left: 8px; }
+        .sidebar-toggle:hover { transform: scale(1.06); }
+        .sidebar-toggle.collapsed-pos { left: 16px; top: 86px; }
+        .sidebar-toggle.shifted { left: 296px; }
+        .sidebar-toggle.collapsed-pos.shifted { left: 16px; }
         .sidebar-mask {
             display: none;
             position: fixed;
@@ -337,7 +366,7 @@
             .sidebar-item .drag-handle { font-size: 11px; }
             .sidebar-footer { padding: 8px 10px; }
             .sidebar-footer .account-pill { font-size: 10px; padding: 4px 8px; }
-            .sidebar-toggle, .sidebar-toggle.shifted, .sidebar-toggle.collapsed-pos { left: 8px !important; top: 50% !important; transform: translateY(-50%) !important; width: 32px; height: 32px; font-size: 14px; }
+            .sidebar-toggle, .sidebar-toggle.shifted { left: 8px !important; top: 92px !important; width: 32px; height: 32px; font-size: 14px; }
             .app-main { padding-left: 8px; }
             body.sidebar-collapsed .app-main { padding-left: 8px; }
         }
@@ -2281,7 +2310,8 @@
                 <ul class="sidebar-list" id="sidebarTools"></ul>
             </div>
             <div class="sidebar-footer">
-                <span class="account-pill" id="sidebarAccountPill">📚 <b>--</b></span>
+                <button class="sidebar-sync-btn" id="sidebarCloudSyncBtn" title="数据云端同步">☁️ 云端同步</button>
+                <button class="sidebar-user-btn" id="sidebarUserManagerBtn" title="儿童账户管理">👤 学员管理</button>
                 <span style="font-size:11px;color:#64748b;">v3.1</span>
             </div>
         </div>
@@ -6261,6 +6291,13 @@
                 renderAccountName();
                 var btn = $('accountBtn');
                 if (btn) btn.addEventListener('click', openAccountModal);
+                // 侧边栏：学员管理 / 云端同步按钮
+                var sidebarUserBtn = document.getElementById('sidebarUserManagerBtn');
+                if (sidebarUserBtn) sidebarUserBtn.addEventListener('click', openAccountModal);
+                var sidebarSyncBtn = document.getElementById('sidebarCloudSyncBtn');
+                if (sidebarSyncBtn) sidebarSyncBtn.addEventListener('click', function() {
+                    window.location.href = './study-record.html';
+                });
                 var modal = $('accountModal');
                 if (modal) {
                     modal.addEventListener('click', function(e) {
