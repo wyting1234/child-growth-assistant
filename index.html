@@ -272,6 +272,9 @@
             z-index: 150;
         }
         .sidebar-mask.show { display: block; }
+        @media (max-width: 980px) {
+            .sidebar-mask.show { left: min(210px, 46vw); }
+        }
         .account-pill {
             padding: 6px 10px;
             background: rgba(255,255,255,0.06);
@@ -282,9 +285,27 @@
         }
         .account-pill b { color: #f1f5f9; }
         @media (max-width: 980px) {
-            .sidebar { width: 260px; transform: translateX(-100%); }
-            .sidebar-toggle, .sidebar-toggle.shifted { left: 16px !important; }
-            .app-main { padding-left: 0; }
+            .sidebar {
+                width: min(210px, 46vw);
+                transform: none !important;
+                box-shadow: 4px 0 24px rgba(0,0,0,0.25);
+            }
+            .sidebar.collapsed { transform: translateX(-105%) !important; }
+            .sidebar-header { padding: 12px 10px 10px 10px; }
+            .sidebar-header .logo-icon { width: 34px; height: 34px; font-size: 17px; border-radius: 9px; }
+            .sidebar-header .title { font-size: 13px; }
+            .sidebar-header .sub { font-size: 10px; }
+            .sidebar-section { padding: 10px 8px 2px 8px; }
+            .sidebar-section-title { font-size: 10px; padding: 0 6px 6px 6px; }
+            .sidebar-item { padding: 8px 8px; gap: 6px; font-size: 12px; }
+            .sidebar-item .ico { font-size: 14px; width: 18px; }
+            .sidebar-item .badge { font-size: 9px; padding: 1px 5px; }
+            .sidebar-item .drag-handle { font-size: 11px; }
+            .sidebar-footer { padding: 8px 10px; }
+            .sidebar-footer .account-pill { font-size: 10px; padding: 4px 8px; }
+            .sidebar-toggle, .sidebar-toggle.shifted { left: 8px !important; top: 92px !important; width: 32px; height: 32px; font-size: 14px; }
+            .app-main { padding-left: 8px; }
+            body.sidebar-collapsed .app-main { padding-left: 8px; }
         }
         .card {
             background: #fff;
@@ -6478,6 +6499,8 @@
                 var mask = document.getElementById('sidebarMask');
                 if (!sidebar || !toggle) return;
 
+                var isMobile = function() { return window.innerWidth <= 980; };
+
                 function apply(v) {
                     if (v) {
                         sidebar.classList.add('collapsed');
@@ -6490,11 +6513,9 @@
                         document.body.classList.remove('sidebar-collapsed');
                         toggle.classList.remove('collapsed-pos');
                         toggle.setAttribute('aria-label', '收起侧边栏');
-                        if (window.innerWidth > 980) {
-                            if (mask) mask.classList.remove('show');
-                        } else {
-                            if (mask) mask.classList.add('show');
-                        }
+                        // 移动端展开时显示遮罩（点遮罩可收起）
+                        if (isMobile() && mask) mask.classList.add('show');
+                        else if (mask) mask.classList.remove('show');
                     }
                 }
 
@@ -6517,20 +6538,25 @@
                     apply(true);
                 });
 
-                // 小屏 → 强制收起为抽屉式
-                if (window.innerWidth <= 980) {
-                    sidebar.classList.add('collapsed');
-                    document.body.classList.add('sidebar-collapsed');
-                    toggle.classList.add('collapsed-pos');
+                // 移动端也默认展开；点击工具后自动收起让位给内容
+                if (isMobile()) {
+                    if (firstTime) apply(false);
+                    else apply(isCollapsed());
+                    // 选择工具后收起侧栏（移动端）
+                    document.addEventListener('click', function(e) {
+                        var item = e.target.closest ? e.target.closest('.sidebar-item') : null;
+                        if (item) {
+                            setTimeout(function() {
+                                setCollapsed(true);
+                                apply(true);
+                            }, 120);
+                        }
+                    });
                 } else {
                     if (firstTime) {
-                        sidebar.classList.remove('collapsed');
-                        document.body.classList.remove('sidebar-collapsed');
-                        toggle.classList.remove('collapsed-pos');
+                        apply(false);
                     } else {
-                        sidebar.classList.toggle('collapsed', isCollapsed());
-                        document.body.classList.toggle('sidebar-collapsed', isCollapsed());
-                        toggle.classList.toggle('collapsed-pos', isCollapsed());
+                        apply(isCollapsed());
                     }
                 }
             }
