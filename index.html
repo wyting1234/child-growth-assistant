@@ -1728,6 +1728,11 @@
             border-color: var(--primary);
             background: #fff;
         }
+            /* 作业记录：已完成状态与筛选栏 */
+        .diary-item.done .diary-content { text-decoration: line-through; opacity: .55; }
+        .diary-item.done .diary-item-meta { opacity: .6; }
+        .hw-filter-bar select { padding:6px 8px; border:1px solid var(--light,#e2e8f0); border-radius:8px; background:#fff; color:var(--dark,#1e293b); font-size:14px; max-width:100%; }
+        .hw-done-check { accent-color: var(--success,#10b981); }
     </style>
 </head>
 <body>
@@ -1906,10 +1911,11 @@
                 <p style="color:var(--gray);font-size:13px;margin:0 0 10px;">已自动带入日记中选中的文字，也可手动修改或粘贴微信群内容。</p>
                 <textarea id="diaryHwText" rows="3" placeholder="作业内容 / 待办事项，可粘贴微信群通知"></textarea>
                 <div class="diary-todo-row">
-                    <input type="datetime-local" id="diaryHwInfoTime" title="信息时间：微信群通知发出的时间" />
-                    <input type="text" id="diaryHwSubject" placeholder="科目，如：语文 / 数学" />
+                    <input type="datetime-local" id="diaryHwSentTime" title="通知发出时间：微信群通知发出的时间" placeholder="通知发出时间" />
+                    <input type="datetime-local" id="diaryHwRecvTime" title="接收时间：你看到通知的时间（可选）" placeholder="接收时间（可选）" />
                 </div>
                 <div class="diary-todo-row">
+                    <input type="text" id="diaryHwSubject" placeholder="科目，如：语文 / 数学" />
                     <input type="date" id="diaryHwDue" placeholder="截止日期（可选）" />
                 </div>
                 <div style="display:flex;gap:10px;margin-top:14px;">
@@ -2240,15 +2246,28 @@
             <div class="card">
                 <div class="card-title">📚 作业记录 · 粘贴家长群通知</div>
                 <div class="diary-form">
-                    <div class="diary-form-row">
-                        <input type="datetime-local" id="hwInfoTime" title="信息时间：微信群里通知发出的时间" />
-                        <input type="text" id="hwSubject" placeholder="科目，如：语文 / 数学" />
-                    </div>
-                    <div class="diary-form-row">
-                        <input type="date" id="hwDue" placeholder="截止日期（可选）" />
-                        <button class="btn btn-primary" id="hwAddBtn" style="flex:0 0 auto;white-space:nowrap;">+ 添加作业记录</button>
-                    </div>
-                    <textarea id="hwContent" rows="4" class="hw-paste" placeholder="在此粘贴家长群 / 微信群里的作业通知内容，系统会保留换行…"></textarea>
+                <div class="diary-form-row">
+                    <input type="datetime-local" id="hwSentTime" title="通知发出时间：微信群里老师发布作业的时间" placeholder="通知发出时间" />
+                    <input type="datetime-local" id="hwRecvTime" title="接收时间：你看到这条通知的时间（可选）" placeholder="接收时间（可选）" />
+                </div>
+                <div class="diary-form-row">
+                    <input type="text" id="hwSubject" placeholder="科目，如：语文 / 数学" />
+                    <input type="date" id="hwDue" placeholder="截止日期（可选）" />
+                </div>
+                <div class="diary-form-row">
+                    <button class="btn btn-primary" id="hwAddBtn" style="flex:0 0 auto;white-space:nowrap;">+ 添加作业记录</button>
+                </div>
+                <textarea id="hwContent" rows="4" class="hw-paste" placeholder="在此粘贴家长群 / 微信群里的作业通知内容，系统会保留换行…"></textarea>
+                <div class="hw-filter-bar" style="display:flex;gap:8px;margin:12px 0 4px;flex-wrap:wrap;align-items:center;">
+                    <select id="hwSubjectFilter" style="flex:1;min-width:120px;">
+                        <option value="">全部科目</option>
+                    </select>
+                    <select id="hwStatusFilter" style="flex:1;min-width:120px;">
+                        <option value="all">全部状态</option>
+                        <option value="undone">未完成</option>
+                        <option value="done">已完成</option>
+                    </select>
+                </div>
                 </div>
                 <div id="hwList">
                     <div class="empty-state">暂无作业记录，粘贴一条群通知试试</div>
@@ -5005,34 +5024,85 @@
             var list = getHomeworks();
             var container = document.getElementById('hwList');
             if (!container) return;
+
+            var subjectFilter = document.getElementById('hwSubjectFilter');
+            var statusFilter = document.getElementById('hwStatusFilter');
+            var fSubject = subjectFilter ? subjectFilter.value : '';
+            var fStatus = statusFilter ? statusFilter.value : 'all';
+
+            // 同步筛选下拉中的科目列表
+            if (subjectFilter) {
+                var subjects = [];
+                list.forEach(function(h) {
+                    if (h.subject && subjects.indexOf(h.subject) === -1) subjects.push(h.subject);
+                });
+                subjects.sort();
+                var cur = subjectFilter.value;
+                subjectFilter.innerHTML = '<option value="">全部科目</option>' + subjects.map(function(s) {
+                    return '<option value="' + esc(s) + '">' + esc(s) + '</option>';
+                }).join('');
+                subjectFilter.value = (subjects.indexOf(cur) !== -1) ? cur : '';
+                fSubject = subjectFilter.value;
+            }
+
             if (list.length === 0) {
                 container.innerHTML = '<div class="empty-state">暂无作业记录，粘贴一条群通知试试</div>';
                 return;
             }
-            var sorted = list.slice().sort(function(a, b) {
-                return new Date(b.infoTime || 0) - new Date(a.infoTime || 0);
+
+            var filtered = list.filter(function(h) {
+                if (fSubject && h.subject !== fSubject) return false;
+                if (fStatus === 'done' && !h.done) return false;
+                if (fStatus === 'undone' && h.done) return false;
+                return true;
             });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state">没有符合筛选条件的作业记录</div>';
+                return;
+            }
+
+            var sorted = filtered.slice().sort(function(a, b) {
+                if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+                return new Date(b.sentTime || b.infoTime || 0) - new Date(a.sentTime || a.infoTime || 0);
+            });
+
             var html = '';
             sorted.forEach(function(h) {
-                var infoTime = h.infoTime ? '🕒 ' + esc(h.infoTime).replace('T', ' ') : '';
+                var sentTime = h.sentTime ? '📤 发出 ' + esc(h.sentTime).replace('T', ' ') : (h.infoTime ? '🕒 ' + esc(h.infoTime).replace('T', ' ') : '');
+                var recvTime = h.recvTime ? '📥 接收 ' + esc(h.recvTime).replace('T', ' ') : '';
                 var subject = h.subject ? '📖 ' + esc(h.subject) : '';
                 var due = h.due ? '⏰ 截止 ' + esc(h.due) : '';
-                html += '<div class="diary-item" data-id="' + h.id + '">';
+                var doneCls = h.done ? ' done' : '';
+                html += '<div class="diary-item' + doneCls + '" data-id="' + h.id + '">';
+                html += '<div style="display:flex;align-items:flex-start;gap:10px;">';
+                html += '<input type="checkbox" class="hw-done-check" data-hwid="' + h.id + '" ' + (h.done ? 'checked' : '') + ' style="margin-top:4px;flex:0 0 auto;width:18px;height:18px;cursor:pointer;" title="标记为已完成" />';
+                html += '<div style="flex:1;min-width:0;">';
                 html += '<div class="diary-item-meta" style="margin-bottom:8px;">';
-                if (infoTime) html += '<span>' + infoTime + '</span>';
+                if (sentTime) html += '<span>' + sentTime + '</span>';
+                if (recvTime) html += '<span>' + recvTime + '</span>';
                 if (subject) html += '<span>' + subject + '</span>';
                 if (due) html += '<span>' + due + '</span>';
                 html += '</div>';
                 html += '<div class="diary-content">' + esc(h.content || '').replace(/\n/g, '<br>') + '</div>';
+                html += '</div></div>';
                 html += '<div class="diary-actions">';
                 html += '<button class="btn btn-sm" onclick="deleteHomework(\'' + h.id + '\')">🗑️ 删除</button>';
                 html += '</div></div>';
             });
             container.innerHTML = html;
+
+            // 绑定已完成勾选
+            container.querySelectorAll('.hw-done-check').forEach(function(cb) {
+                cb.addEventListener('change', function() {
+                    toggleHomeworkDone(cb.getAttribute('data-hwid'));
+                });
+            });
         }
 
         function addHomework() {
-            var infoEl = document.getElementById('hwInfoTime');
+            var sentEl = document.getElementById('hwSentTime');
+            var recvEl = document.getElementById('hwRecvTime');
             var subjEl = document.getElementById('hwSubject');
             var dueEl = document.getElementById('hwDue');
             var contentEl = document.getElementById('hwContent');
@@ -5041,17 +5111,20 @@
             var list = getHomeworks();
             list.push({
                 id: genId(),
-                infoTime: infoEl ? infoEl.value || '' : '',
+                sentTime: sentEl ? sentEl.value || '' : '',
+                recvTime: recvEl ? recvEl.value || '' : '',
                 subject: subjEl ? subjEl.value.trim() : '',
                 due: dueEl ? dueEl.value || '' : '',
                 content: content,
+                done: false,
                 createdAt: new Date().toISOString()
             });
             setHomeworks(list);
             if (contentEl) contentEl.value = '';
             if (subjEl) subjEl.value = '';
             if (dueEl) dueEl.value = '';
-            if (infoEl) infoEl.value = '';
+            if (sentEl) sentEl.value = '';
+            if (recvEl) recvEl.value = '';
             renderHomeworks();
             showToast('✅ 作业记录已添加');
         }
@@ -5064,6 +5137,16 @@
             showToast('🗑️ 作业记录已删除');
         };
 
+        window.toggleHomeworkDone = function(id) {
+            var list = getHomeworks();
+            var item = list.find(function(h) { return h.id === id; });
+            if (!item) return;
+            item.done = !item.done;
+            item.doneAt = item.done ? new Date().toISOString() : '';
+            setHomeworks(list);
+            renderHomeworks();
+        };
+
         var _currentDiaryHwId = null;
 
         window.openDiaryHomeworkModal = function(id) {
@@ -5074,11 +5157,13 @@
             try { selected = window.getSelection().toString().trim(); } catch (e) {}
             var text = selected || diary.content || diary.title || '';
             var textEl = document.getElementById('diaryHwText');
-            var infoEl = document.getElementById('diaryHwInfoTime');
+            var sentEl = document.getElementById('diaryHwSentTime');
+            var recvEl = document.getElementById('diaryHwRecvTime');
             var subjEl = document.getElementById('diaryHwSubject');
             var dueEl = document.getElementById('diaryHwDue');
             if (textEl) textEl.value = text;
-            if (infoEl) infoEl.value = nowLocal();
+            if (sentEl) sentEl.value = nowLocal();
+            if (recvEl) recvEl.value = '';
             if (subjEl) subjEl.value = '';
             if (dueEl) dueEl.value = '';
             var modal = document.getElementById('diaryHomeworkModal');
@@ -5093,7 +5178,8 @@
 
         window.addDiaryHomework = function() {
             var textEl = document.getElementById('diaryHwText');
-            var infoEl = document.getElementById('diaryHwInfoTime');
+            var sentEl = document.getElementById('diaryHwSentTime');
+            var recvEl = document.getElementById('diaryHwRecvTime');
             var subjEl = document.getElementById('diaryHwSubject');
             var dueEl = document.getElementById('diaryHwDue');
             var text = (textEl ? textEl.value : '').trim();
@@ -5101,11 +5187,13 @@
             var list = getHomeworks();
             list.push({
                 id: genId(),
-                infoTime: infoEl ? infoEl.value || '' : '',
+                sentTime: sentEl ? sentEl.value || '' : '',
+                recvTime: recvEl ? recvEl.value || '' : '',
                 subject: subjEl ? subjEl.value.trim() : '',
                 due: dueEl ? dueEl.value || '' : '',
                 content: text,
                 fromDiary: _currentDiaryHwId,
+                done: false,
                 createdAt: new Date().toISOString()
             });
             setHomeworks(list);
@@ -5127,10 +5215,14 @@
         }
 
         function setupHomeworkEventListeners() {
-            var infoEl = document.getElementById('hwInfoTime');
-            if (infoEl) infoEl.value = nowLocal();
+            var sentEl = document.getElementById('hwSentTime');
+            if (sentEl) sentEl.value = nowLocal();
             var addBtn = document.getElementById('hwAddBtn');
             if (addBtn) addBtn.addEventListener('click', addHomework);
+            var subjectFilter = document.getElementById('hwSubjectFilter');
+            var statusFilter = document.getElementById('hwStatusFilter');
+            if (subjectFilter) subjectFilter.addEventListener('change', renderHomeworks);
+            if (statusFilter) statusFilter.addEventListener('change', renderHomeworks);
             var modal = document.getElementById('diaryHomeworkModal');
             if (modal) {
                 modal.addEventListener('click', function(e) {
