@@ -357,7 +357,8 @@
         }
         .sidebar-sync-btn:hover { background: rgba(14,165,233,0.28); color: #fff; border-color: rgba(14,165,233,0.6); }
         .sidebar-toggle {
-            position: fixed; left: 296px; top: 16px;
+            position: fixed; left: 8px; top: 50%;
+            transform: translateY(-50%);
             width: 36px; height: 36px;
             background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             color: #fff; border: none; border-radius: 50%; font-size: 16px; cursor: pointer;
@@ -365,8 +366,8 @@
             z-index: 550; display: flex; align-items: center; justify-content: center;
             transition: transform .25s, left .3s, top .3s;
         }
-        .sidebar-toggle:hover { transform: scale(1.06); }
-        .sidebar-toggle.collapsed-pos { left: 16px; top: 16px; }
+        .sidebar-toggle:hover { transform: translateY(-50%) scale(1.06); }
+        .sidebar-toggle.collapsed-pos { left: 8px; top: 50%; }
         .sidebar-mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 480; }
         .sidebar-mask.show { display: block; }
         .account-pill { padding: 6px 10px; background: rgba(255,255,255,0.06); border-radius: 999px; color: #cbd5e1; font-size: 11px; border: 1px solid rgba(255,255,255,0.06); }
@@ -386,7 +387,7 @@
             .sidebar-item .drag-handle { font-size: 11px; }
             .sidebar-footer { padding: 8px 10px; }
             .sidebar-footer .account-pill { font-size: 10px; padding: 4px 8px; }
-            .sidebar-toggle, .sidebar-toggle.collapsed-pos { left: 8px !important; top: 8px !important; width: 32px; height: 32px; font-size: 14px; }
+            .sidebar-toggle, .sidebar-toggle.collapsed-pos { left: 8px !important; top: 50% !important; transform: translateY(-50%) !important; width: 32px; height: 32px; font-size: 14px; }
             .app-main { padding-left: 8px; }
             body.sidebar-collapsed .app-main { padding-left: 8px; }
             .sidebar-mask.show { left: min(210px, 46vw); }
@@ -402,7 +403,7 @@
                 <div class="logo-icon">🌱</div>
                 <div class="meta">
                     <div class="title">光阴の记事本</div>
-                    <div class="sub"><span id="sidebarToolCount">2</span> 个网页 · <span id="sidebarAccount">未选择</span></div>
+                    <div class="sub"><span id="sidebarToolCount">2</span> 个网页</div>
                 </div>
             </div>
             <div class="sidebar-section">
@@ -414,7 +415,6 @@
             </div>
             <div class="sidebar-footer">
                 <button class="sidebar-sync-btn" id="sidebarCloudSyncBtn" title="数据云端同步">☁️ 云端同步</button>
-                <span class="account-pill" id="sidebarAccountPill">📚 <b>--</b></span>
                 <span style="font-size:11px;color:#64748b;">v3.1</span>
             </div>
         </div>
