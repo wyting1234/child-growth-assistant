@@ -708,6 +708,11 @@
             font-size: 14px;
             width: auto;
         }
+        .todo-input-row input[type="date"],
+        .todo-input-row input[type="time"] {
+            flex: 0 1 150px;
+            min-width: 110px;
+        }
         .todo-input-row .btn {
             flex: 0 0 auto;
         }
@@ -880,6 +885,8 @@
         }
         .quadrant-item .q-text { min-width: 0; overflow-wrap: anywhere; }
         .quadrant-item .q-text.done { text-decoration: line-through; color: var(--gray); }
+        .quadrant-item .q-deadline { color: var(--gray); font-size: 11px; }
+        .quadrant-item .q-deadline.overdue { color: var(--danger); font-weight: 500; }
         .quadrant-item .q-del { cursor: pointer; color: var(--gray); }
         .quadrant-item .q-del:hover { color: var(--danger); }
         /* ===== 番茄时钟 ===== */
@@ -1598,6 +1605,113 @@
                 line-height: 1.7;
             }
         }
+
+        /* ===== 成长日记 ===== */
+        .diary-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .diary-form-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .diary-form-row input,
+        .diary-form-row select {
+            flex: 1;
+            min-width: 140px;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .diary-form textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        .diary-item {
+            background: var(--light);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+        .diary-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .diary-item-title {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .diary-item-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: var(--gray);
+        }
+        .diary-mood {
+            background: #eef2ff;
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+        .diary-content {
+            color: #444;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            margin-bottom: 10px;
+        }
+        .diary-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .diary-actions .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .diary-todo-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .diary-todo-form textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        .diary-todo-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .diary-todo-row select,
+        .diary-todo-row input {
+            flex: 1;
+            min-width: 120px;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -1765,6 +1879,34 @@
         </div>
     </div>
 
+    <!-- 日记 → 总览待办 快捷录入弹窗 -->
+    <div class="modal-overlay" id="diaryTodoModal">
+        <div class="modal-box" style="max-width:480px;">
+            <div class="modal-title">
+                <span>📝 添加到总览待办</span>
+                <button class="modal-close" onclick="closeDiaryTodoModal()">&times;</button>
+            </div>
+            <div class="diary-todo-form">
+                <p style="color:var(--gray);font-size:13px;margin:0 0 10px;">已自动带入日记中选中的文字，也可手动修改。</p>
+                <textarea id="diaryTodoText" rows="3" placeholder="待办内容"></textarea>
+                <div class="diary-todo-row">
+                    <select id="diaryTodoPriority">
+                        <option value="q1">重要且紧急</option>
+                        <option value="q2" selected>重要不紧急</option>
+                        <option value="q3">不重要但紧急</option>
+                        <option value="q4">不重要不紧急</option>
+                    </select>
+                    <input type="date" id="diaryTodoDeadline" />
+                    <input type="time" id="diaryTodoDeadlineTime" />
+                </div>
+                <div style="display:flex;gap:10px;margin-top:14px;">
+                    <button class="btn btn-primary" onclick="addDiaryTodo()" style="flex:1;">确认添加</button>
+                    <button class="btn" onclick="closeDiaryTodoModal()" style="flex:1;">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== 主界面 ===== -->
     <header>
         <div class="container nav-wrap">
@@ -1781,6 +1923,7 @@
                 <a href="javascript:;" data-target="daily">✅ 每日陪伴</a>
                 <a href="javascript:;" data-target="review">📝 周期复盘</a>
                 <a href="javascript:;" data-target="archive">📂 成长档案</a>
+                <a href="javascript:;" data-target="diary">🌱 成长日记</a>
                 <a href="javascript:;" data-target="indicator">📋 指标库</a>
                 <a href="javascript:;" class="sync-nav-btn" id="syncNavBtn" title="云端数据同步">☁️ 云同步<span class="sync-dot" id="syncDot"></span></a>
             </nav>
@@ -1880,7 +2023,8 @@
                     <option value="q3">不重要但紧急</option>
                     <option value="q4">不重要不紧急</option>
                     </select>
-                    <input type="date" id="todoDeadline" />
+                    <input type="date" id="todoDeadline" title="截止日期" />
+                    <input type="time" id="todoDeadlineTime" title="截止时间（可选）" />
                     <button class="btn btn-primary" id="todoAddBtn">+ 添加</button>
                 </div>
                 <div class="todo-view-tabs" id="todoViewTabs">
@@ -2049,6 +2193,34 @@
             </div>
         </div>
 
+        <!-- 7. 成长日记 -->
+        <div class="module" id="diary">
+            <div class="card">
+                <div class="card-title">🌱 成长日记 · 记录亲子时光</div>
+                <div class="diary-form">
+                    <div class="diary-form-row">
+                        <input type="date" id="diaryDate" />
+                        <input type="text" id="diaryTitle" placeholder="标题，例如：周末公园野餐" />
+                    </div>
+                    <div class="diary-form-row">
+                        <input type="number" id="diaryMinutes" placeholder="亲子时长（分钟）" min="0" step="5" />
+                        <select id="diaryMood">
+                            <option value="开心">😊 开心</option>
+                            <option value="平静">😌 平静</option>
+                            <option value="感动">🥰 感动</option>
+                            <option value="惊喜">🤩 惊喜</option>
+                            <option value="其他">📝 其他</option>
+                        </select>
+                    </div>
+                    <textarea id="diaryContent" rows="3" placeholder="记录今天和孩子相处的点滴、趣事、感悟…"></textarea>
+                    <button class="btn btn-primary" id="diaryAddBtn">+ 记一笔</button>
+                </div>
+                <div id="diaryList">
+                    <div class="empty-state">暂无日记，记录第一段亲子时光吧！</div>
+                </div>
+            </div>
+        </div>
+
     </div>
     <!-- ===== container 结束 ===== -->
 
@@ -2069,7 +2241,7 @@
             _ACCOUNT_KEY: 'child_account_current',
             _LIST_KEY: 'child_account_list',
             // 需要按账户隔离的记录类键（daily_* 覆盖每日打卡/临时/签到动态键）
-            _ISOLATED: /^(time_records|todos|timer_state_sm|growth_week_review|growth_month_review|growth_milestone|growth_month_days|daily_)/,
+            _ISOLATED: /^(time_records|todos|timer_state_sm|growth_week_review|growth_month_review|growth_milestone|growth_month_days|growth_diary|daily_)/,
             cur: function() {
                 try { return localStorage.getItem(Storage._ACCOUNT_KEY) || ''; } catch (e) { return ''; }
             },
@@ -2132,6 +2304,7 @@
                     if (target === 'indicator') renderIndicatorList();
                     if (target === 'daily') { loadDailyTasks();
                         updateSummary(); }
+                    if (target === 'diary') renderDiaries();
                 });
             });
         });
@@ -2246,6 +2419,7 @@
             setupTimerEventListenersSm();
             setupTodoEventListeners();
             setupTodoViewTabs();
+            setupDiaryEventListeners();
             setupPomodoro();
             setupFilterTabs();
             setupRecordModal();
@@ -2470,6 +2644,9 @@
         function getIndicators() { return Storage.get('growth_indicators') || []; }
 
         function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 4); }
+        function esc(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
 
         function openCategoryModal() {
             try {
@@ -4530,6 +4707,17 @@
         };
         function prioOf(todo) { return PRIO[todo.priority] ? todo.priority : 'q2'; }
 
+        function isTodoOverdue(todo) {
+            if (todo.completed || !todo.deadline) return false;
+            if (todo.deadline < today) return true;
+            if (todo.deadline === today && todo.deadlineTime) {
+                var now = new Date();
+                var nowStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+                return nowStr > todo.deadlineTime;
+            }
+            return false;
+        }
+
         function renderTodos() {
             var todos = getTodos();
             var container = document.getElementById('todoList');
@@ -4541,11 +4729,12 @@
             todos.forEach(function(todo) {
                 var doneClass = todo.completed ? 'done' : '';
                 var deadline = todo.deadline || '';
-                var isOverdue = !todo.completed && deadline && deadline < today;
+                var isOverdue = isTodoOverdue(todo);
                 var deadlineHtml = '';
                 if (deadline) {
                     var cls = isOverdue ? 'deadline overdue' : 'deadline';
-                    deadlineHtml = '<span class="' + cls + '">📅 ' + deadline + (isOverdue ? ' ⚠️过期' : '') + '</span>';
+                    var timeStr = todo.deadlineTime ? ' ⏰' + todo.deadlineTime : '';
+                    deadlineHtml = '<span class="' + cls + '">📅 ' + deadline + timeStr + (isOverdue ? ' ⚠️过期' : '') + '</span>';
                 }
                 var p = PRIO[prioOf(todo)];
                 var badge = '<span class="todo-prio-badge ' + p.color + '">' + p.short + '</span>';
@@ -4591,9 +4780,12 @@
                 } else {
                     groups[q].forEach(function(t) {
                         var done = t.completed ? 'done' : '';
+                        var overdue = isTodoOverdue(t);
+                        var dl = t.deadline ? ('📅 ' + t.deadline + (t.deadlineTime ? ' ⏰' + t.deadlineTime : '') + (overdue ? ' ⚠️过期' : '')) : '';
+                        var dlHtml = dl ? '<br><small class="q-deadline ' + (overdue ? 'overdue' : '') + '">' + dl + '</small>' : '';
                         html += '<div class="quadrant-item" data-id="' + t.id + '">';
                         html += '<input type="checkbox" class="q-ck" ' + (t.completed ? 'checked' : '') + ' />';
-                        html += '<span class="q-text ' + done + '">' + t.text + '</span>';
+                        html += '<span class="q-text ' + done + '">' + t.text + dlHtml + '</span>';
                         html += '<span class="q-del" onclick="deleteTodo(\'' + t.id + '\')">✕</span>';
                         html += '</div>';
                     });
@@ -4620,6 +4812,7 @@
             document.getElementById('todoAddBtn').addEventListener('click', function() {
                 var input = document.getElementById('todoInput');
                 var deadline = document.getElementById('todoDeadline');
+                var deadlineTime = document.getElementById('todoDeadlineTime');
                 var prioSel = document.getElementById('todoPriority');
                 var text = input.value.trim();
                 if (!text) { showToast('⚠️ 请输入待办内容'); return; }
@@ -4630,11 +4823,13 @@
                     completed: false,
                     priority: prioSel ? prioSel.value : 'q2',
                     deadline: deadline.value || '',
+                    deadlineTime: deadlineTime ? deadlineTime.value || '' : '',
                     createdAt: new Date().toISOString()
                 });
                 setTodos(todos);
                 input.value = '';
                 deadline.value = today;
+                if (deadlineTime) deadlineTime.value = '';
                 renderTodos();
                 if (isTodoMatrixView()) renderTodoMatrix();
                 showToast('✅ 待办已添加');
@@ -4686,6 +4881,138 @@
                     }
                 });
             });
+        }
+
+        // ----- 成长日记 -----
+        function getDiaries() { return Storage.get('growth_diary') || []; }
+        function setDiaries(list) { Storage.set('growth_diary', list); }
+        var _currentDiaryTodoId = null;
+
+        function renderDiaries() {
+            var list = getDiaries();
+            var container = document.getElementById('diaryList');
+            if (!container) return;
+            if (list.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无日记，记录第一段亲子时光吧！</div>';
+                return;
+            }
+            var sorted = list.slice().sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+            var html = '';
+            sorted.forEach(function(d) {
+                var minText = d.minutes ? '⏱️ ' + d.minutes + ' 分钟' : '';
+                html += '<div class="diary-item" data-id="' + d.id + '">';
+                html += '<div class="diary-item-header">';
+                html += '<div class="diary-item-title">' + esc(d.title || '无标题') + '</div>';
+                html += '<div class="diary-item-meta">';
+                html += '<span>📅 ' + (d.date || '-') + '</span>';
+                if (minText) html += '<span>' + minText + '</span>';
+                html += '<span class="diary-mood">' + esc(d.mood || '其他') + '</span>';
+                html += '</div></div>';
+                html += '<div class="diary-content">' + esc(d.content || '').replace(/\n/g, '<br>') + '</div>';
+                html += '<div class="diary-actions">';
+                html += '<button class="btn btn-primary btn-sm" onclick="openDiaryTodoModal(\'' + d.id + '\')">📝 加入待办</button>';
+                html += '<button class="btn btn-sm" onclick="deleteDiary(\'' + d.id + '\')">🗑️ 删除</button>';
+                html += '</div></div>';
+            });
+            container.innerHTML = html;
+        }
+
+        function addDiary() {
+            var dateEl = document.getElementById('diaryDate');
+            var titleEl = document.getElementById('diaryTitle');
+            var minEl = document.getElementById('diaryMinutes');
+            var moodEl = document.getElementById('diaryMood');
+            var contentEl = document.getElementById('diaryContent');
+            var title = (titleEl ? titleEl.value : '').trim();
+            var content = (contentEl ? contentEl.value : '').trim();
+            if (!title && !content) { showToast('⚠️ 请填写标题或内容'); return; }
+            var list = getDiaries();
+            list.push({
+                id: genId(),
+                date: dateEl ? dateEl.value || today : today,
+                title: title,
+                minutes: minEl ? parseInt(minEl.value || '0', 10) || 0 : 0,
+                mood: moodEl ? moodEl.value : '其他',
+                content: content,
+                createdAt: new Date().toISOString()
+            });
+            setDiaries(list);
+            if (titleEl) titleEl.value = '';
+            if (minEl) minEl.value = '';
+            if (moodEl) moodEl.value = '开心';
+            if (contentEl) contentEl.value = '';
+            if (dateEl) dateEl.value = today;
+            renderDiaries();
+            showToast('✅ 日记已保存');
+        }
+
+        window.deleteDiary = function(id) {
+            if (!confirm('确定删除这条成长日记吗？')) return;
+            var list = getDiaries().filter(function(d) { return d.id !== id; });
+            setDiaries(list);
+            renderDiaries();
+            showToast('🗑️ 日记已删除');
+        };
+
+        window.openDiaryTodoModal = function(id) {
+            var diary = getDiaries().find(function(d) { return d.id === id; });
+            if (!diary) return;
+            _currentDiaryTodoId = id;
+            var selected = '';
+            try { selected = window.getSelection().toString().trim(); } catch (e) {}
+            var text = selected || diary.content || diary.title || '';
+            var textEl = document.getElementById('diaryTodoText');
+            var prioEl = document.getElementById('diaryTodoPriority');
+            var dlEl = document.getElementById('diaryTodoDeadline');
+            var dlTimeEl = document.getElementById('diaryTodoDeadlineTime');
+            if (textEl) textEl.value = text;
+            if (prioEl) prioEl.value = 'q2';
+            if (dlEl) dlEl.value = today;
+            if (dlTimeEl) dlTimeEl.value = '';
+            var modal = document.getElementById('diaryTodoModal');
+            if (modal) modal.classList.add('show');
+        };
+
+        window.closeDiaryTodoModal = function() {
+            var modal = document.getElementById('diaryTodoModal');
+            if (modal) modal.classList.remove('show');
+            _currentDiaryTodoId = null;
+        };
+
+        window.addDiaryTodo = function() {
+            var textEl = document.getElementById('diaryTodoText');
+            var prioEl = document.getElementById('diaryTodoPriority');
+            var dlEl = document.getElementById('diaryTodoDeadline');
+            var dlTimeEl = document.getElementById('diaryTodoDeadlineTime');
+            var text = (textEl ? textEl.value : '').trim();
+            if (!text) { showToast('⚠️ 请输入待办内容'); return; }
+            var todos = getTodos();
+            todos.push({
+                id: genId(),
+                text: text,
+                completed: false,
+                priority: prioEl ? prioEl.value : 'q2',
+                deadline: dlEl ? dlEl.value || '' : '',
+                deadlineTime: dlTimeEl ? dlTimeEl.value || '' : '',
+                createdAt: new Date().toISOString(),
+                fromDiary: _currentDiaryTodoId
+            });
+            setTodos(todos);
+            closeDiaryTodoModal();
+            showToast('✅ 已添加到总览待办');
+        };
+
+        function setupDiaryEventListeners() {
+            var dateEl = document.getElementById('diaryDate');
+            if (dateEl) dateEl.value = today;
+            var addBtn = document.getElementById('diaryAddBtn');
+            if (addBtn) addBtn.addEventListener('click', addDiary);
+            var modal = document.getElementById('diaryTodoModal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) closeDiaryTodoModal();
+                });
+            }
         }
 
         // ----- 番茄时钟 -----
