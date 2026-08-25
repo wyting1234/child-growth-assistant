@@ -17,6 +17,22 @@
         .nav-links button.active { background:#2563eb; color:white; box-shadow:0 2px 6px rgba(37,99,235,0.25); }
         .nav-links .user-btn { background:#7c3aed; color:white; border-radius:20px; padding:0.2rem 1rem; font-size:0.85rem; }
         .nav-links .user-btn:hover { background:#6d28d9; color:white; }
+        .nav-links .sync-btn { background:#0ea5e9; color:white; border-radius:20px; padding:0.2rem 1rem; font-size:0.85rem; }
+        .nav-links .sync-btn:hover { background:#0284c7; color:white; }
+        /* 云端同步面板 */
+        .sync-config { background:#f0f9ff; border-left:3px solid #0ea5e9; padding:0.8rem; border-radius:8px; margin-bottom:0.8rem; font-size:0.85rem; }
+        .sync-config label { display:block; font-weight:600; color:#0f2b4a; margin:0.5rem 0 0.2rem; font-size:0.82rem; }
+        .sync-config input { width:100%; padding:0.5rem; border:1px solid #d1d9e6; border-radius:6px; font-size:0.85rem; }
+        .sync-actions { display:flex; gap:0.5rem; margin:0.8rem 0; flex-wrap:wrap; }
+        .sync-actions button { flex:1; min-width:120px; padding:0.6rem; border-radius:8px; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; }
+        .btn-upload { background:#0ea5e9; color:white; }
+        .btn-upload:hover { background:#0284c7; }
+        .btn-download { background:#f1f5f9; color:#0f2b4a; }
+        .btn-download:hover { background:#e2e8f0; }
+        .sync-status { font-size:0.85rem; padding:0.6rem; border-radius:8px; margin-top:0.5rem; min-height:1.2rem; }
+        .sync-status.ok { background:#dcfce7; color:#15803d; }
+        .sync-status.err { background:#fee2e2; color:#b91c1c; }
+        .sync-status.info { background:#e0f2fe; color:#075985; }
 
         .container { flex:1; padding:1.5rem 2rem; max-width:1400px; margin:0 auto; width:100%; }
         .page-section { display:none; animation:fadeUp 0.3s ease; }
@@ -401,6 +417,7 @@
             <button data-page="cards">🃏 知识卡</button>
             <button data-page="errors">❌ 错题本</button>
             <button data-page="logs">📝 学习日志</button>
+            <button class="sync-btn" id="cloudSyncBtn">☁️ 云端同步</button>
             <button class="user-btn" id="userManagerBtn">👤 学员管理</button>
         </div>
     </nav>
@@ -465,6 +482,36 @@
             </div>
             <ul class="user-list" id="userList"></ul>
             <div style="font-size:0.8rem;color:#64748b;margin-top:0.5rem;">💡 学员名 = 主系统账户名；年级 = 主系统的年级设置。可点击「📘」修改年级。</div>
+        </div>
+    </div>
+
+    <!-- 云端同步模态框 -->
+    <div class="modal-overlay" id="cloudSyncModal">
+        <div class="modal-box" style="max-width:520px;">
+            <div class="modal-title">
+                <span>☁️ 云端同步</span>
+                <button class="close-btn" id="closeCloudSyncBtn">✕</button>
+            </div>
+            <div class="sync-config">
+                <div style="font-weight:600;color:#0f2b4a;margin-bottom:0.4rem;">🔐 同步配置（GitHub Gist）</div>
+                <label>GitHub Token</label>
+                <input type="password" id="cloudTokenInput" placeholder="ghp_xxxxxxxx（仅保存在本机浏览器）">
+                <label>Gist ID（可选）</label>
+                <input type="text" id="cloudGistIdInput" placeholder="留空则自动创建，创建后自动填入">
+                <div style="font-size:0.78rem;color:#64748b;margin-top:0.4rem;">
+                    💡 首次使用请填入一个具备 gist 权限的 GitHub Token；Gist ID 留空会自动创建。
+                </div>
+                <button class="btn small" id="saveCloudConfigBtn" style="margin-top:0.5rem;background:#0ea5e9;color:white;border:none;border-radius:6px;padding:0.4rem 0.8rem;cursor:pointer;">保存配置</button>
+            </div>
+            <div style="font-size:0.85rem;color:#0f2b4a;font-weight:600;margin-bottom:0.3rem;">🔄 同步操作</div>
+            <div style="font-size:0.78rem;color:#64748b;margin-bottom:0.5rem;">
+                同步范围：学习记录全部数据（学员、学期、知识卡、错题本、学习日志、年级信息）。
+            </div>
+            <div class="sync-actions">
+                <button class="btn-upload" id="uploadCloudBtn">⬆️ 上传到云端</button>
+                <button class="btn-download" id="downloadCloudBtn">⬇️ 从云端下载</button>
+            </div>
+            <div class="sync-status" id="cloudSyncStatus">尚未同步</div>
         </div>
     </div>
 
@@ -923,9 +970,8 @@
         let selectedSlices = appData.selectedSlices || [];
         let sliceMode = appData.sliceMode || 'single';
 
-        // 自动选择第一个学期和科目
-        if (!currentSemesterId && appData.semesters.length) {
-            // 优先根据主系统(child_account_meta)中设置的年级匹配学期
+        // 根据学员年级自动同步默认学期（每次加载都执行，覆盖旧的默认值）
+        if (appData.semesters.length) {
             const usersTmp = getUsers();
             const currentIdTmp = getCurrentUserId();
             const userTmp = usersTmp.find(u => u.id === currentIdTmp);
@@ -935,8 +981,13 @@
             const gradeNames = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
             const gradeNum = metaGrade ? (gradeNames.indexOf(metaGrade.replace('年级', '').trim()) + 1) : 0;
             const matchedSem = (gradeNum > 0) ? appData.semesters.find(s => s.id === 'sem_' + gradeNum + '_0') : null;
-            currentSemesterId = matchedSem ? matchedSem.id : appData.semesters[0].id;
-            appData.currentSemesterId = currentSemesterId;
+            if (matchedSem) {
+                currentSemesterId = matchedSem.id;
+                appData.currentSemesterId = currentSemesterId;
+            } else if (!currentSemesterId) {
+                currentSemesterId = appData.semesters[0].id;
+                appData.currentSemesterId = currentSemesterId;
+            }
         }
         if (currentSemesterId) {
             const sem = appData.semesters.find(s => s.id === currentSemesterId);
@@ -2273,6 +2324,117 @@
             renderAll();
         }
 
+        // ================================================================
+        // 云端同步（GitHub Gist）
+        // ================================================================
+        const CLOUD_CONFIG_KEY = 'cloud_sync_config_v1';
+        const CLOUD_SYNC_TIME_KEY = 'cloud_sync_time_v1';
+
+        function getCloudConfig() {
+            try { return JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY) || '{}'); } catch(e) { return {}; }
+        }
+        function setCloudConfig(cfg) { localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cfg)); }
+        function setSyncStatus(msg, type) {
+            const el = document.getElementById('cloudSyncStatus');
+            if (!el) return;
+            el.textContent = msg;
+            el.className = 'sync-status ' + (type || 'info');
+        }
+        function collectSyncData() {
+            const data = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.indexOf('study') === 0 || key.indexOf('child_account') === 0)) {
+                    data[key] = localStorage.getItem(key);
+                }
+            }
+            return data;
+        }
+        function applySyncData(data) {
+            let applied = 0;
+            Object.keys(data || {}).forEach(key => {
+                if (key.indexOf('study') === 0 || key.indexOf('child_account') === 0) {
+                    localStorage.setItem(key, data[key]);
+                    applied++;
+                }
+            });
+            return applied;
+        }
+        function cloudApi(method, url, token, body) {
+            return fetch(url, {
+                method: method,
+                headers: {
+                    'Authorization': 'token ' + token,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: body ? JSON.stringify(body) : undefined
+            }).then(r => {
+                if (!r.ok) {
+                    return r.json().then(j => { throw new Error((j && j.message) || ('HTTP ' + r.status)); })
+                        .catch(() => { throw new Error('HTTP ' + r.status); });
+                }
+                return r.json();
+            });
+        }
+        window.uploadToCloud = function() {
+            const cfg = getCloudConfig();
+            const token = document.getElementById('cloudTokenInput').value.trim() || cfg.token || '';
+            if (!token) { setSyncStatus('请先填写 GitHub Token', 'err'); return; }
+            const data = collectSyncData();
+            const content = JSON.stringify({ timestamp: new Date().toISOString(), data: data }, null, 2);
+            setSyncStatus('正在上传…', 'info');
+            const gistId = cfg.gistId || document.getElementById('cloudGistIdInput').value.trim();
+            const file = { 'study-record-backup.json': { content: content } };
+            let p;
+            if (gistId) {
+                p = cloudApi('PATCH', 'https://api.github.com/gists/' + gistId, token, { files: file });
+            } else {
+                p = cloudApi('POST', 'https://api.github.com/gists', token, { description: '学习记录云端备份', public: false, files: file });
+            }
+            p.then(res => {
+                const gid = res.id || gistId;
+                if (gid) {
+                    cfg.token = token;
+                    cfg.gistId = gid;
+                    setCloudConfig(cfg);
+                    document.getElementById('cloudGistIdInput').value = gid;
+                }
+                localStorage.setItem(CLOUD_SYNC_TIME_KEY, new Date().toISOString());
+                setSyncStatus('✅ 上传成功（' + Object.keys(data).length + ' 项数据）', 'ok');
+            }).catch(err => {
+                setSyncStatus('❌ 上传失败：' + err.message, 'err');
+            });
+        };
+        window.downloadFromCloud = function() {
+            const cfg = getCloudConfig();
+            const token = document.getElementById('cloudTokenInput').value.trim() || cfg.token || '';
+            const gistId = cfg.gistId || document.getElementById('cloudGistIdInput').value.trim();
+            if (!token) { setSyncStatus('请先填写 GitHub Token', 'err'); return; }
+            if (!gistId) { setSyncStatus('请先上传一次或填写 Gist ID', 'err'); return; }
+            if (!confirm('从云端下载将覆盖本机数据，确定继续？')) return;
+            setSyncStatus('正在下载…', 'info');
+            cloudApi('GET', 'https://api.github.com/gists/' + gistId, token).then(res => {
+                const file = res.files && res.files['study-record-backup.json'];
+                if (!file || !file.content) { setSyncStatus('❌ 云端未找到备份文件', 'err'); return; }
+                const parsed = JSON.parse(file.content);
+                const data = parsed.data || {};
+                const applied = applySyncData(data);
+                localStorage.setItem(CLOUD_SYNC_TIME_KEY, parsed.timestamp || new Date().toISOString());
+                setSyncStatus('✅ 下载成功（恢复 ' + applied + ' 项数据），即将刷新…', 'ok');
+                setTimeout(function() { location.reload(); }, 1200);
+            }).catch(err => {
+                setSyncStatus('❌ 下载失败：' + err.message, 'err');
+            });
+        };
+        window.saveCloudConfig = function() {
+            const token = document.getElementById('cloudTokenInput').value.trim();
+            const gistId = document.getElementById('cloudGistIdInput').value.trim();
+            if (!token) { setSyncStatus('请输入 GitHub Token', 'err'); return; }
+            setCloudConfig({ token: token, gistId: gistId });
+            setSyncStatus('✅ 配置已保存（仅存本机浏览器）', 'ok');
+        };
+
         function renderAll() {
             renderDashboard();
             renderTheory();
@@ -2289,6 +2451,24 @@
                 renderUserManager();
                 document.getElementById('userManagerModal').classList.add('open');
             };
+            // 云端同步事件
+            document.getElementById('cloudSyncBtn').onclick = function() {
+                const cfg = getCloudConfig();
+                if (cfg.token) document.getElementById('cloudTokenInput').value = cfg.token;
+                if (cfg.gistId) document.getElementById('cloudGistIdInput').value = cfg.gistId;
+                const lastSync = localStorage.getItem(CLOUD_SYNC_TIME_KEY);
+                setSyncStatus(lastSync ? ('上次同步：' + lastSync.replace('T', ' ').slice(0, 19)) : '尚未同步', 'info');
+                document.getElementById('cloudSyncModal').classList.add('open');
+            };
+            document.getElementById('closeCloudSyncBtn').onclick = function() {
+                document.getElementById('cloudSyncModal').classList.remove('open');
+            };
+            document.getElementById('cloudSyncModal').onclick = function(e) {
+                if (e.target === this) this.classList.remove('open');
+            };
+            document.getElementById('saveCloudConfigBtn').onclick = saveCloudConfig;
+            document.getElementById('uploadCloudBtn').onclick = uploadToCloud;
+            document.getElementById('downloadCloudBtn').onclick = downloadFromCloud;
             // 返回主系统：通过侧边栏「儿童成长系统」入口切换
             document.getElementById('closeUserModalBtn').onclick = function() {
                 document.getElementById('userManagerModal').classList.remove('open');
