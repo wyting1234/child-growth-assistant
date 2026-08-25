@@ -925,7 +925,17 @@
 
         // 自动选择第一个学期和科目
         if (!currentSemesterId && appData.semesters.length) {
-            currentSemesterId = appData.semesters[0].id;
+            // 优先根据主系统(child_account_meta)中设置的年级匹配学期
+            const usersTmp = getUsers();
+            const currentIdTmp = getCurrentUserId();
+            const userTmp = usersTmp.find(u => u.id === currentIdTmp);
+            const metaName = userTmp ? userTmp.name : '默认学员';
+            let metaGrade = '';
+            try { metaGrade = localStorage.getItem('child_account_meta::' + metaName) || ''; } catch(e) {}
+            const gradeNames = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
+            const gradeNum = metaGrade ? (gradeNames.indexOf(metaGrade.replace('年级', '').trim()) + 1) : 0;
+            const matchedSem = (gradeNum > 0) ? appData.semesters.find(s => s.id === 'sem_' + gradeNum + '_0') : null;
+            currentSemesterId = matchedSem ? matchedSem.id : appData.semesters[0].id;
             appData.currentSemesterId = currentSemesterId;
         }
         if (currentSemesterId) {
