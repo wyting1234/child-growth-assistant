@@ -770,7 +770,12 @@
 
         // ---------- 学员管理 ----------
         // 与主系统打通：把学员名同步到 child_account_list（主系统的儿童账户）
+        // 注意：syncMainAccountList 会调用 getUsers，getUsers 不得反向调用 syncMainAccountList，
+        // 否则会相互递归导致死循环。同步只在初始化时显式执行一次。
+        var _mainSyncDone = false;
         function syncMainAccountList() {
+            if (_mainSyncDone) return;
+            _mainSyncDone = true;
             try {
                 var mainList = JSON.parse(localStorage.getItem('child_account_list') || '[]');
                 if (Array.isArray(mainList)) {
@@ -826,8 +831,6 @@
                 });
                 localStorage.setItem('studyUsers_v21', JSON.stringify(users));
             }
-            // 启动时与主系统账户列表打通
-            syncMainAccountList();
             return users;
         }
 
@@ -2276,11 +2279,7 @@
                 renderUserManager();
                 document.getElementById('userManagerModal').classList.add('open');
             };
-            // 返回主系统（儿童成长陪伴复盘系统）
-            document.getElementById('backToMain').onclick = function() {
-                try { saveAndRender(); } catch(e) {}
-                window.location.href = './index.html';
-            };
+            // 返回主系统：通过侧边栏「儿童成长系统」入口切换
             document.getElementById('closeUserModalBtn').onclick = function() {
                 document.getElementById('userManagerModal').classList.remove('open');
             };
@@ -2628,6 +2627,8 @@
         // ================================================================
         renderAll();
         document.getElementById('subjectPopup').classList.remove('open');
+        // 与主系统账户列表打通（只执行一次，避免递归）
+        syncMainAccountList();
         console.log('📚 学习记录 v21.0 已加载 — 学员管理、仪表盘学期切换、错题本升级、默认学期');
 
         // ================================================================
