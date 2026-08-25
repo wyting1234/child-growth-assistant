@@ -422,11 +422,7 @@
         </div>
     </nav>
 
-    <!-- 浮动选择器 -->
-    <div class="subject-float" id="subjectFloat">
-        <div class="float-label" id="floatLabel">未选择</div>
-        <button class="float-btn" id="floatBtn">📚</button>
-    </div>
+    <!-- 浮动选择器已移除（应需求去掉右下角悬浮按钮） -->
     <div class="subject-popup" id="subjectPopup">
         <div class="popup-title">
             <span>📚 选择年级·科目</span>
@@ -2162,7 +2158,8 @@
             const sem = getCurrentSemester();
             const subj = getCurrentSubject();
             const label = (sem && subj) ? `${sem.name} - ${subj.name}` : '未选择';
-            document.getElementById('floatLabel').textContent = label;
+            const floatLabelEl = document.getElementById('floatLabel');
+            if (floatLabelEl) floatLabelEl.textContent = label;
             const popup = document.getElementById('subjectPopup');
             const semSelect = document.getElementById('semesterSelect');
             semSelect.innerHTML = getSemesterOptions();
@@ -2586,11 +2583,7 @@
                 } catch (e) { alert('同步失败：' + e.message); }
             };
 
-            // 浮动选择器
-            document.getElementById('floatBtn').onclick = function() {
-                document.getElementById('subjectPopup').classList.toggle('open');
-                if (document.getElementById('subjectPopup').classList.contains('open')) renderFloat();
-            };
+            // 浮动选择器已移除（右下角悬浮按钮）
             document.getElementById('closePopupBtn').onclick = function() {
                 document.getElementById('subjectPopup').classList.remove('open');
             };
