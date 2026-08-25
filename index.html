@@ -66,6 +66,39 @@
             font-weight: bold;
             color: var(--primary);
         }
+        /* ===== 顶部内部模块导航 ===== */
+        .nav-menu {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .nav-menu a {
+            text-decoration: none;
+            color: var(--gray);
+            font-size: 14px;
+            transition: 0.3s;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+        .nav-menu a.active,
+        .nav-menu a:hover {
+            color: var(--primary);
+            background: #eff6ff;
+        }
+        .sync-nav-btn { display: inline-flex; align-items: center; gap: 4px; }
+        .sync-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #94a3b8;
+            margin-left: 2px;
+        }
+        .sync-dot.ready { background: #22c55e; }
+        .sync-dot.syncing { background: #f59e0b; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
         /* ============ 光阴の侧边栏 ============ */
         .app-shell { display: flex; min-height: calc(100vh - 70px); }
@@ -2211,13 +2244,24 @@
                 <div class="logo">🌱 儿童成长陪伴复盘系统</div>
                 <div class="brand-right">
                     <button class="account-btn" id="accountBtn" title="切换儿童账户">👦 <span id="accountName">选择儿童</span><span id="accountGrade" style="margin-left:4px;font-size:11px;color:#2563eb;"></span> ▾</button>
-                    <button class="account-btn" id="syncNavBtnTop" title="云端数据同步" style="background:#f1f5f9;color:#2563eb;">☁️ 云同步<span class="sync-dot" id="syncDotTop"></span></button>
+                    <button class="nav-toggle" id="navToggle" title="展开菜单" aria-label="展开菜单">☰</button>
                 </div>
             </div>
+            <nav class="nav-menu" id="navMenu">
+                <a href="javascript:;" class="active" data-target="dashboard">⏱️ 总览</a>
+                <a href="javascript:;" data-target="goal">🎯 目标库</a>
+                <a href="javascript:;" data-target="daily">✅ 每日陪伴</a>
+                <a href="javascript:;" data-target="review">📝 周期复盘</a>
+                <a href="javascript:;" data-target="archive">📂 成长档案</a>
+                <a href="javascript:;" data-target="diary">🌱 成长日记</a>
+                <a href="javascript:;" data-target="homework">📚 作业记录</a>
+                <a href="javascript:;" data-target="indicator">📋 指标库</a>
+                <a href="javascript:;" class="sync-nav-btn" id="syncNavBtn" title="云端数据同步">☁️ 云同步<span class="sync-dot" id="syncDot"></span></a>
+            </nav>
         </div>
     </header>
 
-    <!-- ===== 光阴の侧边栏 ===== -->
+    <!-- ===== 光阴の侧边栏（网页工具集） ===== -->
     <div class="sidebar-mask" id="sidebarMask"></div>
     <aside class="sidebar" id="appSidebar">
         <div class="sidebar-inner">
@@ -2225,23 +2269,19 @@
                 <div class="logo-icon">🌱</div>
                 <div class="meta">
                     <div class="title">光阴の记事本</div>
-                    <div class="sub"><span id="sidebarToolCount">9</span> 个工具 · <span id="sidebarAccount">未选择</span></div>
+                    <div class="sub"><span id="sidebarToolCount">2</span> 个网页 · <span id="sidebarAccount">未选择</span></div>
                 </div>
             </div>
             <div class="sidebar-section">
-                <div class="sidebar-section-title">工作台</div>
-                <ul class="sidebar-list" id="sidebarDashboard"></ul>
-            </div>
-            <div class="sidebar-section">
                 <div class="sidebar-section-title">
-                    <span>我的工具</span>
-                    <button class="manage-btn" id="sidebarManageBtn" title="添加工具">＋ 管理</button>
+                    <span>网页工具</span>
+                    <button class="manage-btn" id="sidebarManageBtn" title="更多工具将陆续添加">＋ 管理</button>
                 </div>
                 <ul class="sidebar-list" id="sidebarTools"></ul>
             </div>
             <div class="sidebar-footer">
                 <span class="account-pill" id="sidebarAccountPill">📚 <b>--</b></span>
-                <span style="font-size:11px;color:#64748b;">v3.0</span>
+                <span style="font-size:11px;color:#64748b;">v3.1</span>
             </div>
         </div>
     </aside>
@@ -6254,22 +6294,23 @@
         })();
 
         // ================================================================
-        //  光阴の侧边栏（参考工具站模式）
+        //  光阴の侧边栏（网页工具集：儿童成长系统 / 学习记录 / 后续扩展）
         // ================================================================
         (function() {
             'use strict';
 
+            // 网页工具定义：后续新增网页工具只需在下面追加一条
             var TOOL_DEFS = [
-                { key: 'dashboard', ico: '⏱️', name: '时间统计', dash: true },
-                { key: 'goal',       ico: '🎯', name: '目标库' },
-                { key: 'daily',      ico: '✅', name: '每日陪伴' },
-                { key: 'review',     ico: '📝', name: '周期复盘' },
-                { key: 'archive',    ico: '📂', name: '成长档案' },
-                { key: 'diary',      ico: '🌱', name: '成长日记' },
-                { key: 'homework',   ico: '📚', name: '作业记录' },
-                { key: 'indicator',  ico: '📋', name: '指标库' },
-                { key: 'study',      ico: '📖', name: '学习记录', external: './study-record.html' }
+                { key: 'main',  ico: '🌱', name: '儿童成长系统', href: './index.html' },
+                { key: 'study', ico: '📚', name: '默认学员学习记录', href: './study-record.html' }
             ];
+
+            // 当前所在网页
+            function currentKey() {
+                var p = window.location.pathname.split('/').pop() || 'index.html';
+                if (p === 'study-record.html') return 'study';
+                return 'main';
+            }
 
             function getOrder() {
                 try {
@@ -6292,71 +6333,42 @@
             function setCollapsed(v) {
                 try { localStorage.setItem('sidebar_collapsed_v3', v ? '1' : '0'); } catch (e) {}
             }
+
+            // 统计每个网页的数据量（用于「有数据 / 未使用」徽章）
             function getToolDataCount(key) {
                 var total = 0;
                 try {
-                    var acc = Storage.cur();
-                    var rk = function(k) { return (acc && Storage._ISOLATED.test(k)) ? (acc + '::' + k) : k; };
-                    switch (key) {
-                        case 'dashboard':
-                            var tr = JSON.parse(localStorage.getItem(rk('time_records')) || '[]');
-                            var td = JSON.parse(localStorage.getItem(rk('todos')) || '[]');
-                            total = tr.length + td.length;
-                            break;
-                        case 'goal':
-                            var g = JSON.parse(localStorage.getItem(rk('growth_goal')) || 'null');
-                            total = g && (g.year || g.month || g.daily) ? 1 : 0;
-                            break;
-                        case 'daily':
-                            var keys = Object.keys(localStorage).filter(function(k) { return k.indexOf(rk('daily_')) === 0; });
-                            total = keys.reduce(function(sum, k) {
-                                try { var v = JSON.parse(localStorage.getItem(k) || '[]'); return sum + (Array.isArray(v) ? v.length : 0); } catch (e) { return sum; }
-                            }, 0);
-                            break;
-                        case 'review':
-                            var w = JSON.parse(localStorage.getItem(rk('growth_week_review')) || 'null');
-                            var m = JSON.parse(localStorage.getItem(rk('growth_month_review')) || 'null');
-                            total = (w && Object.keys(w).length ? 1 : 0) + (m && Object.keys(m).length ? 1 : 0);
-                            break;
-                        case 'archive':
-                            var mi = JSON.parse(localStorage.getItem(rk('growth_milestone')) || '[]');
-                            var md = JSON.parse(localStorage.getItem(rk('growth_month_days')) || '[]');
-                            total = mi.length + md.length;
-                            break;
-                        case 'diary':
-                            var d = JSON.parse(localStorage.getItem(rk('growth_diary')) || '[]');
-                            total = d.length;
-                            break;
-                        case 'homework':
-                            var h = JSON.parse(localStorage.getItem(rk('growth_homework')) || '[]');
-                            total = h.length;
-                            break;
-                        case 'indicator':
-                            try { var u = JSON.parse(localStorage.getItem(rk('growth_indicator_used')) || '{}'); total = Object.keys(u).length; } catch (e) {}
-                            if (total === 0) {
-                                var cats = ['cat-action', 'cat-subject', 'cat-mood'];
-                                for (var i = 0; i < cats.length; i++) {
-                                    if (localStorage.getItem(rk(cats[i]))) { total = 1; break; }
-                                }
-                            }
-                            break;
-                        case 'study':
-                            try { var u2 = JSON.parse(localStorage.getItem('studyUsers_v21') || '[]'); total = u2.length; } catch (e) {}
-                            break;
+                    if (key === 'main') {
+                        // 汇总主系统的记录类数据
+                        var acc = Storage.cur();
+                        var rk = function(k) { return (acc && Storage._ISOLATED.test(k)) ? (acc + '::' + k) : k; };
+                        ['time_records', 'todos', 'growth_diary', 'growth_homework', 'growth_milestone', 'growth_month_days'].forEach(function(k) {
+                            try {
+                                var v = JSON.parse(localStorage.getItem(rk(k)) || '[]');
+                                total += Array.isArray(v) ? v.length : 0;
+                            } catch (e) {}
+                        });
+                        // 补充：周/月复盘、目标、每日打卡
+                        ['growth_week_review', 'growth_month_review', 'growth_goal'].forEach(function(k) {
+                            try {
+                                var v = JSON.parse(localStorage.getItem(rk(k)) || 'null');
+                                if (v && Object.keys(v).length) total++;
+                            } catch (e) {}
+                        });
+                    } else if (key === 'study') {
+                        try { var u = JSON.parse(localStorage.getItem('studyUsers_v21') || '[]'); total = u.length; } catch (e) {}
                     }
                 } catch (e) {}
                 return total;
             }
 
-            function makeItemHTML(tool, isDash, isActive) {
+            function makeItemHTML(tool, isActive) {
                 var count = getToolDataCount(tool.key);
                 var badge = count > 0
                     ? '<span class="badge has-data">有数据</span>'
                     : '<span class="badge no-data">未使用</span>';
-                var drag = isDash ? '' : '<span class="drag-handle" title="拖动排序">⋮⋮</span>';
-                var extra = tool.external ? ' external="1"' : '';
-                return '<li class="sidebar-item' + (isActive ? ' active' : '') + '" data-tool="' + tool.key + '"' + extra + '>' +
-                    drag +
+                return '<li class="sidebar-item' + (isActive ? ' active' : '') + '" data-tool="' + tool.key + '" data-href="' + tool.href + '">' +
+                    '<span class="drag-handle" title="拖动排序">⋮⋮</span>' +
                     '<span class="ico">' + tool.ico + '</span>' +
                     '<span class="name">' + tool.name + '</span>' +
                     badge +
@@ -6368,19 +6380,11 @@
                 var map = {};
                 TOOL_DEFS.forEach(function(t) { map[t.key] = t; });
 
-                // 工作台分组（仪表盘）
-                var dashList = document.getElementById('sidebarDashboard');
-                if (dashList) {
-                    var dashKey = 'dashboard';
-                    dashList.innerHTML = makeItemHTML(map[dashKey], true, currentTarget === dashKey);
-                }
-
-                // 我的工具分组
                 var toolsList = document.getElementById('sidebarTools');
                 if (toolsList) {
-                    var activeKey = currentTarget;
-                    toolsList.innerHTML = order.filter(function(k) { return k !== 'dashboard' && map[k]; }).map(function(k) {
-                        return makeItemHTML(map[k], false, k === activeKey);
+                    var activeKey = currentKey();
+                    toolsList.innerHTML = order.filter(function(k) { return map[k]; }).map(function(k) {
+                        return makeItemHTML(map[k], k === activeKey);
                     }).join('');
                 }
 
@@ -6400,49 +6404,22 @@
             // 暴露刷新接口给其他模块
             window.refreshSidebar = render;
 
-            // 切换主面板
-            var currentTarget = 'dashboard';
-            window.sidebarNavigate = function(target, externalUrl) {
-                if (externalUrl) { window.location.href = externalUrl; return; }
-                currentTarget = target;
-                var modules = document.querySelectorAll('.module');
-                modules.forEach(function(mod) {
-                    mod.classList.remove('active');
-                    if (mod.id === target) mod.classList.add('active');
-                });
-                // 触发对应模块的渲染
-                if (target === 'dashboard') {
-                    updateStats(); renderTodos(); renderBarChart(currentFilter); renderRingChart();
-                    populateCustomSelectSm(); initTimerStateSm();
-                }
-                if (target === 'indicator') renderIndicatorList();
-                if (target === 'daily') { loadDailyTasks(); updateSummary(); }
-                if (target === 'diary') renderDiaries();
-                if (target === 'homework') renderHomeworks();
-                if (target === 'review') { /* 月/周复盘无需额外渲染 */ }
-                if (target === 'archive') renderMileList();
-                if (target === 'goal') { /* 字段已写回，无需额外 */ }
-                render();
-            };
-
             function bindItemEvents() {
-                var dashList = document.getElementById('sidebarDashboard');
                 var toolsList = document.getElementById('sidebarTools');
-                function bindList(listEl) {
-                    if (!listEl) return;
-                    listEl.addEventListener('click', function(e) {
-                        var item = e.target.closest('.sidebar-item');
-                        if (!item || item.querySelector('.drag-handle') === e.target) return;
-                        var tool = item.getAttribute('data-tool');
-                        var def = TOOL_DEFS.find(function(t) { return t.key === tool; });
-                        if (def && def.external) window.sidebarNavigate(tool, def.external);
-                        else if (def) window.sidebarNavigate(tool);
-                    });
-                }
-                bindList(dashList); bindList(toolsList);
+                if (!toolsList) return;
+                toolsList.addEventListener('click', function(e) {
+                    var item = e.target.closest('.sidebar-item');
+                    if (!item || item.querySelector('.drag-handle') === e.target) return;
+                    var href = item.getAttribute('data-href');
+                    if (href && window.location.pathname.split('/').pop() !== href.split('/').pop()) {
+                        window.location.href = href;
+                    } else {
+                        showToast && showToast('当前就在此页面');
+                    }
+                });
             }
 
-            // 拖拽排序
+            // 拖拽排序（为后续更多网页工具预留）
             function bindDragSort() {
                 var list = document.getElementById('sidebarTools');
                 if (!list) return;
@@ -6487,7 +6464,7 @@
                     dragItem = null;
 
                     // 持久化新顺序
-                    var newOrder = ['dashboard'].concat(Array.from(list.querySelectorAll('.sidebar-item')).map(function(li) { return li.getAttribute('data-tool'); }));
+                    var newOrder = Array.from(list.querySelectorAll('.sidebar-item')).map(function(li) { return li.getAttribute('data-tool'); });
                     setOrder(newOrder);
                 });
             }
@@ -6513,7 +6490,6 @@
                         document.body.classList.remove('sidebar-collapsed');
                         toggle.classList.remove('collapsed-pos');
                         toggle.setAttribute('aria-label', '收起侧边栏');
-                        // 移动端展开时显示遮罩（点遮罩可收起）
                         if (isMobile() && mask) mask.classList.add('show');
                         else if (mask) mask.classList.remove('show');
                     }
@@ -6521,11 +6497,8 @@
 
                 // 首次访问（未写过 cookie）→ 默认展开，不写入 localStorage
                 var firstTime = localStorage.getItem('sidebar_collapsed_v3') === null;
-                if (firstTime) {
-                    apply(false);
-                } else {
-                    apply(isCollapsed());
-                }
+                if (firstTime) apply(false);
+                else apply(isCollapsed());
 
                 toggle.addEventListener('click', function() {
                     var willOpen = sidebar.classList.contains('collapsed');
@@ -6538,11 +6511,8 @@
                     apply(true);
                 });
 
-                // 移动端也默认展开；点击工具后自动收起让位给内容
+                // 移动端：选择工具后自动收起让位给内容
                 if (isMobile()) {
-                    if (firstTime) apply(false);
-                    else apply(isCollapsed());
-                    // 选择工具后收起侧栏（移动端）
                     document.addEventListener('click', function(e) {
                         var item = e.target.closest ? e.target.closest('.sidebar-item') : null;
                         if (item) {
@@ -6552,19 +6522,13 @@
                             }, 120);
                         }
                     });
-                } else {
-                    if (firstTime) {
-                        apply(false);
-                    } else {
-                        apply(isCollapsed());
-                    }
                 }
             }
 
-            // 管理（占位）
+            // 管理（占位：后续可加入更多工具说明）
             var manageBtn = document.getElementById('sidebarManageBtn');
             if (manageBtn) manageBtn.addEventListener('click', function() {
-                showToast && showToast('📌 共 ' + TOOL_DEFS.length + ' 个工具，拖动 ⋮⋮ 可以重新排序');
+                showToast && showToast('📌 当前 ' + TOOL_DEFS.length + ' 个网页工具，拖动 ⋮⋮ 可调整顺序');
             });
 
             function init() {
@@ -6582,8 +6546,6 @@
 
             // 数据变化时刷新徽章（包括跨 tab 存储事件）
             window.addEventListener('storage', function() { render(); });
-            // 自定义刷新钩子
-            var _r = render;
         })();
     </script>
     </main></div>
