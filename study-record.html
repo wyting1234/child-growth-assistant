@@ -356,6 +356,21 @@
             white-space: nowrap;
         }
         .sidebar-sync-btn:hover { background: rgba(14,165,233,0.28); color: #fff; border-color: rgba(14,165,233,0.6); }
+        .sidebar-user-btn {
+            flex: 1;
+            background: rgba(124,58,237,0.15);
+            color: #c4b5fd;
+            border: 1px solid rgba(124,58,237,0.35);
+            border-radius: 8px;
+            padding: 8px 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+        .sidebar-user-btn:hover { background: rgba(124,58,237,0.28); color: #fff; border-color: rgba(124,58,237,0.6); }
         .sidebar-toggle {
             position: fixed; left: 8px; top: 50%;
             transform: translateY(-50%);
@@ -415,6 +430,7 @@
             </div>
             <div class="sidebar-footer">
                 <button class="sidebar-sync-btn" id="sidebarCloudSyncBtn" title="数据云端同步">☁️ 云端同步</button>
+                <button class="sidebar-user-btn" id="sidebarUserManagerBtn" title="学员管理">👤 学员管理</button>
                 <span style="font-size:11px;color:#64748b;">v3.1</span>
             </div>
         </div>
@@ -433,7 +449,6 @@
             <button data-page="cards">🃏 知识卡</button>
             <button data-page="errors">❌ 错题本</button>
             <button data-page="logs">📝 学习日志</button>
-            <button class="user-btn" id="userManagerBtn">👤 学员管理</button>
         </div>
     </nav>
 
@@ -483,7 +498,19 @@
             <div style="margin-bottom:0.8rem;">
                 <div class="flex-row">
                     <input type="text" id="newUserName" placeholder="学员姓名" style="flex:1;">
-                    <input type="text" id="newUserGrade" placeholder="年级（如：三年级）" style="flex:1;">
+                    <select id="newUserGrade" style="flex:1;">
+                        <option value="">选择年级</option>
+                        <option value="1">1年级</option>
+                        <option value="2">2年级</option>
+                        <option value="3">3年级</option>
+                        <option value="4">4年级</option>
+                        <option value="5">5年级</option>
+                        <option value="6">6年级</option>
+                    </select>
+                    <select id="newUserSemester" style="flex:1;">
+                        <option value="上">上学期</option>
+                        <option value="下">下学期</option>
+                    </select>
                     <button class="btn green" id="addUserBtn">添加</button>
                 </div>
             </div>
@@ -493,6 +520,35 @@
             </div>
             <ul class="user-list" id="userList"></ul>
             <div style="font-size:0.8rem;color:#64748b;margin-top:0.5rem;">💡 学员名 = 主系统账户名；年级 = 主系统的年级设置。可点击「📘」修改年级。</div>
+        </div>
+    </div>
+
+    <!-- 修改年级学期模态框 -->
+    <div class="modal-overlay" id="editGradeModal">
+        <div class="modal-box" style="max-width:360px;">
+            <div class="modal-title">
+                <span>📘 修改年级学期</span>
+                <button class="close-btn" id="closeEditGradeBtn">✕</button>
+            </div>
+            <div style="font-size:0.9rem;color:#0f2b4a;font-weight:600;margin:8px 0;" id="editGradeUserName"></div>
+            <div style="display:flex;gap:8px;">
+                <select id="editGradeSelect" style="flex:1;">
+                    <option value="">选择年级</option>
+                    <option value="1">1年级</option>
+                    <option value="2">2年级</option>
+                    <option value="3">3年级</option>
+                    <option value="4">4年级</option>
+                    <option value="5">5年级</option>
+                    <option value="6">6年级</option>
+                </select>
+                <select id="editSemesterSelect" style="flex:1;">
+                    <option value="上">上学期</option>
+                    <option value="下">下学期</option>
+                </select>
+            </div>
+            <div style="margin-top:12px;text-align:right;">
+                <button class="btn green" id="saveEditGradeBtn">保存</button>
+            </div>
         </div>
     </div>
 
@@ -740,6 +796,27 @@
         // ================================================================
         const SUBJECTS = ['语文', '数学', '英语', '道德与法治', '科学'];
 
+        // 年级数字 → 中文（小学 1-6 年级）
+        const CN_GRADES = ['一', '二', '三', '四', '五', '六'];
+        // 数字年级 + 学期 → 中文年级学期（如 4 + 上 → "四年级上"）
+        function gradeToCn(num, sem) {
+            const n = parseInt(num, 10);
+            if (!n || n < 1 || n > 6) return '';
+            return CN_GRADES[n - 1] + '年级' + (sem === '下' ? '下' : '上');
+        }
+        // 中文年级学期 → { num, sem }（如 "四年级上" → { num:4, sem:'上' }）
+        function cnToGrade(text) {
+            const t = (text || '').trim();
+            if (!t) return null;
+            const idx = CN_GRADES.findIndex(g => t.indexOf(g) === 0);
+            if (idx < 0) {
+                const m = t.match(/^(\d+)/);
+                if (m) return { num: parseInt(m[1], 10), sem: t.indexOf('下') >= 0 ? '下' : '上' };
+                return null;
+            }
+            return { num: idx + 1, sem: t.indexOf('下') >= 0 ? '下' : '上' };
+        }
+
         function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
         function today() { return new Date().toISOString().split('T')[0]; }
@@ -981,7 +1058,7 @@
         let selectedSlices = appData.selectedSlices || [];
         let sliceMode = appData.sliceMode || 'single';
 
-        // 根据学员年级自动同步默认学期（每次加载都执行，覆盖旧的默认值）
+        // 根据学员年级学期自动同步默认学期（每次加载都执行，覆盖旧的默认值）
         if (appData.semesters.length) {
             const usersTmp = getUsers();
             const currentIdTmp = getCurrentUserId();
@@ -989,9 +1066,8 @@
             const metaName = userTmp ? userTmp.name : '默认学员';
             let metaGrade = '';
             try { metaGrade = localStorage.getItem('child_account_meta::' + metaName) || ''; } catch(e) {}
-            const gradeNames = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
-            const gradeNum = metaGrade ? (gradeNames.indexOf(metaGrade.replace('年级', '').trim()) + 1) : 0;
-            const matchedSem = (gradeNum > 0) ? appData.semesters.find(s => s.id === 'sem_' + gradeNum + '_0') : null;
+            const meta = cnToGrade(metaGrade);
+            const matchedSem = meta ? appData.semesters.find(s => s.id === 'sem_' + meta.num + '_' + (meta.sem === '下' ? '1' : '0')) : null;
             if (matchedSem) {
                 currentSemesterId = matchedSem.id;
                 appData.currentSemesterId = currentSemesterId;
@@ -2242,19 +2318,21 @@
             });
         }
 
-        // 修改学员的年级（与主系统共享）
+        // 修改学员的年级学期（与主系统共享，使用下拉选择）
         window.editUserGrade = function(userId) {
             const users = getUsers();
             const user = users.find(u => u.id === userId);
             if (!user) return;
             let curGrade = '';
             try { curGrade = localStorage.getItem('child_account_meta::' + user.name) || ''; } catch(e) {}
-            const g = prompt('为「' + user.name + '」设置年级（如：三年级、四年级、初一 …）：', curGrade || '');
-            if (g !== null) {
-                try { if (g.trim()) localStorage.setItem('child_account_meta::' + user.name, g.trim()); } catch(e) {}
-                renderUserManager();
-                alert('年级已更新');
-            }
+            const meta = cnToGrade(curGrade);
+            const gradeSel = document.getElementById('editGradeSelect');
+            const semSel = document.getElementById('editSemesterSelect');
+            if (gradeSel) gradeSel.value = meta ? String(meta.num) : '';
+            if (semSel) semSel.value = meta ? meta.sem : '上';
+            document.getElementById('editGradeUserName').textContent = '学员：' + user.name;
+            window._editGradeUserId = userId;
+            document.getElementById('editGradeModal').classList.add('open');
         };
 
         window.switchUser = function(userId) {
@@ -2272,7 +2350,14 @@
             currentLessonIdx = appData.currentLessonIdx !== undefined ? appData.currentLessonIdx : null;
             selectedSlices = appData.selectedSlices || [];
             sliceMode = appData.sliceMode || 'single';
-            if (!currentSemesterId && appData.semesters.length) {
+            // 根据切换学员的年级学期匹配默认学期
+            let swMeta = null;
+            try { swMeta = cnToGrade(localStorage.getItem('child_account_meta::' + (switched ? switched.name : '')) || ''); } catch(e) {}
+            const swSem = swMeta ? appData.semesters.find(s => s.id === 'sem_' + swMeta.num + '_' + (swMeta.sem === '下' ? '1' : '0')) : null;
+            if (swSem) {
+                currentSemesterId = swSem.id;
+                appData.currentSemesterId = currentSemesterId;
+            } else if (!currentSemesterId && appData.semesters.length) {
                 currentSemesterId = appData.semesters[0].id;
                 appData.currentSemesterId = currentSemesterId;
             }
@@ -2458,8 +2543,8 @@
             renderLogsPage();
             updateSelects();
 
-            // 学员管理事件
-            document.getElementById('userManagerBtn').onclick = function() {
+            // 学员管理事件（侧边栏入口）
+            document.getElementById('sidebarUserManagerBtn').onclick = function() {
                 renderUserManager();
                 document.getElementById('userManagerModal').classList.add('open');
             };
@@ -2488,9 +2573,49 @@
             document.getElementById('userManagerModal').onclick = function(e) {
                 if (e.target === this) this.classList.remove('open');
             };
+            // 修改年级学期模态框事件
+            document.getElementById('closeEditGradeBtn').onclick = function() {
+                document.getElementById('editGradeModal').classList.remove('open');
+            };
+            document.getElementById('editGradeModal').onclick = function(e) {
+                if (e.target === this) this.classList.remove('open');
+            };
+            document.getElementById('saveEditGradeBtn').onclick = function() {
+                const userId = window._editGradeUserId;
+                const users = getUsers();
+                const user = users.find(u => u.id === userId);
+                if (!user) return;
+                const gradeNum = document.getElementById('editGradeSelect').value;
+                const semester = document.getElementById('editSemesterSelect').value || '上';
+                const gradeText = gradeNum ? gradeToCn(gradeNum, semester) : '';
+                try {
+                    if (gradeText) localStorage.setItem('child_account_meta::' + user.name, gradeText);
+                    else localStorage.removeItem('child_account_meta::' + user.name);
+                } catch(e) {}
+                document.getElementById('editGradeModal').classList.remove('open');
+                renderUserManager();
+                // 同步当前学员的学期
+                if (user.id === getCurrentUserId()) {
+                    const meta = gradeText ? cnToGrade(gradeText) : null;
+                    if (meta) {
+                        const targetSem = appData.semesters.find(s => s.id === 'sem_' + meta.num + '_' + (meta.sem === '下' ? '1' : '0'));
+                        if (targetSem) {
+                            currentSemesterId = targetSem.id;
+                            appData.currentSemesterId = currentSemesterId;
+                            currentSubjectId = targetSem.subjects.length ? targetSem.subjects[0].id : null;
+                            currentUnitId = null;
+                            currentLessonIdx = null;
+                            selectedSlices = [];
+                            saveAndRender();
+                        }
+                    }
+                }
+                alert('年级已更新');
+            };
             document.getElementById('addUserBtn').onclick = function() {
                 const nameInput = document.getElementById('newUserName');
                 const gradeInput = document.getElementById('newUserGrade');
+                const semesterInput = document.getElementById('newUserSemester');
                 const name = nameInput.value.trim();
                 if (!name) { alert('请输入学员姓名'); return; }
                 const users = getUsers();
@@ -2514,12 +2639,15 @@
                     saveUsers(users);
                     setCurrentUserId(users[users.length - 1].id);
                 }
-                // 与主系统打通：把该姓名注册到 child_account_list，并把年级写入 child_account_meta::<name>
+                // 年级 + 学期 → 中文年级学期（如"四年级上"），写入 child_account_meta::<name>
+                const gradeNum = gradeInput ? gradeInput.value : '';
+                const semester = semesterInput ? (semesterInput.value || '上') : '上';
+                const gradeText = gradeNum ? gradeToCn(gradeNum, semester) : '';
                 try {
                     var accs = JSON.parse(localStorage.getItem('child_account_list') || '[]');
                     if (accs.indexOf(name) === -1) { accs.push(name); localStorage.setItem('child_account_list', JSON.stringify(accs)); }
-                    if (gradeInput && gradeInput.value.trim()) {
-                        localStorage.setItem('child_account_meta::' + name, gradeInput.value.trim());
+                    if (gradeText) {
+                        localStorage.setItem('child_account_meta::' + name, gradeText);
                     }
                 } catch (e) {}
                 appData = getCurrentUserData();
@@ -2529,7 +2657,13 @@
                 currentLessonIdx = appData.currentLessonIdx !== undefined ? appData.currentLessonIdx : null;
                 selectedSlices = appData.selectedSlices || [];
                 sliceMode = appData.sliceMode || 'single';
-                if (!currentSemesterId && appData.semesters.length) {
+                // 根据新设置的年级学期匹配默认学期
+                const metaInfo = gradeText ? cnToGrade(gradeText) : null;
+                if (metaInfo) {
+                    const targetSem = appData.semesters.find(s => s.id === 'sem_' + metaInfo.num + '_' + (metaInfo.sem === '下' ? '1' : '0'));
+                    currentSemesterId = targetSem ? targetSem.id : (appData.semesters.length ? appData.semesters[0].id : null);
+                    appData.currentSemesterId = currentSemesterId;
+                } else if (!currentSemesterId && appData.semesters.length) {
                     currentSemesterId = appData.semesters[0].id;
                     appData.currentSemesterId = currentSemesterId;
                 }
@@ -2545,6 +2679,7 @@
                 try { localStorage.setItem('child_account_current', name); } catch (e) {}
                 nameInput.value = '';
                 if (gradeInput) gradeInput.value = '';
+                if (semesterInput) semesterInput.value = '上';
                 renderAll();
                 renderUserManager();
                 alert('学员已添加并切换！');
