@@ -1174,6 +1174,31 @@
             margin-top: auto;
             margin-bottom: auto;
         }
+        /* ===== 作业记录：⚙ 管理按钮 + 象限徽章 ===== */
+        .hw-subj-mgr-btn {
+            background: rgba(99,102,241,0.1);
+            color: var(--primary, #6366f1);
+            border: 1px solid rgba(99,102,241,0.25);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .hw-subj-mgr-btn:hover { background: rgba(99,102,241,0.2); }
+        .hw-quad-tag {
+            display: inline-block;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+            line-height: 1.3;
+            vertical-align: middle;
+        }
+        .hw-quad-tag.q1 { color: #b91c1c; background: #fee2e2; border: 1px solid #fecaca; }
+        .hw-quad-tag.q2 { color: #c2410c; background: #ffedd5; border: 1px solid #fed7aa; }
+        .hw-quad-tag.q3 { color: #a16207; background: #fef9c3; border: 1px solid #fef08a; }
+        .hw-quad-tag.q4 { color: #475569; background: #f1f5f9; border: 1px solid #e2e8f0; }
+        .hw-quad-tag.unset { color: #94a3b8; background: #f8fafc; border: 1px dashed #cbd5e1; }
         .quadrant-item {
             display: grid;
             grid-template-columns: auto 1fr auto;
@@ -2384,6 +2409,30 @@
         <div class="module active" id="dashboard">
 
             <div class="card">
+                <div class="card-title">📝 待办清单</div>
+                <div class="todo-input-row">
+                    <input type="text" id="todoInput" placeholder="写一个待办..." />
+                    <select id="todoPriority" class="todo-priority-select" title="优先级（重要/紧急程度）">
+                    <option value="q1">重要且紧急</option>
+                    <option value="q2" selected>重要不紧急</option>
+                    <option value="q3">不重要但紧急</option>
+                    <option value="q4">不重要不紧急</option>
+                    </select>
+                    <input type="date" id="todoDeadline" title="截止日期" />
+                    <input type="time" id="todoDeadlineTime" title="截止时间（可选）" />
+                    <button class="btn btn-primary" id="todoAddBtn">+ 添加</button>
+                </div>
+                <div class="todo-view-tabs" id="todoViewTabs">
+                    <button class="active" data-todo-view="list">📋 列表</button>
+                    <button data-todo-view="matrix">🔲 四维图</button>
+                </div>
+                <div id="todoList">
+                    <div class="empty-state">暂无待办，添加一个吧！</div>
+                </div>
+                <div id="todoMatrix" style="display:none;"></div>
+            </div>
+
+            <div class="card">
                 <div class="card-title">
                     ⏱️ 时间统计总览
                     <span style="margin-left:auto;font-size:13px;color:var(--gray);font-weight:400;">
@@ -2457,30 +2506,6 @@
                 <div style="margin-top:6px;text-align:center;font-size:12px;color:var(--gray);">
                     <span>⏳ 椭圆环上每个色块代表一个活动时段，灰色为休息/空白</span>
                 </div>
-            </div>
-
-            <div class="card">
-                <div class="card-title">📝 待办清单</div>
-                <div class="todo-input-row">
-                    <input type="text" id="todoInput" placeholder="写一个待办..." />
-                    <select id="todoPriority" class="todo-priority-select" title="优先级（重要/紧急程度）">
-                    <option value="q1">重要且紧急</option>
-                    <option value="q2" selected>重要不紧急</option>
-                    <option value="q3">不重要但紧急</option>
-                    <option value="q4">不重要不紧急</option>
-                    </select>
-                    <input type="date" id="todoDeadline" title="截止日期" />
-                    <input type="time" id="todoDeadlineTime" title="截止时间（可选）" />
-                    <button class="btn btn-primary" id="todoAddBtn">+ 添加</button>
-                </div>
-                <div class="todo-view-tabs" id="todoViewTabs">
-                    <button class="active" data-todo-view="list">📋 列表</button>
-                    <button data-todo-view="matrix">🔲 四维图</button>
-                </div>
-                <div id="todoList">
-                    <div class="empty-state">暂无待办，添加一个吧！</div>
-                </div>
-                <div id="todoMatrix" style="display:none;"></div>
             </div>
 
             <div class="card">
@@ -2674,11 +2699,33 @@
                 <div class="diary-form">
                 <div class="diary-form-row">
                     <input type="datetime-local" id="hwSentTime" title="通知发出时间：微信群里老师发布作业的时间" placeholder="通知发出时间" />
-                    <input type="datetime-local" id="hwRecvTime" title="接收时间：你看到这条通知的时间（可选）" placeholder="接收时间（可选）" />
+                    <input type="datetime-local" id="hwRecvTime" title="接收时间：你看到这条通知的时间（默认此刻）" placeholder="接收时间（默认此刻）" />
                 </div>
                 <div class="diary-form-row">
-                    <input type="text" id="hwSubject" placeholder="科目，如：语文 / 数学" />
-                    <input type="date" id="hwDue" placeholder="截止日期（可选）" />
+                    <div class="hw-subject-wrap" style="display:flex;gap:6px;flex:1;">
+                        <select id="hwSubject" style="flex:1;min-width:0;"></select>
+                        <button type="button" class="btn btn-sm hw-subj-mgr-btn" id="hwSubjMgrBtn" title="管理科目分类" style="flex:0 0 auto;">⚙</button>
+                    </div>
+                    <input type="datetime-local" id="hwDue" title="截止时间（精确到分，可选）" placeholder="截止时间" />
+                </div>
+                <div class="diary-form-row">
+                    <select id="hwImportance" title="重要性" style="flex:1;">
+                        <option value="1">☆ 不重要</option>
+                        <option value="2">★ 较重要</option>
+                        <option value="3" selected>★★ 一般</option>
+                        <option value="4">★★★ 重要</option>
+                        <option value="5">★★★★ 非常重要</option>
+                    </select>
+                    <select id="hwUrgency" title="紧迫性" style="flex:1;">
+                        <option value="1">🕐 不紧迫</option>
+                        <option value="2">🕑 较紧迫</option>
+                        <option value="3" selected>🕒 一般</option>
+                        <option value="4">🕓 紧迫</option>
+                        <option value="5">🕔 非常紧迫</option>
+                    </select>
+                    <label style="display:flex;align-items:center;gap:4px;flex:0 0 auto;font-size:13px;color:var(--gray);cursor:pointer;white-space:nowrap;">
+                        <input type="checkbox" id="hwAddToTodo" style="width:16px;height:16px;cursor:pointer;" /> ➕ 一键加入待办
+                    </label>
                 </div>
                 <div class="diary-form-row">
                     <button class="btn btn-primary" id="hwAddBtn" style="flex:0 0 auto;white-space:nowrap;">+ 添加作业记录</button>
@@ -2687,6 +2734,13 @@
                 <div class="hw-filter-bar" style="display:flex;gap:8px;margin:12px 0 4px;flex-wrap:wrap;align-items:center;">
                     <select id="hwSubjectFilter" style="flex:1;min-width:120px;">
                         <option value="">全部科目</option>
+                    </select>
+                    <select id="hwQuadrantFilter" style="flex:1;min-width:120px;">
+                        <option value="">全部四象限</option>
+                        <option value="q1">Q1 重要且紧急</option>
+                        <option value="q2">Q2 重要不紧急</option>
+                        <option value="q3">Q3 不重要但紧急</option>
+                        <option value="q4">Q4 不重要不紧急</option>
                     </select>
                     <select id="hwStatusFilter" style="flex:1;min-width:120px;">
                         <option value="all">全部状态</option>
@@ -5497,23 +5551,161 @@
         function getHomeworks() { return Storage.get('growth_homework') || []; }
         function setHomeworks(list) { Storage.set('growth_homework', list); }
 
+        // ============ 作业科目管理（按学员隔离）============
+        var HW_SUBJECTS_KEY = 'homework_subjects';
+        var HW_SUBJECTS_DEFAULTS = ['语文', '数学', '英语', '物理', '化学', '生物', '历史', '地理', '政治', '其他'];
+        function hwSubjectsRk() { return Storage.rk(HW_SUBJECTS_KEY); }
+        function getHwSubjects() {
+            var arr;
+            try { arr = JSON.parse(localStorage.getItem(hwSubjectsRk()) || '[]'); } catch (e) { arr = []; }
+            if (Array.isArray(arr) && arr.length) return arr;
+            return HW_SUBJECTS_DEFAULTS.slice();
+        }
+        function saveHwSubjects(arr) {
+            try { localStorage.setItem(hwSubjectsRk(), JSON.stringify(arr)); } catch (e) {}
+        }
+        function renderHwSubjectSelect() {
+            var sel = document.getElementById('hwSubject');
+            if (!sel) return;
+            var subs = getHwSubjects();
+            var cur = sel.value;
+            sel.innerHTML = '<option value="">— 选择科目 —</option>' + subs.map(function(s) {
+                return '<option value="' + esc(s) + '">' + esc(s) + '</option>';
+            }).join('');
+            if (cur && subs.indexOf(cur) !== -1) sel.value = cur;
+        }
+        function hwSubjectAdminOpen() {
+            ensureHwSubjectModal();
+            renderHwSubjectList();
+            var m = document.getElementById('hwSubjModal');
+            if (m) m.classList.add('show');
+            setTimeout(function() { var inp = document.getElementById('hwSubjInput'); if (inp) inp.focus(); }, 50);
+        }
+        function hwSubjectAdminClose() {
+            var m = document.getElementById('hwSubjModal');
+            if (m) m.classList.remove('show');
+        }
+        function renderHwSubjectList() {
+            var wrap = document.getElementById('hwSubjList');
+            if (!wrap) return;
+            var subs = getHwSubjects();
+            if (!subs.length) {
+                wrap.innerHTML = '<div class="hw-subj-empty">— 空，底栏输入添加 —</div>';
+                return;
+            }
+            wrap.innerHTML = subs.map(function(s) {
+                return '<span class="hw-subj-chip">' +
+                    '<span>' + esc(s) + '</span>' +
+                    '<button type="button" class="hw-subj-x" data-del="' + esc(s) + '" title="删除">×</button>' +
+                '</span>';
+            }).join('');
+            wrap.querySelectorAll('[data-del]').forEach(function(b) {
+                b.addEventListener('click', function() {
+                    var name = b.getAttribute('data-del');
+                    var arr = getHwSubjects().filter(function(v) { return v !== name; });
+                    saveHwSubjects(arr);
+                    renderHwSubjectList();
+                    renderHwSubjectSelect();
+                });
+            });
+        }
+        function hwSubjectAdd() {
+            var inp = document.getElementById('hwSubjInput');
+            if (!inp) return;
+            var v = inp.value.trim();
+            if (!v) { showToast('⚠️ 请输入科目名'); return; }
+            var arr = getHwSubjects();
+            if (arr.indexOf(v) !== -1) { showToast('已存在该科目'); return; }
+            arr.push(v);
+            saveHwSubjects(arr);
+            inp.value = '';
+            renderHwSubjectList();
+            renderHwSubjectSelect();
+            showToast('✅ 已添加：' + v);
+        }
+        function ensureHwSubjectModal() {
+            if (document.getElementById('hwSubjModal')) return;
+            var html =
+                '<div class="modal-mask" id="hwSubjModal" onclick="if(event.target===this)hwSubjectAdminClose()">' +
+                    '<div class="hw-subj-box">' +
+                        '<div class="hw-subj-head">' +
+                            '<span class="hw-subj-title">⚙ 科目分类管理</span>' +
+                            '<button class="hw-subj-x" type="button" onclick="hwSubjectAdminClose()" aria-label="关闭">×</button>' +
+                        '</div>' +
+                        '<div class="hw-subj-hint">按学员隔离保存。底栏输入新科目 → 添加；每个 chip 旁的 × 删除。</div>' +
+                        '<div class="hw-subj-list" id="hwSubjList"></div>' +
+                        '<div class="hw-subj-add">' +
+                            '<input type="text" id="hwSubjInput" placeholder="输入新科目…" maxlength="20">' +
+                            '<button class="hw-subj-addbtn" type="button" id="hwSubjAddBtn">添加</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            var wrap = document.createElement('div');
+            wrap.innerHTML = html;
+            document.body.appendChild(wrap.firstChild);
+            // 注入样式（与情商club EqOptMgr 同款思路，但走的是内联样式表）
+            if (!document.getElementById('hw-subj-style')) {
+                var style = document.createElement('style');
+                style.id = 'hw-subj-style';
+                style.textContent =
+                    '#hwSubjModal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:99999;align-items:center;justify-content:center;}' +
+                    '#hwSubjModal.show{display:flex;}' +
+                    '#hwSubjModal .hw-subj-box{background:#fff;border-radius:16px;padding:22px;max-width:460px;width:92vw;max-height:84vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);}' +
+                    '#hwSubjModal .hw-subj-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}' +
+                    '#hwSubjModal .hw-subj-title{font-size:16px;font-weight:700;color:var(--primary,#6366f1);}' +
+                    '#hwSubjModal .hw-subj-x{background:none;border:none;font-size:22px;color:#94a3b8;cursor:pointer;line-height:1;padding:0 4px;}' +
+                    '#hwSubjModal .hw-subj-hint{font-size:12px;color:#64748b;margin-bottom:12px;}' +
+                    '#hwSubjModal .hw-subj-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;min-height:80px;padding:10px;background:#f8fafc;border-radius:10px;}' +
+                    '#hwSubjModal .hw-subj-empty{color:#94a3b8;font-size:13px;text-align:center;padding:16px 0;width:100%;}' +
+                    '#hwSubjModal .hw-subj-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#fff;border:1px solid #cbd5e1;border-radius:16px;font-size:13px;color:#1e293b;}' +
+                    '#hwSubjModal .hw-subj-x{color:#94a3b8;font-size:14px;}' +
+                    '#hwSubjModal .hw-subj-x:hover{color:#ef4444;}' +
+                    '#hwSubjModal .hw-subj-add{display:flex;gap:8px;}' +
+                    '#hwSubjModal .hw-subj-add input{flex:1;min-width:0;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;outline:none;}' +
+                    '#hwSubjModal .hw-subj-addbtn{padding:8px 16px;background:var(--primary,#6366f1);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;}';
+                document.head.appendChild(style);
+            }
+            // 绑定事件
+            document.getElementById('hwSubjAddBtn').addEventListener('click', hwSubjectAdd);
+            document.getElementById('hwSubjInput').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); hwSubjectAdd(); }
+            });
+            // ⚙ 按钮
+            var mgr = document.getElementById('hwSubjMgrBtn');
+            if (mgr) mgr.addEventListener('click', function(e) { e.preventDefault(); hwSubjectAdminOpen(); });
+            // init 时填科目 select
+            renderHwSubjectSelect();
+            // init 时填默认接收时间
+            var recvEl = document.getElementById('hwRecvTime');
+            if (recvEl && !recvEl.value) recvEl.value = (typeof nowLocal === 'function') ? nowLocal() : '';
+        }
+
         function renderHomeworks() {
             var list = getHomeworks();
             var container = document.getElementById('hwList');
             if (!container) return;
 
             var subjectFilter = document.getElementById('hwSubjectFilter');
+            var quadrantFilter = document.getElementById('hwQuadrantFilter');
             var statusFilter = document.getElementById('hwStatusFilter');
             var fSubject = subjectFilter ? subjectFilter.value : '';
+            var fQuadrant = quadrantFilter ? quadrantFilter.value : '';
             var fStatus = statusFilter ? statusFilter.value : 'all';
 
-            // 同步筛选下拉中的科目列表
-            if (subjectFilter) {
-                var subjects = [];
-                list.forEach(function(h) {
-                    if (h.subject && subjects.indexOf(h.subject) === -1) subjects.push(h.subject);
+            // 同步筛选下拉中的科目列表（同时同步下方主体表单的 hwSubject）
+            var subjects = [];
+            list.forEach(function(h) {
+                if (h.subject && subjects.indexOf(h.subject) === -1) subjects.push(h.subject);
+            });
+            // 合并用户自定义的科目（来自 hwSubjMgr 模块）
+            try {
+                var customSubs = getHwSubjects();
+                customSubs.forEach(function(s) {
+                    if (subjects.indexOf(s) === -1) subjects.push(s);
                 });
-                subjects.sort();
+            } catch (e) {}
+            subjects.sort();
+            if (subjectFilter) {
                 var cur = subjectFilter.value;
                 subjectFilter.innerHTML = '<option value="">全部科目</option>' + subjects.map(function(s) {
                     return '<option value="' + esc(s) + '">' + esc(s) + '</option>';
@@ -5529,6 +5721,10 @@
 
             var filtered = list.filter(function(h) {
                 if (fSubject && h.subject !== fSubject) return false;
+                if (fQuadrant) {
+                    var q = h.quadrant || computeQuadrant(h.importance, h.urgency);
+                    if (q !== fQuadrant) return false;
+                }
                 if (fStatus === 'done' && !h.done) return false;
                 if (fStatus === 'undone' && h.done) return false;
                 return true;
@@ -5539,9 +5735,15 @@
                 return;
             }
 
+            // 四象限顺序 + 完成状态
+            var quadOrder = { q1: 0, q2: 1, q3: 2, q4: 3, unset: 4 };
             var sorted = filtered.slice().sort(function(a, b) {
                 if (!!a.done !== !!b.done) return a.done ? 1 : -1;
-                return new Date(b.sentTime || b.infoTime || 0) - new Date(a.sentTime || a.infoTime || 0);
+                var qa = a.quadrant || computeQuadrant(a.importance, a.urgency);
+                var qb = b.quadrant || computeQuadrant(b.importance, b.urgency);
+                var oa = quadOrder[qa || 'unset'], ob = quadOrder[qb || 'unset'];
+                if (oa !== ob) return oa - ob;
+                return new Date(b.recvTime || b.sentTime || b.createdAt || 0) - new Date(a.recvTime || a.sentTime || a.createdAt || 0);
             });
 
             var html = '';
@@ -5549,8 +5751,12 @@
                 var sentTime = h.sentTime ? '📤 发出 ' + esc(h.sentTime).replace('T', ' ') : (h.infoTime ? '🕒 ' + esc(h.infoTime).replace('T', ' ') : '');
                 var recvTime = h.recvTime ? '📥 接收 ' + esc(h.recvTime).replace('T', ' ') : '';
                 var subject = h.subject ? '📖 ' + esc(h.subject) : '';
-                var due = h.due ? '⏰ 截止 ' + esc(h.due) : '';
+                var due = h.due ? '⏰ 截止 ' + esc(h.due).replace('T', ' ') : '';
                 var doneCls = h.done ? ' done' : '';
+                var q = h.quadrant || computeQuadrant(h.importance, h.urgency);
+                var qClass = q || 'unset';
+                var qLabels = { q1: 'Q1 重要且紧急', q2: 'Q2 重要不紧急', q3: 'Q3 不重要但紧急', q4: 'Q4 不重要不紧急', unset: '未评级' };
+                var quadTag = '<span class="hw-quad-tag ' + qClass + '" title="' + qLabels[qClass] + '">' + qLabels[qClass] + '</span>';
                 html += '<div class="diary-item' + doneCls + '" data-id="' + h.id + '">';
                 html += '<div style="display:flex;align-items:flex-start;gap:10px;">';
                 html += '<input type="checkbox" class="hw-done-check" data-hwid="' + h.id + '" ' + (h.done ? 'checked' : '') + ' style="margin-top:4px;flex:0 0 auto;width:18px;height:18px;cursor:pointer;" title="标记为已完成" />';
@@ -5560,6 +5766,7 @@
                 if (recvTime) html += '<span>' + recvTime + '</span>';
                 if (subject) html += '<span>' + subject + '</span>';
                 if (due) html += '<span>' + due + '</span>';
+                html += quadTag;
                 html += '</div>';
                 html += '<div class="diary-content">' + esc(h.content || '').replace(/\n/g, '<br>') + '</div>';
                 html += '</div></div>';
@@ -5582,28 +5789,81 @@
             var recvEl = document.getElementById('hwRecvTime');
             var subjEl = document.getElementById('hwSubject');
             var dueEl = document.getElementById('hwDue');
+            var impEl = document.getElementById('hwImportance');
+            var urgEl = document.getElementById('hwUrgency');
+            var todoEl = document.getElementById('hwAddToTodo');
             var contentEl = document.getElementById('hwContent');
             var content = (contentEl ? contentEl.value : '').trim();
             if (!content) { showToast('⚠️ 请粘贴 / 填写作业内容'); return; }
+            // 接收时间默认此刻（如果用户没填）
+            var recvTime = recvEl ? (recvEl.value || nowLocal()) : nowLocal();
+            if (recvEl) recvEl.value = recvTime;
+            // 重要性 / 紧迫性 → 四象限
+            var importance = parseInt(impEl && impEl.value, 10) || 3;
+            var urgency = parseInt(urgEl && urgEl.value, 10) || 3;
+            var quadrant = computeQuadrant(importance, urgency);
+            // 摘要（用于一键加入待办）
+            var subject = subjEl ? subjEl.value.trim() : '';
+            var summary = (subject ? '【' + subject + '】' : '') + content.split('\n')[0].slice(0, 60);
+
             var list = getHomeworks();
             list.push({
                 id: genId(),
                 sentTime: sentEl ? sentEl.value || '' : '',
-                recvTime: recvEl ? recvEl.value || '' : '',
-                subject: subjEl ? subjEl.value.trim() : '',
+                recvTime: recvTime,
+                subject: subject,
                 due: dueEl ? dueEl.value || '' : '',
                 content: content,
+                importance: importance,
+                urgency: urgency,
+                quadrant: quadrant,
                 done: false,
                 createdAt: new Date().toISOString()
             });
             setHomeworks(list);
+
+            // 一键加入待办
+            if (todoEl && todoEl.checked) {
+                var todos = getTodos();
+                todos.push({
+                    id: genId(),
+                    text: summary,
+                    completed: false,
+                    priority: quadrant,
+                    deadline: dueEl && dueEl.value ? dueEl.value.slice(0, 10) : '',
+                    deadlineTime: dueEl && dueEl.value ? dueEl.value.slice(11, 16) : '',
+                    source: 'homework',
+                    createdAt: new Date().toISOString()
+                });
+                setTodos(todos);
+                renderTodos();
+                if (typeof renderTodoMatrix === 'function') renderTodoMatrix();
+            }
+
+            // 清空表单（保留筛选与接收时间默认值）
             if (contentEl) contentEl.value = '';
             if (subjEl) subjEl.value = '';
             if (dueEl) dueEl.value = '';
             if (sentEl) sentEl.value = '';
-            if (recvEl) recvEl.value = '';
+            if (impEl) impEl.value = '3';
+            if (urgEl) urgEl.value = '3';
+            if (todoEl) todoEl.checked = false;
+            if (recvEl) recvEl.value = nowLocal();
+
             renderHomeworks();
-            showToast('✅ 作业记录已添加');
+            // 同步刷新顶栏学员 badge（addStorage 后侧栏账号旁 badge 可能显示数）
+            try { if (typeof refreshSidebar === 'function') refreshSidebar(); } catch (e) {}
+            showToast('✅ 作业记录已添加' + (todoEl && todoEl.checked ? '，并加入待办' : ''));
+        }
+
+        // 重要性×紧迫性 → 四象限（与 todo 用同一套规则）
+        function computeQuadrant(importance, urgency) {
+            var i = parseInt(importance, 10) || 0;
+            var u = parseInt(urgency, 10) || 0;
+            if (i >= 3 && u >= 3) return 'q1';       // 重要且紧急
+            if (i >= 3 && u < 3) return 'q2';        // 重要不紧急
+            if (i < 3 && u >= 3) return 'q3';        // 不重要但紧急
+            return 'q4';                              // 不重要不紧急
         }
 
         window.deleteHomework = function(id) {
@@ -5694,11 +5954,15 @@
         function setupHomeworkEventListeners() {
             var sentEl = document.getElementById('hwSentTime');
             if (sentEl) sentEl.value = nowLocal();
+            // 作业记录初始化：填充科目 select + 默认接收时间
+            try { ensureHwSubjectModal(); } catch (e) {}
             var addBtn = document.getElementById('hwAddBtn');
             if (addBtn) addBtn.addEventListener('click', addHomework);
             var subjectFilter = document.getElementById('hwSubjectFilter');
+            var quadrantFilter = document.getElementById('hwQuadrantFilter');
             var statusFilter = document.getElementById('hwStatusFilter');
             if (subjectFilter) subjectFilter.addEventListener('change', renderHomeworks);
+            if (quadrantFilter) quadrantFilter.addEventListener('change', renderHomeworks);
             if (statusFilter) statusFilter.addEventListener('change', renderHomeworks);
             var modal = document.getElementById('diaryHomeworkModal');
             if (modal) {
