@@ -7006,28 +7006,27 @@
                 });
                 // 页面变色（深/浅切换）：写到 localStorage 并切换 <html class="dark">
                 var themeBtn = document.getElementById('sidebarThemeBtn');
-                if (themeBtn) themeBtn.addEventListener('click', togglePageTheme);
-                // 初始化时按 localStorage 决定
-                try {
-                    var saved = localStorage.getItem('page_theme_v1');
-                    if (saved === 'light') {
-                        document.documentElement.classList.remove('shadow');
-                        document.body && document.body.classList.remove('dark');
-                        document.documentElement.classList.remove('dark');
-                    } else {
-                        document.documentElement.classList.add('dark');
-                    }
-                } catch (e) {}
-                // 跨标签页同步
+                if (themeBtn) {
+                    // 兼容新 key 'page_theme_v1' 与老 key 'theme'
+                    var saved = null;
+                    try { saved = localStorage.getItem('page_theme_v1') || localStorage.getItem('theme'); } catch (e) {}
+                    if (saved === 'light') document.documentElement.classList.remove('dark');
+                    else document.documentElement.classList.add('dark');
+                    themeBtn.textContent = document.documentElement.classList.contains('dark') ? '🌙 页面变色' : '☀️ 页面变色';
+                    themeBtn.addEventListener('click', togglePageTheme);
+                }
+                // 跨标签页同步（其它 tab 切了 → 这里立即跟随）
                 window.addEventListener('storage', function(e) {
-                    if (e.key === 'page_theme_v1') togglePageTheme(null, false);
+                    if (e.key === 'page_theme_v1' || e.key === 'theme') togglePageTheme(null, false);
                 });
             }
-
             function togglePageTheme(btn, persist) {
                 if (persist !== false) {
-                    var isDark = !document.documentElement.classList.contains('dark');
-                    try { localStorage.setItem('page_theme_v1', isDark ? 'dark' : 'light'); } catch (e) {}
+                    var willBeDark = !document.documentElement.classList.contains('dark');
+                    try {
+                        localStorage.setItem('page_theme_v1', willBeDark ? 'dark' : 'light');
+                        localStorage.setItem('theme', willBeDark ? 'dark' : 'light');
+                    } catch (e) {}
                 }
                 document.documentElement.classList.toggle('dark');
                 var tb = document.getElementById('sidebarThemeBtn');
