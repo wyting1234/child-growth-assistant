@@ -499,6 +499,50 @@
         }
         .sidebar-toggle:hover .toggle-hide-btn { display: inline-flex; }
         .sidebar-toggle .toggle-hide-btn:hover { background: rgba(239,68,68,.95); }
+        /* ===== 下拉选项管理按钮（地点 / 渠道 / 沟通类型） ===== */
+        .eq-opt-mgr-btn {
+            background: rgba(99,102,241,0.1);
+            color: #4F46E5;
+            border: none;
+            font-size: 12px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            line-height: 1.4;
+            transition: background .15s;
+        }
+        .eq-opt-mgr-btn:hover { background: rgba(99,102,241,0.22); color: #3730a3; }
+        .dark .eq-opt-mgr-btn { color: #a5b4fc; background: rgba(129,140,248,0.12); }
+        .dark .eq-opt-mgr-btn:hover { background: rgba(129,140,248,0.28); }
+        /* 选项管理 modal */
+        #eq-opt-modal { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.5); z-index: 99999; align-items: center; justify-content: center; }
+        #eq-opt-modal.show { display: flex; }
+        #eq-opt-modal .eq-opt-box { background: #fff; border-radius: 16px; padding: 24px; max-width: 480px; width: 92vw; max-height: 86vh; overflow: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+        .dark #eq-opt-modal .eq-opt-box { background: #1e293b; color: #e2e8f0; }
+        #eq-opt-modal .eq-opt-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        #eq-opt-modal .eq-opt-title { font-size: 17px; font-weight: 700; }
+        #eq-opt-modal .eq-opt-x { background: none; border: none; font-size: 22px; color: #94a3b8; cursor: pointer; line-height: 1; padding: 0 4px; }
+        #eq-opt-modal .eq-opt-x:hover { color: #475569; }
+        #eq-opt-modal .eq-opt-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+        #eq-opt-modal .eq-opt-tab { padding: 6px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; color: #475569; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
+        #eq-opt-modal .eq-opt-tab.active { background: linear-gradient(135deg, #4F46E5 0%, #7c3aed 100%); color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(79,70,229,0.3); }
+        .dark #eq-opt-modal .eq-opt-tab { background: #334155; border-color: #475569; color: #cbd5e1; }
+        .dark #eq-opt-modal .eq-opt-tab.active { color: #fff; }
+        #eq-opt-modal .eq-opt-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; min-height: 80px; padding: 12px; background: #f8fafc; border-radius: 10px; }
+        .dark #eq-opt-modal .eq-opt-list { background: #0f172a; }
+        #eq-opt-modal .eq-opt-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: #fff; border: 1px solid #cbd5e1; border-radius: 16px; font-size: 13px; color: #1e293b; }
+        .dark #eq-opt-modal .eq-opt-chip { background: #1e293b; border-color: #475569; color: #e2e8f0; }
+        #eq-opt-modal .eq-opt-chip .x { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+        #eq-opt-modal .eq-opt-chip .x:hover { color: #ef4444; }
+        #eq-opt-modal .eq-opt-add { display: flex; gap: 8px; }
+        #eq-opt-modal .eq-opt-add input { flex: 1; min-width: 0; padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 14px; outline: none; background: #fff; color: #1e293b; }
+        .dark #eq-opt-modal .eq-opt-add input { background: #1e293b; border-color: #475569; color: #e2e8f0; }
+        #eq-opt-modal .eq-opt-add input:focus { border-color: #4F46E5; }
+        #eq-opt-modal .eq-opt-add button { padding: 8px 16px; background: #4F46E5; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        #eq-opt-modal .eq-opt-add button:hover { background: #3730a3; }
+        #eq-opt-modal .eq-opt-empty { color: #94a3b8; font-size: 13px; text-align: center; padding: 18px 0; }
+        #eq-opt-modal .eq-opt-hint { font-size: 12px; color: #64748b; margin-bottom: 12px; }
+        .dark #eq-opt-modal .eq-opt-hint { color: #94a3b8; }
         /* 移动端：侧栏变抽屉 */
         @media (max-width: 980px) {
             .sidebar { width: min(210px, 46vw); transform: none !important; box-shadow: 4px 0 24px rgba(0,0,0,0.25); }
@@ -693,8 +737,11 @@
                                 <input type="datetime-local" id="time" class="form-input !py-1.5 text-sm" required>
                             </div>
                             <div>
-                                <label class="form-label">地点</label>
-                                <input type="text" id="place" placeholder="办公室/餐厅/微信" class="form-input !py-1.5 text-sm">
+                                <label class="form-label flex items-center justify-between">
+                                    <span>地点</span>
+                                    <button type="button" class="eq-opt-mgr-btn" data-opt-type="place" title="管理地点选项">⚙</button>
+                                </label>
+                                <select id="place" class="form-select !py-1.5 text-sm"></select>
                             </div>
                         </div>
 
@@ -720,24 +767,18 @@
 
                         <div class="grid grid-cols-2 gap-2.5">
                             <div>
-                                <label class="form-label">渠道</label>
-                                <select id="channel" class="form-select !py-1.5 text-sm">
-                                    <option value="线下当面">线下当面</option>
-                                    <option value="微信文字">微信文字</option>
-                                    <option value="语音/电话">语音/电话</option>
-                                    <option value="线上会议">线上会议</option>
-                                </select>
+                                <label class="form-label flex items-center justify-between">
+                                    <span>渠道</span>
+                                    <button type="button" class="eq-opt-mgr-btn" data-opt-type="channel" title="管理渠道选项">⚙</button>
+                                </label>
+                                <select id="channel" class="form-select !py-1.5 text-sm"></select>
                             </div>
                             <div>
-                                <label class="form-label">沟通类型</label>
-                                <select id="talkType" class="form-select !py-1.5 text-sm">
-                                    <option value="闲聊">闲聊</option>
-                                    <option value="汇报">汇报</option>
-                                    <option value="谈判协商">谈判协商</option>
-                                    <option value="安抚情绪">安抚情绪</option>
-                                    <option value="争论分歧">争论分歧</option>
-                                    <option value="求助咨询">求助咨询</option>
-                                </select>
+                                <label class="form-label flex items-center justify-between">
+                                    <span>沟通类型</span>
+                                    <button type="button" class="eq-opt-mgr-btn" data-opt-type="talkType" title="管理沟通类型选项">⚙</button>
+                                </label>
+                                <select id="talkType" class="form-select !py-1.5 text-sm"></select>
                             </div>
                         </div>
 
@@ -877,6 +918,7 @@
             setChildAccountCurrent(name);                              // 同步侧边栏
             recordList = loadUserData(name);
             renderAll();
+            if (typeof renderOptSelects === 'function') renderOptSelects();
             if (name) showToast('已切换到学员：' + name, 'success');
             else showToast('未选择学员，使用本地默认数据', 'warning');
         }
@@ -994,6 +1036,7 @@
                     showToast('已切回本地默认数据', 'warning');
                 }
                 renderUserSelect();
+                if (typeof renderOptSelects === 'function') renderOptSelects();
             });
         }
 
@@ -1582,6 +1625,167 @@
         });
 
         // =================================================================
+        //  下拉选项管理：地点 / 渠道 / 沟通类型（按学员隔离，可增删改）
+        // =================================================================
+        const OPT_DEFAULTS = {
+            place: ['办公室', '会议室', '家', '餐厅/咖啡厅', '微信', '电话', '线上会议', '路上', '其他'],
+            channel: ['线下当面', '微信文字', '语音/电话', '视频会议', '邮件', '其他'],
+            talkType: ['闲聊', '正式谈话', '汇报', '谈判协商', '安抚情绪', '争论分歧', '求助咨询', '道歉解释', '表扬感谢', '其他']
+        };
+        const OPT_LABELS = { place: '地点', channel: '渠道', talkType: '沟通类型' };
+
+        function optKey(type) {
+            const u = currentUser || '__default__';
+            return 'eq_club_opt_' + type + '::' + u;
+        }
+        function getOptList(type) {
+            try {
+                const v = JSON.parse(localStorage.getItem(optKey(type)) || '[]');
+                if (Array.isArray(v) && v.length) return v;
+            } catch (e) {}
+            return (OPT_DEFAULTS[type] || []).slice();
+        }
+        function saveOptList(type, list) {
+            try { localStorage.setItem(optKey(type), JSON.stringify(list)); } catch (e) {}
+        }
+        function renderOptSelects() {
+            ['place', 'channel', 'talkType'].forEach(function (id) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const cur = el.value;
+                const list = getOptList(id);
+                el.innerHTML = list.map(function (v) {
+                    return '<option value="' + v.replace(/"/g, '&quot;') + '">' + v + '</option>';
+                }).join('');
+                if (cur && list.indexOf(cur) >= 0) el.value = cur;
+            });
+        }
+        function addOpt(type, value) {
+            value = (value || '').trim();
+            if (!value) return false;
+            const list = getOptList(type);
+            if (list.indexOf(value) >= 0) return false;
+            list.push(value);
+            saveOptList(type, list);
+            return true;
+        }
+        function delOpt(type, value) {
+            let list = getOptList(type).filter(function (v) { return v !== value; });
+            saveOptList(type, list);
+        }
+
+        // 选项管理 modal
+        function ensureOptModal() {
+            if (document.getElementById('eq-opt-modal')) return;
+            const html =
+                '<div id="eq-opt-modal" onclick="if(event.target===this)EqOptMgr.close()">' +
+                  '<div class="eq-opt-box">' +
+                    '<div class="eq-opt-head">' +
+                      '<span class="eq-opt-title">⚙ 选项管理</span>' +
+                      '<button class="eq-opt-x" type="button" onclick="EqOptMgr.close()" aria-label="关闭">×</button>' +
+                    '</div>' +
+                    '<div class="eq-opt-hint" id="eq-opt-hint">增删改你的下拉选项。下方 chip 旁的 × 删除；底栏输入新值 → 添加。当前学员切换后，选项自动跟随。</div>' +
+                    '<div class="eq-opt-tabs" id="eq-opt-tabs">' +
+                      '<button type="button" data-type="place" class="eq-opt-tab">📍 地点</button>' +
+                      '<button type="button" data-type="channel" class="eq-opt-tab">📡 渠道</button>' +
+                      '<button type="button" data-type="talkType" class="eq-opt-tab">💬 沟通类型</button>' +
+                    '</div>' +
+                    '<div class="eq-opt-list" id="eq-opt-list"></div>' +
+                    '<div class="eq-opt-add">' +
+                      '<input type="text" id="eq-opt-input" placeholder="输入新选项…" maxlength="30">' +
+                      '<button type="button" id="eq-opt-addbtn">添加</button>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>';
+            const wrap = document.createElement('div');
+            wrap.innerHTML = html;
+            document.body.appendChild(wrap.firstChild);
+            // 事件
+            document.querySelectorAll('#eq-opt-modal .eq-opt-tab').forEach(function (b) {
+                b.addEventListener('click', function () { EqOptMgr.setType(b.getAttribute('data-type')); });
+            });
+            document.getElementById('eq-opt-addbtn').addEventListener('click', function () {
+                const v = document.getElementById('eq-opt-input').value;
+                if (EqOptMgr.addCurrent(v)) document.getElementById('eq-opt-input').value = '';
+            });
+            document.getElementById('eq-opt-input').addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const v = e.target.value;
+                    if (EqOptMgr.addCurrent(v)) e.target.value = '';
+                }
+            });
+        }
+        const EqOptMgr = {
+            curType: 'place',
+            open: function (type) {
+                ensureOptModal();
+                this.setType(type || 'place');
+                document.getElementById('eq-opt-modal').classList.add('show');
+                setTimeout(function () {
+                    const inp = document.getElementById('eq-opt-input');
+                    if (inp) inp.focus();
+                }, 50);
+            },
+            close: function () {
+                const m = document.getElementById('eq-opt-modal');
+                if (m) m.classList.remove('show');
+            },
+            setType: function (type) {
+                this.curType = type;
+                document.querySelectorAll('#eq-opt-modal .eq-opt-tab').forEach(function (b) {
+                    b.classList.toggle('active', b.getAttribute('data-type') === type);
+                });
+                this.renderList();
+            },
+            renderList: function () {
+                const list = getOptList(this.curType);
+                const wrap = document.getElementById('eq-opt-list');
+                if (!list.length) {
+                    wrap.innerHTML = '<div class="eq-opt-empty">（空，底栏输入添加）</div>';
+                    return;
+                }
+                wrap.innerHTML = list.map(function (v) {
+                    return '<span class="eq-opt-chip">' +
+                        '<span>' + v.replace(/</g, '&lt;') + '</span>' +
+                        '<button type="button" class="x" data-del="' + v.replace(/"/g, '&quot;') + '" title="删除">×</button>' +
+                    '</span>';
+                }).join('');
+                wrap.querySelectorAll('[data-del]').forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        delOpt(EqOptMgr.curType, b.getAttribute('data-del'));
+                        EqOptMgr.renderList();
+                        renderOptSelects();
+                    });
+                });
+            },
+            addCurrent: function (value) {
+                if (!addOpt(this.curType, value)) {
+                    if (typeof showToast === 'function') showToast('已存在或输入为空', 'warning');
+                    return false;
+                }
+                this.renderList();
+                renderOptSelects();
+                if (typeof showToast === 'function') showToast('已添加：' + value, 'success');
+                return true;
+            }
+        };
+
+        // 绑定三个 ⚙ 按钮 + 切学员后刷新 select
+        document.querySelectorAll('.eq-opt-mgr-btn').forEach(function (b) {
+            b.addEventListener('click', function (e) {
+                e.preventDefault();
+                EqOptMgr.open(b.getAttribute('data-opt-type'));
+            });
+        });
+        // 跨标签页同步（学员切换时 storage 事件触发）
+        window.addEventListener('storage', function (e) {
+            if (e.key === 'child_account_current' || e.key === 'child_account_list') {
+                renderOptSelects();
+            }
+        });
+
+        // =================================================================
         //  初始化
         // =================================================================
         function init() {
@@ -1590,6 +1794,7 @@
             els.time.value = now.toISOString().slice(0, 16);
 
             renderUserSelect();
+            renderOptSelects();
             renderAll();
 
             // 如果记录为空，显示提示
@@ -1621,7 +1826,8 @@
                 { key: 'eq',    ico: '💬', name: '情商club',      href: './情商club.html' }
             ];
             function currentKey() {
-                var p = window.location.pathname.split('/').pop() || 'index.html';
+                // pathname 可能是 URL 编码形式（%E6%83%85%E5%95%86club.html），先解码再比对
+                var p = decodeURIComponent(window.location.pathname.split('/').pop() || 'index.html');
                 if (p === 'study-record.html') return 'study';
                 if (p === '情商club.html') return 'eq';
                 return 'main';
