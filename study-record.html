@@ -2607,10 +2607,14 @@
             renderLogsPage();
             updateSelects();
 
-            // 学员管理事件（侧边栏入口）
+            // 学员管理事件（侧边栏入口）：优先用共享 modal，未载入则用本地降级
             document.getElementById('sidebarUserManagerBtn').onclick = function() {
-                renderUserManager();
-                document.getElementById('userManagerModal').classList.add('open');
+                if (window.AccountManager && typeof window.AccountManager.open === 'function') {
+                    window.AccountManager.open();
+                } else {
+                    renderUserManager();
+                    document.getElementById('userManagerModal').classList.add('open');
+                }
             };
             // 云端同步事件（侧边栏入口）
             document.getElementById('sidebarCloudSyncBtn').onclick = function() {
@@ -3298,6 +3302,8 @@
             init();
         })();
     </script>
+    <!-- 共享的学员管理 modal：侧栏 👤 学员管理 一键打开（与 index.html / 情商club 同一个） -->
+    <script src="./account-manager.js"></script>
     </main></div>
 </body>
 </html>
