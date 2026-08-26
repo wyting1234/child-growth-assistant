@@ -1683,7 +1683,7 @@
                     apply(true);
                 });
             }
-            // footer 按钮：云端同步 / 学员管理 → 跳主页里点
+            // footer 按钮：云端同步 / 学员管理 → 直接打开 modal（学员管理已共享）
             function bindFooterActions() {
                 var sync = document.getElementById('sidebarCloudSyncBtn');
                 if (sync) sync.addEventListener('click', function() {
@@ -1691,7 +1691,12 @@
                 });
                 var userMgr = document.getElementById('sidebarUserManagerBtn');
                 if (userMgr) userMgr.addEventListener('click', function() {
-                    if (typeof showToast === 'function') showToast('请到主页 👤 学员管理 操作');
+                    // 直接弹出 modal，不再跳页
+                    if (window.AccountManager && typeof window.AccountManager.open === 'function') {
+                        window.AccountManager.open();
+                    } else if (typeof showToast === 'function') {
+                        showToast('学员管理加载中…');
+                    }
                 });
             }
             // 汉堡 / × / 召唤条
@@ -1735,6 +1740,9 @@
             bindFooterActions();
         })();
     </script>
+
+    <!-- 共享的学员管理 modal：侧栏 👤 学员管理 一键打开 -->
+    <script src="./account-manager.js"></script>
 
     </div><!-- /max-w-7xl -->
     </main><!-- /app-main -->
