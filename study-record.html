@@ -3098,7 +3098,7 @@
             ];
 
             function currentKey() {
-                var p = window.location.pathname.split('/').pop() || 'index.html';
+                var p = decodeURIComponent(window.location.pathname.split('/').pop() || 'index.html');
                 if (p === 'study-record.html') return 'study';
                 if (p === '情商club.html') return 'eq';
                 return 'main';
