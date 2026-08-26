@@ -2629,26 +2629,7 @@
             document.getElementById('saveCloudConfigBtn').onclick = saveCloudConfig;
             document.getElementById('uploadCloudBtn').onclick = uploadToCloud;
             document.getElementById('downloadCloudBtn').onclick = downloadFromCloud;
-            // 侧栏页面变色：切换 <html class="dark"> + 写 localStorage + 跨标签页同步
-            var themeBtn = document.getElementById('sidebarThemeBtn');
-            if (themeBtn) themeBtn.addEventListener('click', togglePageTheme);
-            try {
-                var saved = localStorage.getItem('page_theme_v1');
-                if (saved === 'light') document.documentElement.classList.remove('dark');
-                else document.documentElement.classList.add('dark');
-            } catch (e) {}
-            window.addEventListener('storage', function(e) {
-                if (e.key === 'page_theme_v1') togglePageTheme(null, false);
-            });
-            function togglePageTheme(btn, persist) {
-                if (persist !== false) {
-                    var isDark = !document.documentElement.classList.contains('dark');
-                    try { localStorage.setItem('page_theme_v1', isDark ? 'dark' : 'light'); } catch (e) {}
-                }
-                document.documentElement.classList.toggle('dark');
-                var tb = document.getElementById('sidebarThemeBtn');
-                if (tb) tb.textContent = document.documentElement.classList.contains('dark') ? '🌙 页面变色' : '☀️ 页面变色';
-            }
+            initPageTheme();
             // 返回主系统：通过侧边栏「儿童成长系统」入口切换
             document.getElementById('closeUserModalBtn').onclick = function() {
                 document.getElementById('userManagerModal').classList.remove('open');
@@ -3019,6 +3000,39 @@
             };
             document.getElementById('logSemesterFilter').onchange = function() { renderLogsPage(); };
             document.getElementById('logSubjectFilter').onchange = function() { renderLogsPage(); };
+        }
+
+        // ================================================================
+        //  页面变色（侧栏按钮触发）：统一三个文件 + 跨标签页同步
+        // ================================================================
+        function initPageTheme() {
+            // 兼容新 key 'page_theme_v1' 与老 key 'theme'
+            var saved = null;
+            try { saved = localStorage.getItem('page_theme_v1') || localStorage.getItem('theme'); } catch (e) {}
+            if (saved === 'light') document.documentElement.classList.remove('dark');
+            else document.documentElement.classList.add('dark');  // 新用户默认 dark
+            // 侧栏按钮绑定
+            var btn = document.getElementById('sidebarThemeBtn');
+            if (btn) {
+                btn.textContent = document.documentElement.classList.contains('dark') ? '🌙 页面变色' : '☀️ 页面变色';
+                btn.addEventListener('click', togglePageTheme);
+            }
+            // 跨标签页同步（其它 tab 切了 → 这里立即跟随）
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'page_theme_v1' || e.key === 'theme') togglePageTheme(null, false);
+            });
+        }
+        function togglePageTheme(btn, persist) {
+            if (persist !== false) {
+                var willBeDark = !document.documentElement.classList.contains('dark');
+                try {
+                    localStorage.setItem('page_theme_v1', willBeDark ? 'dark' : 'light');
+                    localStorage.setItem('theme', willBeDark ? 'dark' : 'light'); // 同步老 key
+                } catch (e) {}
+            }
+            document.documentElement.classList.toggle('dark');
+            var tb = document.getElementById('sidebarThemeBtn');
+            if (tb) tb.textContent = document.documentElement.classList.contains('dark') ? '🌙 页面变色' : '☀️ 页面变色';
         }
 
         // ================================================================
