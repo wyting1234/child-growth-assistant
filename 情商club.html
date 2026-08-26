@@ -1869,7 +1869,8 @@
             function bindFooterActions() {
                 var sync = document.getElementById('sidebarCloudSyncBtn');
                 if (sync) sync.addEventListener('click', function() {
-                    if (typeof showToast === 'function') showToast('请到主页 ☁️ 云同步 操作');
+                    // 云端同步只能在主页里进行：跳过去并带上 ?sync=1 让主页自动打开同步弹窗
+                    window.location.href = './index.html?sync=1';
                 });
                 var userMgr = document.getElementById('sidebarUserManagerBtn');
                 if (userMgr) userMgr.addEventListener('click', function() {
