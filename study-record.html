@@ -2588,9 +2588,14 @@
                     document.getElementById('userManagerModal').classList.add('open');
                 }
             };
-            // 云端同步事件（侧边栏入口）：只能在主页同步 → 跳过去并带 ?sync=1
+            // 云端同步事件（侧边栏入口）：直接在子页同步，不跳主页
             document.getElementById('sidebarCloudSyncBtn').onclick = function() {
-                window.location.href = './index.html?sync=1';
+                const cfg = getCloudConfig();
+                if (cfg.token) document.getElementById('cloudTokenInput').value = cfg.token;
+                if (cfg.gistId) document.getElementById('cloudGistIdInput').value = cfg.gistId;
+                const lastSync = localStorage.getItem(CLOUD_SYNC_TIME_KEY);
+                setSyncStatus(lastSync ? ('上次同步：' + lastSync.replace('T', ' ').slice(0, 19)) : '尚未同步', 'info');
+                document.getElementById('cloudSyncModal').classList.add('open');
             };
             document.getElementById('closeCloudSyncBtn').onclick = function() {
                 document.getElementById('cloudSyncModal').classList.remove('open');
