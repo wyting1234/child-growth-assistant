@@ -1,5 +1,6 @@
-/* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装） */
-const CACHE = 'child-growth-v4';
+/* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装）
+   v5：错题本下拉彻底跟学员同步 + 汉堡侧栏左缘定位 */
+const CACHE = 'child-growth-v5';
 const CORE = ['./', './index.html', './study-record.html', './manifest.json'];
 
 self.addEventListener('install', function (e) {
