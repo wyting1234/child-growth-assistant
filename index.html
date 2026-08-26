@@ -12,6 +12,9 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>" />
     <title>儿童成长助手 | 全周期学习成长计划</title>
+    <!-- 预取其它两个工具页：切换时直接从缓存加载，减少白屏卡顿 -->
+    <link rel="prefetch" href="./study-record.html">
+    <link rel="prefetch" href="./情商club.html">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
     </script>
     <style>
@@ -304,10 +307,9 @@
             white-space: nowrap;
         }
         .sidebar-user-btn:hover { background: rgba(124,58,237,0.28); color: #fff; border-color: rgba(124,58,237,0.6); }
-        /* 侧栏 Hamburger：贴在侧栏左缘垂直居中，可"隐身"
+        /* 侧栏 Hamburger：贴在侧栏左缘垂直居中，一直显示
            - 默认位置：垂直 50% / 水平贴在 sidebar 左缘，半圈 tab 样式
-           - .shifted / .collapsed-pos 保留以兼容旧 JS（变 no-op，不再决定位置）
-           - .is-hidden：整条标签向左滑出屏幕外（隐身） */
+           - .shifted / .collapsed-pos 保留以兼容旧 JS（变 no-op，不再决定位置） */
         .sidebar-toggle {
             position: fixed;
             left: 0;
@@ -327,7 +329,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: width .25s, padding-left .25s, transform .3s, opacity .2s;
+            transition: width .25s, padding-left .25s, transform .3s;
             padding-left: 2px;
             writing-mode: vertical-rl;
             letter-spacing: 1px;
@@ -339,60 +341,6 @@
         .sidebar-toggle.collapsed-pos,
         .sidebar-toggle.shifted,
         .sidebar-toggle.collapsed-pos.shifted { /* no-op */ }
-
-        /* 隐身态：整条标签滑出屏幕外，仅留召唤条 */
-        .sidebar-toggle.is-hidden {
-            transform: translate(-100%, -50%);
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        /* 召唤条：隐身时贴在屏幕左缘中央，hover 变粗显示出来 */
-        .sidebar-toggle-revive {
-            position: fixed;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 4px;
-            height: 44px;
-            background: rgba(99,102,241,.55);
-            border-radius: 0 4px 4px 0;
-            border: none;
-            padding: 0;
-            cursor: pointer;
-            z-index: 249;
-            display: none;
-            transition: width .25s, background .15s, height .2s;
-        }
-        .sidebar-toggle-revive:hover {
-            width: 10px;
-            height: 56px;
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-        }
-        body.sidebar-toggle-hidden .sidebar-toggle-revive { display: block; }
-
-        /* hamburger 上的"×"小按钮：hover 时才出现 */
-        .sidebar-toggle .toggle-hide-btn {
-            position: absolute;
-            top: 4px;
-            right: 2px;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: rgba(0,0,0,.45);
-            color: #fff;
-            border: none;
-            font-size: 11px;
-            line-height: 1;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        }
-        .sidebar-toggle:hover .toggle-hide-btn { display: inline-flex; }
-        .sidebar-toggle .toggle-hide-btn:hover { background: rgba(239,68,68,.95); }
         .sidebar-mask {
             display: none;
             position: fixed;
@@ -433,7 +381,6 @@
             .sidebar-footer { padding: 8px 10px; }
             .sidebar-footer .account-pill { font-size: 10px; padding: 4px 8px; }
             .sidebar-toggle, .sidebar-toggle.shifted { left: 0 !important; top: 50% !important; transform: translateY(-50%) !important; width: 20px; height: 48px; font-size: 12px; }
-            .sidebar-toggle.is-hidden, .sidebar-toggle.shifted.is-hidden { transform: translate(-100%, -50%) !important; }
             .app-main { padding-left: 8px; }
             body.sidebar-collapsed .app-main { padding-left: 8px; }
         }
@@ -2425,8 +2372,7 @@
             </div>
         </div>
     </aside>
-    <button class="sidebar-toggle" id="sidebarToggle" title="展开/收起侧边栏（hover 出现 × 可隐藏）" aria-label="展开侧边栏">☰<span class="toggle-hide-btn" id="sidebarToggleHide" title="隐藏导航按钮（以后想打开可点屏幕左边细条）" aria-label="隐藏导航按钮">×</span></button>
-    <button class="sidebar-toggle-revive" id="sidebarToggleRevive" title="显示导航按钮" aria-label="显示导航按钮"></button>
+    <button class="sidebar-toggle" id="sidebarToggle" title="展开/收起侧边栏" aria-label="展开侧边栏">☰</button>
 
     <div class="app-shell">
     <main class="app-main">
@@ -6730,50 +6676,6 @@
                         }
                     });
                 }
-            }
-
-            // ============ 导航按钮「隐身 / 召唤」 ============
-            var HIDE_KEY = 'sidebar_toggle_hidden_v1';
-            var hideBtn = document.getElementById('sidebarToggleHide');
-            var reviveBtn = document.getElementById('sidebarToggleRevive');
-            // 复用 bindToggle 里的 toggle；若 bindToggle 已跑过，这里能拿到；否则重新查一次
-            var toggleEl = document.getElementById('sidebarToggle');
-
-            function applyHidden(hidden) {
-                try { localStorage.setItem(HIDE_KEY, hidden ? '1' : '0'); } catch(e) {}
-                if (toggleEl) {
-                    if (hidden) toggleEl.classList.add('is-hidden');
-                    else toggleEl.classList.remove('is-hidden');
-                }
-                if (hidden) document.body.classList.add('sidebar-toggle-hidden');
-                else document.body.classList.remove('sidebar-toggle-hidden');
-            }
-
-            // 初始化：按上次状态决定是否隐身
-            try {
-                if (localStorage.getItem(HIDE_KEY) === '1') {
-                    setTimeout(function() { applyHidden(true); }, 0);
-                }
-            } catch(e) {}
-
-            // 隐藏按钮：阻止冒泡，免得触发外层 ☰ 的"展开/收起"
-            if (hideBtn) {
-                hideBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    applyHidden(true);
-                    if (typeof showToast === 'function') {
-                        showToast('导航按钮已隐藏 · 想找回时点屏幕左侧中间细条');
-                    }
-                });
-            }
-            // 召唤条：点一下恢复
-            if (reviveBtn) {
-                reviveBtn.addEventListener('click', function() {
-                    applyHidden(false);
-                    if (typeof showToast === 'function') {
-                        showToast('导航按钮已恢复');
-                    }
-                });
             }
 
             // 管理（占位：后续可加入更多工具说明）
