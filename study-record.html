@@ -3089,12 +3089,14 @@
 
             var TOOL_DEFS = [
                 { key: 'main',  ico: '🌱', name: '儿童成长系统', href: './index.html' },
-                { key: 'study', ico: '📚', name: '默认学员学习记录', href: './study-record.html' }
+                { key: 'study', ico: '📚', name: '默认学员学习记录', href: './study-record.html' },
+                { key: 'eq', ico: '💬', name: '情商club', href: './情商club.html' }
             ];
 
             function currentKey() {
                 var p = window.location.pathname.split('/').pop() || 'index.html';
                 if (p === 'study-record.html') return 'study';
+                if (p === '情商club.html') return 'eq';
                 return 'main';
             }
 
