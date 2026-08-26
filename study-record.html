@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>📚 默认学员学习记录 · 儿童成长陪伴复盘系统</title>
+    <title>📚 儿童学习记录 · 儿童成长陪伴复盘系统</title>
     <!-- 预取其它两个工具页：切换时直接从缓存加载，减少白屏卡顿 -->
     <link rel="prefetch" href="./index.html">
     <link rel="prefetch" href="./情商club.html">
@@ -343,9 +343,9 @@
         .sidebar-item .badge.no-data { background: rgba(100,116,139,0.2); color: #94a3b8; }
         .sidebar-item.dragging { opacity: 0.5; border: 1px dashed #6366f1; }
         .sidebar-item.drag-over { border-top: 2px solid #6366f1; }
-        .sidebar-footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; }
+        .sidebar-footer { padding: 10px 14px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; gap: 6px; }
         .sidebar-sync-btn {
-            flex: 1;
+            width: 100%;
             background: rgba(14,165,233,0.15);
             color: #7dd3fc;
             border: 1px solid rgba(14,165,233,0.35);
@@ -355,12 +355,11 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
-            margin-right: 8px;
             white-space: nowrap;
         }
         .sidebar-sync-btn:hover { background: rgba(14,165,233,0.28); color: #fff; border-color: rgba(14,165,233,0.6); }
         .sidebar-user-btn {
-            flex: 1;
+            width: 100%;
             background: rgba(124,58,237,0.15);
             color: #c4b5fd;
             border: 1px solid rgba(124,58,237,0.35);
@@ -370,10 +369,33 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
-            margin-right: 8px;
             white-space: nowrap;
         }
         .sidebar-user-btn:hover { background: rgba(124,58,237,0.28); color: #fff; border-color: rgba(124,58,237,0.6); }
+        .sidebar-theme-btn {
+            width: 100%;
+            background: rgba(245,158,11,0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245,158,11,0.35);
+            border-radius: 8px;
+            padding: 8px 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .sidebar-theme-btn:hover { background: rgba(245,158,11,0.28); color: #fff; border-color: rgba(245,158,11,0.6); }
+        .sidebar-version { text-align: center; font-size: 11px; color: #64748b; margin-top: 2px; }
+        /* dark 模式下 select 下拉背景与暗色风格一致 */
+        body.dark select option,
+        html.dark select option { background: #1e293b; color: #f1f5f9; }
+        body.dark select option:checked,
+        html.dark select option:checked { background: #4338ca; color: #fff; }
         .sidebar-toggle {
             /* 同 child-growth-assistant/index.html：左缘垂直居中、半圈 tab、可"隐身" */
             position: fixed; left: 0; top: 50%;
@@ -442,7 +464,8 @@
             <div class="sidebar-footer">
                 <button class="sidebar-sync-btn" id="sidebarCloudSyncBtn" title="数据云端同步">☁️ 云端同步</button>
                 <button class="sidebar-user-btn" id="sidebarUserManagerBtn" title="学员管理">👤 学员管理</button>
-                <span style="font-size:11px;color:#64748b;">v3.1</span>
+                <button class="sidebar-theme-btn" id="sidebarThemeBtn" title="切换页面深色/浅色模式">🌗 页面变色</button>
+                <span class="sidebar-version">v3.1</span>
             </div>
         </div>
     </aside>
@@ -2606,6 +2629,26 @@
             document.getElementById('saveCloudConfigBtn').onclick = saveCloudConfig;
             document.getElementById('uploadCloudBtn').onclick = uploadToCloud;
             document.getElementById('downloadCloudBtn').onclick = downloadFromCloud;
+            // 侧栏页面变色：切换 <html class="dark"> + 写 localStorage + 跨标签页同步
+            var themeBtn = document.getElementById('sidebarThemeBtn');
+            if (themeBtn) themeBtn.addEventListener('click', togglePageTheme);
+            try {
+                var saved = localStorage.getItem('page_theme_v1');
+                if (saved === 'light') document.documentElement.classList.remove('dark');
+                else document.documentElement.classList.add('dark');
+            } catch (e) {}
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'page_theme_v1') togglePageTheme(null, false);
+            });
+            function togglePageTheme(btn, persist) {
+                if (persist !== false) {
+                    var isDark = !document.documentElement.classList.contains('dark');
+                    try { localStorage.setItem('page_theme_v1', isDark ? 'dark' : 'light'); } catch (e) {}
+                }
+                document.documentElement.classList.toggle('dark');
+                var tb = document.getElementById('sidebarThemeBtn');
+                if (tb) tb.textContent = document.documentElement.classList.contains('dark') ? '🌙 页面变色' : '☀️ 页面变色';
+            }
             // 返回主系统：通过侧边栏「儿童成长系统」入口切换
             document.getElementById('closeUserModalBtn').onclick = function() {
                 document.getElementById('userManagerModal').classList.remove('open');
@@ -3065,7 +3108,7 @@
 
             var TOOL_DEFS = [
                 { key: 'main',  ico: '🌱', name: '儿童成长系统', href: './index.html' },
-                { key: 'study', ico: '📚', name: '默认学员学习记录', href: './study-record.html' },
+                { key: 'study', ico: '📚', name: '儿童学习记录', href: './study-record.html' },
                 { key: 'eq', ico: '💬', name: '情商club', href: './情商club.html' }
             ];
 
