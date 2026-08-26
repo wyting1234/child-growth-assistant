@@ -6690,6 +6690,13 @@
                 bindDragSort();
                 bindToggle();
                 bindFooterActions();
+                // 接收子页跳过来的「自动打开云同步」请求（?sync=1）
+                try {
+                    var q = new URLSearchParams(window.location.search);
+                    if (q.get('sync') === '1' && typeof window.openSyncPanel === 'function') {
+                        setTimeout(function () { window.openSyncPanel(); }, 50);
+                    }
+                } catch (e) {}
             }
 
             // 侧边栏底部功能入口（始终显示）：云同步 / 学员管理
