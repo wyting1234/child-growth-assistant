@@ -2208,10 +2208,52 @@
                 📝 <b>记录隔离</b>：时间记录、每日打卡、复盘、待办、里程碑等各自保存，互不干扰
             </div>
             <div class="account-rows" id="accountRows"></div>
-            <div style="display:flex; gap:8px; margin-top:14px; align-items:center;">
-                <input id="newAccountName" placeholder="儿童姓名" style="flex:1;min-width:120px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
-                <input id="newAccountGrade" placeholder="年级（如：三年级）" style="flex:1;min-width:120px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
-                <button class="btn btn-primary" onclick="addAccount()" style="flex:1;">＋ 添加儿童</button>
+            <div style="display:flex; gap:8px; margin-top:14px; align-items:center; flex-wrap:wrap;">
+                <input type="text" id="newAccountName" placeholder="儿童姓名" style="flex:1;min-width:100px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+                <select id="newAccountGrade" style="flex:1;min-width:90px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+                    <option value="">选择年级</option>
+                    <option value="1">1年级</option>
+                    <option value="2">2年级</option>
+                    <option value="3">3年级</option>
+                    <option value="4">4年级</option>
+                    <option value="5">5年级</option>
+                    <option value="6">6年级</option>
+                </select>
+                <select id="newAccountSemester" style="flex:1;min-width:90px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+                    <option value="上">上学期</option>
+                    <option value="下">下学期</option>
+                </select>
+                <button class="btn btn-primary" onclick="addAccount()" style="flex:1;min-width:80px;padding:8px 0;font-size:13px;">＋ 添加</button>
+            </div>
+            <div style="font-size:12px;color:var(--gray);margin-top:8px;">💡 年级与学员学习系统共享，切换儿童即同步切换学员。</div>
+        </div>
+    </div>
+
+    <!-- 修改年级学期弹窗 -->
+    <div class="modal-overlay" id="editGradeModal">
+        <div class="modal-box" style="max-width:360px;">
+            <div class="modal-title">
+                <span>📘 修改年级学期</span>
+                <button class="modal-close" onclick="closeEditGradeModal()">&times;</button>
+            </div>
+            <div style="font-size:14px;color:var(--dark);font-weight:600;margin:8px 0;" id="editGradeUserName"></div>
+            <div style="display:flex;gap:8px;">
+                <select id="editGradeSelect" style="flex:1;">
+                    <option value="">选择年级</option>
+                    <option value="1">1年级</option>
+                    <option value="2">2年级</option>
+                    <option value="3">3年级</option>
+                    <option value="4">4年级</option>
+                    <option value="5">5年级</option>
+                    <option value="6">6年级</option>
+                </select>
+                <select id="editSemesterSelect" style="flex:1;">
+                    <option value="上">上学期</option>
+                    <option value="下">下学期</option>
+                </select>
+            </div>
+            <div style="margin-top:12px;text-align:right;">
+                <button class="btn btn-primary" onclick="saveEditGrade()" style="padding:8px 24px;font-size:13px;">保存</button>
             </div>
         </div>
     </div>
@@ -6209,7 +6251,7 @@
                 var accs = accountList();
                 var c = curAccount();
                 if (accs.length === 0) {
-                    wrap.innerHTML = '<div class="account-empty">还没有儿童账户，点下方「＋ 添加儿童」创建第一个吧 👶</div>';
+                    wrap.innerHTML = '<div class="account-empty">还没有儿童账户，点下方「＋ 添加」创建第一个吧 👶</div>';
                     return;
                 }
                 var html = '';
@@ -6229,14 +6271,57 @@
                 wrap.innerHTML = html;
             }
 
+            // 年级学期工具（与学员学习系统同款：数字年级+学期 ↔ 中文）
+            var CN_GRADES = ['一', '二', '三', '四', '五', '六'];
+            function gradeToCn(num, sem) {
+                var n = parseInt(num, 10);
+                if (!n || n < 1 || n > 6) return '';
+                return CN_GRADES[n - 1] + '年级' + (sem === '下' ? '下' : '上');
+            }
+            function cnToGrade(text) {
+                var t = (text || '').trim();
+                if (!t) return null;
+                var idx = CN_GRADES.indexOf(t.charAt(0));
+                if (idx < 0) {
+                    var m = t.match(/^(\d+)/);
+                    if (m) return { num: parseInt(m[1], 10), sem: t.indexOf('下') >= 0 ? '下' : '上' };
+                    return null;
+                }
+                return { num: idx + 1, sem: t.indexOf('下') >= 0 ? '下' : '上' };
+            }
+
             window.editAccountGrade = function(name) {
                 var cur = getAccountGrade(name);
-                var g = prompt('为「' + name + '」设置年级（如：三年级、四年级、五年级、初一 …）：', cur || '');
-                if (g !== null) {
-                    setAccountGrade(name, g.trim());
-                    renderAccountRows();
-                    showToast('📘 年级已更新');
-                }
+                var meta = cnToGrade(cur);
+                var gradeSel = document.getElementById('editGradeSelect');
+                var semSel = document.getElementById('editSemesterSelect');
+                if (gradeSel) gradeSel.value = meta ? String(meta.num) : '';
+                if (semSel) semSel.value = meta ? meta.sem : '上';
+                var nameEl = document.getElementById('editGradeUserName');
+                if (nameEl) nameEl.textContent = '儿童：' + name;
+                window._editGradeAccountName = name;
+                var m = document.getElementById('editGradeModal');
+                if (m) m.classList.add('show');
+            };
+
+            window.closeEditGradeModal = function() {
+                var m = document.getElementById('editGradeModal');
+                if (m) m.classList.remove('show');
+            };
+
+            window.saveEditGrade = function() {
+                var name = window._editGradeAccountName;
+                if (!name) return;
+                var gradeSel = document.getElementById('editGradeSelect');
+                var semSel = document.getElementById('editSemesterSelect');
+                var gradeNum = gradeSel ? gradeSel.value : '';
+                var semester = (semSel && semSel.value) || '上';
+                var gradeText = gradeNum ? gradeToCn(gradeNum, semester) : '';
+                setAccountGrade(name, gradeText);
+                closeEditGradeModal();
+                renderAccountRows();
+                renderAccountName();
+                showToast('📘 年级已更新');
             };
 
             window.switchAccount = function(name) {
@@ -6247,19 +6332,23 @@
 
             window.addAccount = function() {
                 var input = document.getElementById('newAccountName');
-                var gradeInput = document.getElementById('newAccountGrade');
+                var gradeSel = document.getElementById('newAccountGrade');
+                var semSel = document.getElementById('newAccountSemester');
                 var name = input ? input.value.trim() : '';
                 if (!name) { alert('请输入儿童姓名'); return; }
                 var accs = accountList();
                 if (accs.indexOf(name) > -1) { alert('该儿童已存在'); return; }
                 accs.push(name);
                 Storage.saveList(accs);
-                if (gradeInput && gradeInput.value.trim()) {
-                    setAccountGrade(name, gradeInput.value.trim());
-                }
+                // 年级下拉 + 学期下拉 → 中文年级学期（如"三年级上"），与学员学习系统共享
+                var gradeNum = gradeSel ? gradeSel.value : '';
+                var semester = (semSel && semSel.value) || '上';
+                var gradeText = gradeNum ? gradeToCn(gradeNum, semester) : '';
+                if (gradeText) setAccountGrade(name, gradeText);
                 try { localStorage.setItem('child_account_current', name); } catch (e) {}
                 if (input) input.value = '';
-                if (gradeInput) gradeInput.value = '';
+                if (gradeSel) gradeSel.value = '';
+                if (semSel) semSel.value = '上';
                 showToast('✅ 已添加并切换到：' + name);
                 setTimeout(function() { location.reload(); }, 300);
             };
@@ -6302,6 +6391,13 @@
                 if (modal) {
                     modal.addEventListener('click', function(e) {
                         if (e.target === modal) closeAccountModal();
+                    });
+                }
+                // 修改年级学期弹窗：点击遮罩关闭
+                var egModal = $('editGradeModal');
+                if (egModal) {
+                    egModal.addEventListener('click', function(e) {
+                        if (e.target === egModal) closeEditGradeModal();
                     });
                 }
                 // 移动端：汉堡菜单
