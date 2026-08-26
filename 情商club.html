@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>人际沟通复盘系统 · 口才情商迭代</title>
+    <!-- 预取其它两个工具页：切换时直接从缓存加载，减少白屏卡顿 -->
+    <link rel="prefetch" href="./index.html">
+    <link rel="prefetch" href="./study-record.html">
     <script src="https://cdn.tailwindcss.com">
     </script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -473,32 +476,7 @@
         }
         .sidebar-toggle:hover { width: 26px; padding-left: 3px; }
         .sidebar-toggle:active { transform: translateY(-50%) scale(.96); }
-        .sidebar-toggle.is-hidden { transform: translate(-100%, -50%); opacity: 0; pointer-events: none; }
-        .sidebar-toggle-revive {
-            position: fixed; left: 0; top: 50%;
-            transform: translateY(-50%);
-            width: 4px; height: 44px;
-            background: rgba(99,102,241,.55);
-            border-radius: 0 4px 4px 0;
-            border: none; padding: 0; cursor: pointer;
-            z-index: 249;
-            display: none;
-            transition: width .25s, background .15s, height .2s;
-        }
-        .sidebar-toggle-revive:hover { width: 10px; height: 56px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
-        body.sidebar-toggle-hidden .sidebar-toggle-revive { display: block; }
-        .sidebar-toggle .toggle-hide-btn {
-            position: absolute; top: 4px; right: 2px;
-            width: 14px; height: 14px; border-radius: 50%;
-            background: rgba(0,0,0,.45); color: #fff;
-            border: none; font-size: 11px; line-height: 1;
-            cursor: pointer;
-            display: none; align-items: center; justify-content: center;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        }
-        .sidebar-toggle:hover .toggle-hide-btn { display: inline-flex; }
-        .sidebar-toggle .toggle-hide-btn:hover { background: rgba(239,68,68,.95); }
+        /* 汉堡一直显示：无隐身逻辑 */
         /* ===== 下拉选项管理按钮（地点 / 渠道 / 沟通类型） ===== */
         .eq-opt-mgr-btn {
             background: rgba(99,102,241,0.1);
@@ -558,7 +536,6 @@
             .sidebar-item .badge { font-size: 9px; padding: 1px 5px; }
             .sidebar-footer { padding: 8px 10px; }
             .sidebar-toggle, .sidebar-toggle.shifted { left: 0 !important; top: 50% !important; transform: translateY(-50%) !important; width: 20px; height: 48px; font-size: 12px; padding-left: 2px; }
-            .sidebar-toggle.is-hidden, .sidebar-toggle.shifted.is-hidden { transform: translate(-100%, -50%) !important; }
             .app-main { padding-left: 8px !important; }
             body.sidebar-collapsed .app-main { padding-left: 8px !important; }
         }
@@ -1812,12 +1789,11 @@
         window.__debug = { recordList, renderAll, showToast };
     </script>
 
-    <!-- 汉堡导航：贴侧栏左缘居中，可隐身。点 → 收起/展开侧栏 -->
-    <button class="sidebar-toggle" id="sidebarToggle" title="收起/展开侧栏（hover 出现 × 可隐藏）" aria-label="收起/展开侧栏">☰<span class="toggle-hide-btn" id="sidebarToggleHide" title="隐藏导航按钮（以后想打开可点屏幕左边细条）" aria-label="隐藏导航按钮">×</span></button>
-    <button class="sidebar-toggle-revive" id="sidebarToggleRevive" title="显示导航按钮" aria-label="显示导航按钮"></button>
+    <!-- 汉堡导航：贴侧栏左缘居中，一直显示。点 → 收起/展开侧栏 -->
+    <button class="sidebar-toggle" id="sidebarToggle" title="收起/展开侧栏" aria-label="收起/展开侧栏">☰</button>
 
     <script>
-        // ============ 侧栏逻辑：渲染工具 / 折叠 / 隐身 / footer 按钮 + 跨标签页同步 ============
+        // ============ 侧栏逻辑：渲染工具 / 折叠 / footer 按钮 + 跨标签页同步 ============
         (function() {
             'use strict';
             var TOOL_DEFS = [
@@ -1905,32 +1881,7 @@
                     }
                 });
             }
-            // 汉堡 / × / 召唤条
-            var HIDE_KEY = 'sidebar_toggle_hidden_v1';
-            var toggleEl = document.getElementById('sidebarToggle');
-            var hideBtn = document.getElementById('sidebarToggleHide');
-            var reviveBtn = document.getElementById('sidebarToggleRevive');
-            function applyHidden(hidden) {
-                try { localStorage.setItem(HIDE_KEY, hidden ? '1' : '0'); } catch (e) {}
-                if (toggleEl) {
-                    if (hidden) toggleEl.classList.add('is-hidden');
-                    else toggleEl.classList.remove('is-hidden');
-                }
-                if (hidden) document.body.classList.add('sidebar-toggle-hidden');
-                else document.body.classList.remove('sidebar-toggle-hidden');
-            }
-            try {
-                if (localStorage.getItem(HIDE_KEY) === '1') {
-                    setTimeout(function () { applyHidden(true); }, 0);
-                }
-            } catch (e) {}
-            if (hideBtn) hideBtn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                applyHidden(true);
-            });
-            if (reviveBtn) reviveBtn.addEventListener('click', function () {
-                applyHidden(false);
-            });
+            // 汉堡一直显示（无隐身逻辑）
             // 跨标签页同步（学员切换后刷新顶栏账号名）
             window.addEventListener('storage', function (e) {
                 if (!e.key) return;
