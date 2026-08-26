@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>人际沟通复盘系统 · 口才情商迭代</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        primaryLight: '#818CF8',
+                        secondary: '#10B981',
+                        warn: '#F59E0B',
+                        danger: '#EF4444',
+                        neutral: '#64748B',
+                        surface: '#F8FAFC',
+                        darkSurface: '#1E293B',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* ===== 基础重置 & 全局 ===== */
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            transition: background 0.35s ease, color 0.35s ease;
+        }
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+
+        /* ===== 卡片 ===== */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .dark .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            border-color: rgba(255, 255, 255, 0.06);
+        }
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(79, 70, 229, 0.10);
+        }
+        .dark .glass-card:hover {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+        }
+
+        /* ===== 表单 ===== */
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            border-radius: 10px;
+            border: 1.5px solid #e2e8f0;
+            background: #fff;
+            padding: 0.55rem 0.85rem;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s;
+            color: #1e293b;
+        }
+        .dark .form-input,
+        .dark .form-select,
+        .dark .form-textarea {
+            background: #1e293b;
+            border-color: #334155;
+            color: #f1f5f9;
+        }
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+        .dark .form-input:focus,
+        .dark .form-select:focus,
+        .dark .form-textarea:focus {
+            border-color: #818CF8;
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
+        }
+        .form-textarea {
+            resize: vertical;
+            min-height: 50px;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 0.2rem;
+            letter-spacing: 0.02em;
+        }
+        .dark .form-label {
+            color: #94a3b8;
+        }
+
+        /* ===== 标签 ===== */
+        .tag-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.2rem;
+            padding: 0.2rem 0.7rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background: #eef2ff;
+            color: #4F46E5;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            user-select: none;
+        }
+        .dark .tag-pill {
+            background: #312e81;
+            color: #c7d2fe;
+        }
+        .tag-pill:hover {
+            background: #dbeafe;
+            transform: scale(1.03);
+        }
+        .dark .tag-pill:hover {
+            background: #4338ca;
+        }
+        .tag-pill.active {
+            background: #4F46E5;
+            color: #fff;
+            border-color: #4F46E5;
+        }
+        .dark .tag-pill.active {
+            background: #818CF8;
+            color: #0f172a;
+        }
+        .tag-pill .del-tag {
+            opacity: 0.5;
+            font-size: 0.7rem;
+            margin-left: 0.15rem;
+            transition: opacity 0.2s;
+        }
+        .tag-pill .del-tag:hover {
+            opacity: 1;
+        }
+
+        /* ===== 记录卡片 ===== */
+        .record-item {
+            transition: all 0.25s ease;
+            border-radius: 12px;
+            padding: 1rem;
+            background: #fff;
+            border: 1px solid #f1f5f9;
+            cursor: pointer;
+        }
+        .dark .record-item {
+            background: #1e293b;
+            border-color: #334155;
+        }
+        .record-item:hover {
+            border-color: #c7d2fe;
+            box-shadow: 0 4px 16px rgba(79, 70, 229, 0.06);
+        }
+        .dark .record-item:hover {
+            border-color: #4F46E5;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        /* ===== 统计数字动画 ===== */
+        .stat-number {
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ===== 空状态 ===== */
+        .empty-state svg {
+            opacity: 0.3;
+        }
+
+        /* ===== 弹窗 ===== */
+        .modal-overlay {
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            animation: fadeIn 0.25s ease;
+        }
+        .dark .modal-overlay {
+            background: rgba(0, 0, 0, 0.6);
+        }
+        .modal-box {
+            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* ===== Toast ===== */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 360px;
+            width: 100%;
+        }
+        .toast-item {
+            padding: 0.9rem 1.2rem;
+            border-radius: 12px;
+            background: #1e293b;
+            color: #f1f5f9;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            border-left: 4px solid #4F46E5;
+        }
+        .dark .toast-item {
+            background: #0f172a;
+        }
+        .toast-item.success {
+            border-left-color: #10B981;
+        }
+        .toast-item.error {
+            border-left-color: #EF4444;
+        }
+        .toast-item.warning {
+            border-left-color: #F59E0B;
+        }
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .toast-item.removing {
+            animation: slideOutRight 0.3s ease forwards;
+        }
+        @keyframes slideOutRight {
+            to {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+        }
+
+        /* ===== 响应式微调 ===== */
+        @media (max-width: 640px) {
+            .stat-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+            .modal-box {
+                margin: 1rem;
+                max-height: 85vh;
+            }
+            .toast-container {
+                right: 12px;
+                left: 12px;
+                max-width: none;
+                bottom: 12px;
+            }
+        }
+
+        /* 滚动条美化 for modal */
+        .modal-box::-webkit-scrollbar {
+            width: 4px;
+        }
+        .modal-box::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .dark .modal-box::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+
+        /* 选中高亮 */
+        .highlight-match {
+            background: #fef08a;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+        .dark .highlight-match {
+            background: #a16207;
+            color: #fef9c3;
+        }
+
+        /* 按钮通用 */
+        .btn-primary {
+            background: #4F46E5;
+            color: #fff;
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.25s;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            justify-content: center;
+        }
+        .btn-primary:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
+        }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #1e293b;
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.25s;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            justify-content: center;
+        }
+        .dark .btn-secondary {
+            background: #334155;
+            color: #f1f5f9;
+        }
+        .btn-secondary:hover {
+            background: #cbd5e1;
+            transform: translateY(-1px);
+        }
+        .dark .btn-secondary:hover {
+            background: #475569;
+        }
+        .btn-danger {
+            background: #EF4444;
+            color: #fff;
+            padding: 0.6rem 1.2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.25s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
+        }
+        .btn-outline {
+            background: transparent;
+            color: #4F46E5;
+            border: 1.5px solid #4F46E5;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.25s;
+            cursor: pointer;
+        }
+        .dark .btn-outline {
+            color: #818CF8;
+            border-color: #818CF8;
+        }
+        .btn-outline:hover {
+            background: #4F46E5;
+            color: #fff;
+        }
+        .dark .btn-outline:hover {
+            background: #818CF8;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body class="bg-[#F1F5F9] dark:bg-[#0F172A] text-[#0F172A] dark:text-[#F1F5F9] transition-colors duration-300 antialiased">
+
+    <!-- ========== TOAST容器 ========== -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- ========== 主容器 ========== -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-8">
+
+        <!-- ===== HEADER ===== -->
+        <header class="flex flex-wrap items-center justify-between gap-3 mb-7">
+            <div>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primaryLight flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                        <i class="fa fa-comments text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-[clamp(1.3rem,2.8vw,2rem)] font-bold tracking-tight text-primary">沟通复盘系统</h1>
+                        <p class="text-xs text-[#64748B] dark:text-[#94A3B8] mt-0.5 flex items-center gap-1.5">
+                            <i class="fa fa-microphone"></i> 记录交往细节 · 观测微表情 · 迭代口才情商
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <!-- 学员选择器：与侧边栏「学员管理」同步 -->
+                <div class="flex items-center gap-1.5 bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded-xl px-2.5 py-1.5">
+                    <i class="fa fa-user-circle text-primary"></i>
+                    <select id="userSelect" class="text-sm bg-transparent outline-none cursor-pointer text-[#334155] dark:text-[#E2E8F0] pr-1">
+                        <option value="">未选择学员</option>
+                    </select>
+                    <span id="userSyncDot" class="inline-block w-2 h-2 rounded-full bg-[#CBD5E1]" title="未与侧边栏同步"></span>
+                </div>
+                <button id="importBtn" class="btn-secondary text-sm !py-1.5 !px-3">
+                    <i class="fa fa-upload"></i> 导入
+                </button>
+                <button id="exportBtn" class="btn-secondary text-sm !py-1.5 !px-3">
+                    <i class="fa fa-download"></i> 导出
+                </button>
+                <button id="themeToggle" class="btn-secondary text-sm !py-1.5 !px-3" aria-label="切换主题">
+                    <i class="fa fa-moon-o dark:hidden"></i>
+                    <i class="fa fa-sun-o hidden dark:inline"></i>
+                </button>
+                <input type="file" id="importFileInput" accept=".json" class="hidden">
+            </div>
+        </header>
+
+        <!-- ===== 统计看板 ===== -->
+        <section class="stat-grid grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+            <div class="glass-card rounded-2xl p-4 md:p-5">
+                <div class="flex items-center justify-between">
+                    <span class="text-[#64748B] dark:text-[#94A3B8] text-xs font-medium uppercase tracking-wider">总记录</span>
+                    <i class="fa fa-file-text-o text-[#4F46E5] opacity-60"></i>
+                </div>
+                <div class="stat-number text-2xl md:text-3xl font-bold mt-1" id="totalCount">0</div>
+            </div>
+            <div class="glass-card rounded-2xl p-4 md:p-5">
+                <div class="flex items-center justify-between">
+                    <span class="text-[#64748B] dark:text-[#94A3B8] text-xs font-medium uppercase tracking-wider">目标达成</span>
+                    <i class="fa fa-check-circle text-[#10B981] opacity-60"></i>
+                </div>
+                <div class="stat-number text-2xl md:text-3xl font-bold mt-1 text-secondary" id="successCount">0</div>
+            </div>
+            <div class="glass-card rounded-2xl p-4 md:p-5">
+                <div class="flex items-center justify-between">
+                    <span class="text-[#64748B] dark:text-[#94A3B8] text-xs font-medium uppercase tracking-wider">待落实改进</span>
+                    <i class="fa fa-clock-o text-[#F59E0B] opacity-60"></i>
+                </div>
+                <div class="stat-number text-2xl md:text-3xl font-bold mt-1 text-warn" id="todoCount">0</div>
+            </div>
+            <div class="glass-card rounded-2xl p-4 md:p-5">
+                <div class="flex items-center justify-between">
+                    <span class="text-[#64748B] dark:text-[#94A3B8] text-xs font-medium uppercase tracking-wider">高频标签</span>
+                    <i class="fa fa-tags text-[#8B5CF6] opacity-60"></i>
+                </div>
+                <div class="stat-number text-base md:text-lg font-bold mt-1 truncate text-[#8B5CF6]" id="topTag">-</div>
+            </div>
+        </section>
+
+        <!-- ===== 工具条：搜索 + 筛选 ===== -->
+        <div class="glass-card rounded-2xl p-4 mb-6 flex flex-wrap items-center gap-3">
+            <div class="flex-1 min-w-[160px] relative">
+                <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] text-sm"></i>
+                <input type="text" id="searchInput" placeholder="搜索记录（目标/对象/内容）" class="form-input !pl-9 !py-1.5 text-sm">
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <select id="filterResult" class="form-select !py-1.5 !w-auto text-sm !pr-7">
+                    <option value="">全部结果</option>
+                    <option value="目标达成">✅ 目标达成</option>
+                    <option value="部分达成">◐ 部分达成</option>
+                    <option value="未达成">❌ 未达成</option>
+                    <option value="恶化">⚠️ 恶化</option>
+                </select>
+                <select id="filterRelation" class="form-select !py-1.5 !w-auto text-sm !pr-7">
+                    <option value="">全部关系</option>
+                    <option value="同事">同事</option>
+                    <option value="客户">客户</option>
+                    <option value="家人">家人</option>
+                    <option value="朋友">朋友</option>
+                    <option value="上级">上级</option>
+                    <option value="下属">下属</option>
+                    <option value="陌生人">陌生人</option>
+                    <option value="其他">其他</option>
+                </select>
+                <button id="clearFilters" class="text-xs text-[#64748B] dark:text-[#94A3B8] hover:text-primary dark:hover:text-primaryLight transition px-2">
+                    <i class="fa fa-times"></i> 清空
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== 标签快捷预设 ===== -->
+        <div class="glass-card rounded-2xl p-4 mb-6">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                <span class="text-xs font-medium text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa fa-tags"></i> 常用标签
+                </span>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="newTagInput" placeholder="新增标签" class="form-input !py-1 !px-2.5 text-sm !w-28 sm:!w-36">
+                    <button id="addTagBtn" class="btn-primary !py-1 !px-3 text-sm !rounded-lg">+</button>
+                </div>
+            </div>
+            <div id="tagList" class="flex flex-wrap gap-1.5">
+                <!-- 由 JS 动态渲染 -->
+            </div>
+        </div>
+
+        <!-- ===== 主区域 ===== -->
+        <div class="grid lg:grid-cols-5 gap-6">
+
+            <!-- 表单 -->
+            <div class="lg:col-span-2">
+                <div class="glass-card rounded-2xl p-5 sticky top-6">
+                    <h2 class="text-lg font-semibold flex items-center gap-2 mb-4" id="formTitle">
+                        <i class="fa fa-pencil-square-o text-primary"></i> 新增沟通记录
+                    </h2>
+                    <form id="recordForm" class="space-y-3" autocomplete="off">
+                        <input type="hidden" id="editId">
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="form-label">发生时间</label>
+                                <input type="datetime-local" id="time" class="form-input !py-1.5 text-sm" required>
+                            </div>
+                            <div>
+                                <label class="form-label">地点</label>
+                                <input type="text" id="place" placeholder="办公室/餐厅/微信" class="form-input !py-1.5 text-sm">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="form-label">沟通对象</label>
+                                <input type="text" id="target" placeholder="姓名/称呼" class="form-input !py-1.5 text-sm">
+                            </div>
+                            <div>
+                                <label class="form-label">关系</label>
+                                <select id="relation" class="form-select !py-1.5 text-sm">
+                                    <option value="同事">同事</option>
+                                    <option value="客户">客户</option>
+                                    <option value="家人">家人</option>
+                                    <option value="朋友">朋友</option>
+                                    <option value="上级">上级</option>
+                                    <option value="下属">下属</option>
+                                    <option value="陌生人">陌生人</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="form-label">渠道</label>
+                                <select id="channel" class="form-select !py-1.5 text-sm">
+                                    <option value="线下当面">线下当面</option>
+                                    <option value="微信文字">微信文字</option>
+                                    <option value="语音/电话">语音/电话</option>
+                                    <option value="线上会议">线上会议</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label">沟通类型</label>
+                                <select id="talkType" class="form-select !py-1.5 text-sm">
+                                    <option value="闲聊">闲聊</option>
+                                    <option value="汇报">汇报</option>
+                                    <option value="谈判协商">谈判协商</option>
+                                    <option value="安抚情绪">安抚情绪</option>
+                                    <option value="争论分歧">争论分歧</option>
+                                    <option value="求助咨询">求助咨询</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label">🎯 本次沟通目标</label>
+                            <textarea id="goal" rows="2" placeholder="我本次想达成什么结果？" class="form-textarea !py-1.5 text-sm"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="form-label">👤 对方信息（语言/微表情/肢体/情绪/诉求）</label>
+                            <textarea id="otherInfo" rows="2" placeholder="例：对方皱眉，语速变快，表面抱怨，实际希望被认可" class="form-textarea !py-1.5 text-sm"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="form-label">🧑 自我信息（话术/微表情/肢体/情绪/想法）</label>
+                            <textarea id="selfInfo" rows="2" placeholder="例：我急于解释，语速变快，心里有点烦躁" class="form-textarea !py-1.5 text-sm"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="form-label">⚡ 卡点 / 矛盾点</label>
+                            <textarea id="conflict" rows="1" placeholder="沟通哪里卡住、产生误会" class="form-textarea !py-1.5 text-sm"></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="form-label">沟通结果</label>
+                                <select id="result" class="form-select !py-1.5 text-sm">
+                                    <option value="目标达成">✅ 目标达成</option>
+                                    <option value="部分达成">◐ 部分达成</option>
+                                    <option value="未达成">❌ 未达成</option>
+                                    <option value="恶化">⚠️ 恶化</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label">标签（逗号分隔）</label>
+                                <input type="text" id="tags" placeholder="点击上方标签快速添加" class="form-input !py-1.5 text-sm">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label">📝 自我评价：优点 & 短板</label>
+                            <textarea id="eval" rows="2" class="form-textarea !py-1.5 text-sm"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="form-label">🚀 下次改进方案（重点）</label>
+                            <textarea id="improve" rows="2" placeholder="具体怎么做，不要空泛" class="form-textarea !py-1.5 text-sm"></textarea>
+                        </div>
+
+                        <div class="flex items-center gap-2.5 pt-0.5">
+                            <input type="checkbox" id="isDone" class="w-4 h-4 accent-primary rounded border-[#CBD5E1]">
+                            <label for="isDone" class="text-sm text-[#64748B] dark:text-[#94A3B8]">✅ 该改进项已经落实练习</label>
+                        </div>
+
+                        <button type="submit" class="btn-primary w-full !py-2.5 text-base">
+                            <i class="fa fa-save"></i> 保存记录
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 历史记录列表 -->
+            <div class="lg:col-span-3">
+                <div class="glass-card rounded-2xl p-5">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                        <h2 class="text-lg font-semibold flex items-center gap-2">
+                            <i class="fa fa-history text-primary"></i> 历史记录
+                            <span class="text-sm font-normal text-[#64748B] dark:text-[#94A3B8] ml-1" id="recordCount">(0)</span>
+                        </h2>
+                        <div class="flex items-center gap-1.5">
+                            <button id="sortToggle" class="text-sm text-[#64748B] dark:text-[#94A3B8] hover:text-primary transition px-2 py-1 rounded-lg hover:bg-[#F1F5F9] dark:hover:bg-[#1E293B]">
+                                <i class="fa fa-sort-amount-desc"></i> <span id="sortLabel">最新优先</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="recordList" class="space-y-2.5 max-h-[70vh] overflow-y-auto pr-1">
+                        <!-- 由 JS 渲染 -->
+                        <div class="text-center text-[#94A3B8] py-16 text-sm">
+                            <i class="fa fa-inbox text-3xl block mb-3 opacity-30"></i>
+                            暂无记录，开始记录第一次沟通复盘
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 详情弹窗 ========== -->
+    <div id="detailModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay hidden">
+        <div class="modal-box glass-card rounded-2xl p-6 max-w-2xl w-full relative">
+            <button id="modalClose" class="absolute top-4 right-4 text-[#94A3B8] hover:text-[#1E293B] dark:hover:text-[#F1F5F9] transition text-xl">
+                <i class="fa fa-times"></i>
+            </button>
+            <div id="modalContent" class="space-y-3">
+                <!-- 由JS填充 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <script>
+        // =================================================================
+        //  数据层（按学员隔离：communication_record_data::<学员名>）
+        // =================================================================
+        const BASE_STORAGE_KEY = "communication_record_data";
+        let currentUser = null;   // 当前学员名（与侧边栏 child_account_current 同步）
+
+        // 读取侧边栏（child-growth-assistant 学员管理）的学员列表与当前学员
+        function getChildAccountList() {
+            try { return JSON.parse(localStorage.getItem('child_account_list') || '[]'); } catch (e) { return []; }
+        }
+        function getChildAccountCurrent() {
+            try { return localStorage.getItem('child_account_current') || ''; } catch (e) { return ''; }
+        }
+        function setChildAccountCurrent(name) {
+            try { localStorage.setItem('child_account_current', name); } catch (e) {}
+        }
+        // 当前学员的存储 key
+        function storageKeyFor(name) {
+            return name ? (BASE_STORAGE_KEY + '::' + name) : BASE_STORAGE_KEY;
+        }
+        function loadUserData(name) {
+            const key = storageKeyFor(name);
+            try { return JSON.parse(localStorage.getItem(key)) || []; } catch (e) { return []; }
+        }
+        function saveUserData(name, list) {
+            const key = storageKeyFor(name);
+            localStorage.setItem(key, JSON.stringify(list));
+        }
+
+        // 学员切换：保存旧学员数据 → 读新学员数据 → 刷新界面
+        function switchUser(name) {
+            if (name === currentUser) return;
+            if (currentUser) saveUserData(currentUser, recordList);   // 先落盘当前学员
+            currentUser = name;
+            setChildAccountCurrent(name);                              // 同步侧边栏
+            recordList = loadUserData(name);
+            renderAll();
+            if (name) showToast('已切换到学员：' + name, 'success');
+            else showToast('未选择学员，使用本地默认数据', 'warning');
+        }
+
+        // 初始化：跟随侧边栏当前学员
+        (function initUser() {
+            const cur = getChildAccountCurrent();
+            if (cur) {
+                currentUser = cur;
+                recordList = loadUserData(cur);
+            } else {
+                // 侧边栏还没选学员 → 用默认 key 兼容旧数据
+                currentUser = null;
+                recordList = JSON.parse(localStorage.getItem(BASE_STORAGE_KEY) || '[]');
+            }
+        })();
+
+        // =================================================================
+        //  DOM 引用
+        // =================================================================
+        const $ = (s, ctx = document) => ctx.querySelector(s);
+        const $$ = (s, ctx = document) => [...ctx.querySelectorAll(s)];
+
+        const els = {
+            form: $('#recordForm'),
+            editId: $('#editId'),
+            formTitle: $('#formTitle'),
+            time: $('#time'),
+            place: $('#place'),
+            target: $('#target'),
+            relation: $('#relation'),
+            channel: $('#channel'),
+            talkType: $('#talkType'),
+            goal: $('#goal'),
+            otherInfo: $('#otherInfo'),
+            selfInfo: $('#selfInfo'),
+            conflict: $('#conflict'),
+            result: $('#result'),
+            tags: $('#tags'),
+            eval: $('#eval'),
+            improve: $('#improve'),
+            isDone: $('#isDone'),
+
+            list: $('#recordList'),
+            total: $('#totalCount'),
+            success: $('#successCount'),
+            todo: $('#todoCount'),
+            topTag: $('#topTag'),
+            recordCount: $('#recordCount'),
+
+            search: $('#searchInput'),
+            filterResult: $('#filterResult'),
+            filterRelation: $('#filterRelation'),
+            clearFilters: $('#clearFilters'),
+            sortToggle: $('#sortToggle'),
+            sortLabel: $('#sortLabel'),
+
+            tagList: $('#tagList'),
+            newTagInput: $('#newTagInput'),
+            addTagBtn: $('#addTagBtn'),
+
+            modal: $('#detailModal'),
+            modalContent: $('#modalContent'),
+            modalClose: $('#modalClose'),
+
+            themeToggle: $('#themeToggle'),
+            exportBtn: $('#exportBtn'),
+            importBtn: $('#importBtn'),
+            importFileInput: $('#importFileInput'),
+            userSelect: $('#userSelect'),
+            userSyncDot: $('#userSyncDot'),
+        };
+
+        // =================================================================
+        //  状态
+        // =================================================================
+        let sortAsc = false; // false = 最新优先 (desc)
+        let filteredList = [];
+        const tagSet = new Set();
+
+        // =================================================================
+        //  学员选择器（与侧边栏「学员管理」同步）
+        // =================================================================
+        function renderUserSelect() {
+            const accs = getChildAccountList();
+            const cur = getChildAccountCurrent();
+            if (!els.userSelect) return;
+            const options = ['<option value="">未选择学员</option>']
+                .concat(accs.map(function(n) {
+                    return '<option value="' + n.replace(/"/g, '&quot;') + '"' + (n === cur ? ' selected' : '') + '>' + n + '</option>';
+                }));
+            els.userSelect.innerHTML = options.join('');
+            els.userSelect.value = cur || '';
+            // 同步状态点：当前学员与侧边栏一致 = 绿；未选/不一致 = 灰/黄
+            if (els.userSyncDot) {
+                const dot = els.userSyncDot;
+                if (cur && currentUser === cur) { dot.style.background = '#22c55e'; dot.title = '已与侧边栏同步'; }
+                else if (!cur && !currentUser) { dot.style.background = '#cbd5e1'; dot.title = '未选择学员'; }
+                else { dot.style.background = '#f59e0b'; dot.title = '与侧边栏不一致'; }
+            }
+        }
+
+        // 下拉切换 → 与侧边栏学员管理联动
+        if (els.userSelect) {
+            els.userSelect.addEventListener('change', function() {
+                const name = this.value;
+                if (name) switchUser(name);
+                else {
+                    // 选择「未选择学员」→ 回退默认 key
+                    if (currentUser) saveUserData(currentUser, recordList);
+                    currentUser = null;
+                    setChildAccountCurrent('');
+                    recordList = loadUserData(null);
+                    renderAll();
+                    showToast('已切回本地默认数据', 'warning');
+                }
+                renderUserSelect();
+            });
+        }
+
+        // 跨标签页同步：侧边栏（index.html）切换学员时，这里自动跟进
+        window.addEventListener('storage', function(e) {
+            if (!e.key) return;
+            if (e.key === 'child_account_current' || e.key === 'child_account_list' || e.key === 'child_account_meta::' + currentUser) {
+                const cur = getChildAccountCurrent();
+                // 侧边栏切到了别的学员 → 切换本页数据
+                if (e.key === 'child_account_current' && cur !== currentUser) {
+                    if (currentUser) saveUserData(currentUser, recordList);
+                    currentUser = cur || null;
+                    recordList = loadUserData(currentUser);
+                    renderAll();
+                }
+                renderUserSelect();
+            }
+        });
+
+        // =================================================================
+        //  Toast 系统
+        // =================================================================
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = $('#toastContainer');
+            const icons = {
+                info: 'fa-info-circle',
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle'
+            };
+            const colors = {
+                info: '#4F46E5',
+                success: '#10B981',
+                error: '#EF4444',
+                warning: '#F59E0B'
+            };
+            const item = document.createElement('div');
+            item.className = `toast-item ${type}`;
+            item.innerHTML = `
+                <i class="fa ${icons[type] || icons.info}" style="color:${colors[type] || colors.info}"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(item);
+            setTimeout(() => {
+                item.classList.add('removing');
+                setTimeout(() => item.remove(), 300);
+            }, duration);
+        }
+
+        // =================================================================
+        //  主题
+        // =================================================================
+        function initTheme() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'dark') document.documentElement.classList.add('dark');
+            else if (saved === 'light') document.documentElement.classList.remove('dark');
+            else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+            }
+        }
+        initTheme();
+
+        els.themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // =================================================================
+        //  标签管理
+        // =================================================================
+        function loadTagSet() {
+            tagSet.clear();
+            recordList.forEach(r => {
+                if (r.tags) {
+                    r.tags.split(',').map(t => t.trim()).filter(Boolean).forEach(t => tagSet.add(t));
+                }
+            });
+            // 确保预设标签存在
+            const presets = ['急于反驳', '倾听不足', '表达模糊', '共情不足', '情绪急躁', '过度讨好', '边界不清'];
+            presets.forEach(t => tagSet.add(t));
+        }
+
+        function renderTags() {
+            loadTagSet();
+            const sorted = [...tagSet].sort();
+            els.tagList.innerHTML = sorted.map(t => `
+                <span class="tag-pill" data-tag="${t}">
+                    ${t}
+                    <span class="del-tag" data-tag="${t}">×</span>
+                </span>
+            `).join('');
+
+            // 点击标签 → 填入表单
+            els.tagList.querySelectorAll('.tag-pill').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('del-tag')) return;
+                    const tag = el.dataset.tag;
+                    const current = els.tags.value.trim();
+                    const arr = current ? current.split(',').map(s => s.trim()) : [];
+                    if (!arr.includes(tag)) arr.push(tag);
+                    els.tags.value = arr.join(', ');
+                    els.tags.focus();
+                });
+                // 删除标签
+                const del = el.querySelector('.del-tag');
+                if (del) {
+                    del.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const tag = del.dataset.tag;
+                        // 从所有记录中移除该标签
+                        let removed = false;
+                        recordList.forEach(r => {
+                            if (r.tags) {
+                                const parts = r.tags.split(',').map(s => s.trim()).filter(Boolean);
+                                const filtered = parts.filter(p => p !== tag);
+                                if (filtered.length !== parts.length) {
+                                    r.tags = filtered.join(', ');
+                                    removed = true;
+                                }
+                            }
+                        });
+                        if (removed) {
+                            saveLocal();
+                            renderAll();
+                            showToast(`已移除标签“${tag}”`, 'warning');
+                        } else {
+                            // 如果标签没有被使用，直接从tagSet移除
+                            tagSet.delete(tag);
+                            renderTags();
+                        }
+                    });
+                }
+            });
+        }
+
+        // 新增标签
+        els.addTagBtn.addEventListener('click', () => {
+            const val = els.newTagInput.value.trim();
+            if (!val) return showToast('请输入标签名称', 'warning');
+            if (tagSet.has(val)) return showToast('标签已存在', 'warning');
+            tagSet.add(val);
+            els.newTagInput.value = '';
+            renderTags();
+            showToast(`已添加标签“${val}”`, 'success');
+        });
+        els.newTagInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault();
+                els.addTagBtn.click(); }
+        });
+
+        // =================================================================
+        //  渲染列表 & 统计
+        // =================================================================
+        function getFilteredAndSorted() {
+            const search = els.search.value.trim().toLowerCase();
+            const resultFilter = els.filterResult.value;
+            const relationFilter = els.filterRelation.value;
+
+            let list = [...recordList];
+
+            // 搜索
+            if (search) {
+                list = list.filter(r =>
+                    (r.target || '').toLowerCase().includes(search) ||
+                    (r.goal || '').toLowerCase().includes(search) ||
+                    (r.otherInfo || '').toLowerCase().includes(search) ||
+                    (r.selfInfo || '').toLowerCase().includes(search) ||
+                    (r.conflict || '').toLowerCase().includes(search) ||
+                    (r.tags || '').toLowerCase().includes(search) ||
+                    (r.place || '').toLowerCase().includes(search)
+                );
+            }
+
+            // 筛选结果
+            if (resultFilter) {
+                list = list.filter(r => r.result === resultFilter);
+            }
+            // 筛选关系
+            if (relationFilter) {
+                list = list.filter(r => r.relation === relationFilter);
+            }
+
+            // 排序
+            list.sort((a, b) => {
+                const ta = a.time || '';
+                const tb = b.time || '';
+                if (sortAsc) return ta.localeCompare(tb);
+                else return tb.localeCompare(ta);
+            });
+
+            return list;
+        }
+
+        function renderList() {
+            filteredList = getFilteredAndSorted();
+            const listWrap = els.list;
+
+            if (filteredList.length === 0) {
+                const hasFilter = els.search.value.trim() || els.filterResult.value || els.filterRelation.value;
+                listWrap.innerHTML = `
+                    <div class="text-center text-[#94A3B8] py-16 text-sm">
+                        <i class="fa fa-inbox text-3xl block mb-3 opacity-30"></i>
+                        ${hasFilter ? '没有匹配的记录' : '暂无记录，开始记录第一次沟通复盘'}
+                    </div>
+                `;
+                return;
+            }
+
+            listWrap.innerHTML = filteredList.map((item, idx) => {
+                const realIdx = recordList.indexOf(item);
+                const timeStr = item.time ? item.time.replace('T', ' ').slice(0, 16) : '未知时间';
+                const resultIcon = {
+                    '目标达成': '✅',
+                    '部分达成': '◐',
+                    '未达成': '❌',
+                    '恶化': '⚠️'
+                } [item.result] || '📌';
+                const doneBadge = item.isDone ?
+                    '<span class="text-xs text-[#10B981] bg-[#D1FAE5] dark:bg-[#065F46] px-2 py-0.5 rounded-full font-medium">已落实</span>' :
+                    '<span class="text-xs text-[#F59E0B] bg-[#FEF3C7] dark:bg-[#78350F] px-2 py-0.5 rounded-full font-medium">待练习</span>';
+
+                return `
+                    <div class="record-item" data-index="${realIdx}">
+                        <div class="flex flex-wrap items-start justify-between gap-1">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-medium text-sm truncate">${item.target || '未命名'}</span>
+                                    <span class="text-xs text-[#94A3B8] dark:text-[#64748B]">${item.relation || ''}</span>
+                                    ${doneBadge}
+                                </div>
+                                <div class="text-xs text-[#94A3B8] dark:text-[#64748B] mt-0.5 flex items-center gap-2 flex-wrap">
+                                    <span>${timeStr}</span>
+                                    <span>${resultIcon} ${item.result || ''}</span>
+                                    ${item.tags ? `<span class="text-[#8B5CF6]">🏷️ ${item.tags}</span>` : ''}
+                                </div>
+                                <div class="text-sm mt-1 line-clamp-1 text-[#475569] dark:text-[#CBD5E1]">
+                                    ${item.goal ? '🎯 ' + item.goal : ''}
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1 flex-shrink-0">
+                                <button data-index="${realIdx}" class="edit-btn text-[#94A3B8] hover:text-primary transition p-1.5 rounded-lg hover:bg-[#F1F5F9] dark:hover:bg-[#1E293B]">
+                                    <i class="fa fa-pencil"></i>
+                                </button>
+                                <button data-index="${realIdx}" class="del-btn text-[#94A3B8] hover:text-danger transition p-1.5 rounded-lg hover:bg-[#F1F5F9] dark:hover:bg-[#1E293B]">
+                                    <i class="fa fa-trash-o"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 事件绑定：编辑/删除/点击查看详情
+            listWrap.querySelectorAll('.record-item').forEach(el => {
+                const idx = +el.dataset.index;
+                // 点击卡片 → 详情
+                el.addEventListener('click', (e) => {
+                    if (e.target.closest('.edit-btn') || e.target.closest('.del-btn')) return;
+                    showDetail(idx);
+                });
+            });
+
+            listWrap.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    editRecord(+btn.dataset.index);
+                });
+            });
+            listWrap.querySelectorAll('.del-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteRecord(+btn.dataset.index);
+                });
+            });
+
+            els.recordCount.textContent = `(${filteredList.length})`;
+        }
+
+        function updateStats() {
+            const total = recordList.length;
+            const success = recordList.filter(r => r.result === '目标达成').length;
+            const todo = recordList.filter(r => !r.isDone).length;
+
+            els.total.textContent = total;
+            els.success.textContent = success;
+            els.todo.textContent = todo;
+
+            // 高频标签
+            const tagMap = {};
+            recordList.forEach(r => {
+                if (r.tags) {
+                    r.tags.split(',').map(s => s.trim()).filter(Boolean).forEach(t => {
+                        tagMap[t] = (tagMap[t] || 0) + 1;
+                    });
+                }
+            });
+            const sorted = Object.entries(tagMap).sort((a, b) => b[1] - a[1]);
+            els.topTag.textContent = sorted[0]?.[0] || '暂无';
+        }
+
+        function renderAll() {
+            renderList();
+            updateStats();
+            renderTags();
+        }
+
+        // =================================================================
+        //  CRUD
+        // =================================================================
+        function saveLocal() {
+            saveUserData(currentUser, recordList);
+        }
+
+        function resetForm() {
+            els.form.reset();
+            els.editId.value = '';
+            els.formTitle.innerHTML = '<i class="fa fa-pencil-square-o text-primary"></i> 新增沟通记录';
+            // 设置默认时间
+            if (!els.time.value) {
+                const now = new Date();
+                els.time.value = now.toISOString().slice(0, 16);
+            }
+        }
+
+        // 编辑
+        function editRecord(idx) {
+            const item = recordList[idx];
+            if (!item) return;
+            els.editId.value = idx;
+            els.formTitle.innerHTML = '<i class="fa fa-edit text-warn"></i> 编辑记录';
+
+            els.time.value = item.time || '';
+            els.place.value = item.place || '';
+            els.target.value = item.target || '';
+            els.relation.value = item.relation || '同事';
+            els.channel.value = item.channel || '线下当面';
+            els.talkType.value = item.talkType || '闲聊';
+            els.goal.value = item.goal || '';
+            els.otherInfo.value = item.otherInfo || '';
+            els.selfInfo.value = item.selfInfo || '';
+            els.conflict.value = item.conflict || '';
+            els.result.value = item.result || '目标达成';
+            els.tags.value = item.tags || '';
+            els.eval.value = item.eval || '';
+            els.improve.value = item.improve || '';
+            els.isDone.checked = !!item.isDone;
+
+            // 滚动到表单
+            els.form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(() => els.time.focus(), 300);
+        }
+
+        function deleteRecord(idx) {
+            const item = recordList[idx];
+            if (!item) return;
+            if (!confirm(`确定删除“${item.target || '未命名'}”的沟通记录吗？`)) return;
+            recordList.splice(idx, 1);
+            saveLocal();
+            renderAll();
+            showToast('已删除记录', 'warning');
+        }
+
+        // 提交表单
+        els.form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            // 简单验证
+            if (!els.time.value) {
+                showToast('请选择发生时间', 'error');
+                return;
+            }
+
+            const id = els.editId.value;
+            const data = {
+                time: els.time.value,
+                place: els.place.value.trim(),
+                target: els.target.value.trim(),
+                relation: els.relation.value,
+                channel: els.channel.value,
+                talkType: els.talkType.value,
+                goal: els.goal.value.trim(),
+                otherInfo: els.otherInfo.value.trim(),
+                selfInfo: els.selfInfo.value.trim(),
+                conflict: els.conflict.value.trim(),
+                result: els.result.value,
+                tags: els.tags.value.trim(),
+                eval: els.eval.value.trim(),
+                improve: els.improve.value.trim(),
+                isDone: els.isDone.checked
+            };
+
+            if (id !== '') {
+                // 编辑
+                recordList[+id] = data;
+                showToast('记录已更新', 'success');
+            } else {
+                recordList.unshift(data);
+                showToast('记录已保存', 'success');
+            }
+
+            saveLocal();
+            resetForm();
+            renderAll();
+            // 自动设置新时间
+            const now = new Date();
+            els.time.value = now.toISOString().slice(0, 16);
+        });
+
+        // 取消编辑（通过重置）
+        // 点击重置时，如果有editId，清除它
+        document.addEventListener('click', (e) => {
+            // 点击表单外部不会自动重置，但我们不提供重置按钮
+        });
+
+        // 快捷：点击"清空筛选"
+        els.clearFilters.addEventListener('click', () => {
+            els.search.value = '';
+            els.filterResult.value = '';
+            els.filterRelation.value = '';
+            renderAll();
+        });
+
+        // 搜索/筛选变化
+        els.search.addEventListener('input', renderAll);
+        els.filterResult.addEventListener('change', renderAll);
+        els.filterRelation.addEventListener('change', renderAll);
+
+        // 排序切换
+        els.sortToggle.addEventListener('click', () => {
+            sortAsc = !sortAsc;
+            els.sortLabel.textContent = sortAsc ? '最早优先' : '最新优先';
+            renderAll();
+        });
+
+        // =================================================================
+        //  详情弹窗
+        // =================================================================
+        function showDetail(idx) {
+            const item = recordList[idx];
+            if (!item) return;
+
+            const timeStr = item.time ? item.time.replace('T', ' ').slice(0, 16) : '未知';
+            const resultIcon = {
+                '目标达成': '✅',
+                '部分达成': '◐',
+                '未达成': '❌',
+                '恶化': '⚠️'
+            } [item.result] || '📌';
+
+            els.modalContent.innerHTML = `
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <div class="text-lg font-bold">${item.target || '未命名'}</div>
+                        <div class="text-sm text-[#64748B] dark:text-[#94A3B8] flex flex-wrap items-center gap-2 mt-0.5">
+                            <span>${timeStr}</span>
+                            <span>·</span>
+                            <span>${item.relation || ''}</span>
+                            <span>·</span>
+                            <span>${item.channel || ''}</span>
+                            <span>·</span>
+                            <span>${item.talkType || ''}</span>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <div class="text-sm font-medium">${resultIcon} ${item.result || ''}</div>
+                        ${item.isDone ? '<span class="text-xs text-[#10B981] bg-[#D1FAE5] dark:bg-[#065F46] px-2 py-0.5 rounded-full font-medium">✅ 已落实</span>' :
+                            '<span class="text-xs text-[#F59E0B] bg-[#FEF3C7] dark:bg-[#78350F] px-2 py-0.5 rounded-full font-medium">⏳ 待练习</span>'}
+                    </div>
+                </div>
+
+                <div class="border-t border-[#F1F5F9] dark:border-[#1E293B] my-3"></div>
+
+                ${item.place ? `<div class="text-sm"><span class="font-medium text-[#64748B] dark:text-[#94A3B8]">📍 地点：</span>${item.place}</div>` : ''}
+
+                ${item.goal ? `<div class="text-sm"><span class="font-medium text-[#64748B] dark:text-[#94A3B8]">🎯 目标：</span>${item.goal}</div>` : ''}
+
+                ${item.otherInfo ? `<div class="text-sm"><span class="font-medium text-[#64748B] dark:text-[#94A3B8]">👤 对方信息：</span>${item.otherInfo}</div>` : ''}
+
+                ${item.selfInfo ? `<div class="text-sm"><span class="font-medium text-[#64748B] dark:text-[#94A3B8]">🧑 自我信息：</span>${item.selfInfo}</div>` : ''}
+
+                ${item.conflict ? `<div class="text-sm"><span class="font-medium text-[#64748B] dark:text-[#94A3B8]">⚡ 卡点：</span>${item.conflict}</div>` : ''}
+
+                ${item.tags ? `<div class="text-sm"><span class="font-medium text-[#64748B] dark:text-[#94A3B8]">🏷️ 标签：</span><span class="text-[#8B5CF6]">${item.tags}</span></div>` : ''}
+
+                ${item.eval ? `<div class="text-sm"><span class="font-medium text-[#64748B] dark:text-[#94A3B8]">📝 自我评价：</span>${item.eval}</div>` : ''}
+
+                ${item.improve ? `<div class="text-sm p-3 bg-[#EEF2FF] dark:bg-[#1E1B4B] rounded-xl border border-[#C7D2FE] dark:border-[#312E81]"><span class="font-medium text-[#4F46E5] dark:text-[#818CF8]">🚀 改进方案：</span>${item.improve}</div>` : ''}
+
+                <div class="flex gap-2 mt-2 pt-2 border-t border-[#F1F5F9] dark:border-[#1E293B]">
+                    <button data-idx="${idx}" class="modal-edit-btn btn-primary !py-1.5 !px-4 text-sm">
+                        <i class="fa fa-pencil"></i> 编辑
+                    </button>
+                    <button data-idx="${idx}" class="modal-del-btn btn-danger !py-1.5 !px-4 text-sm">
+                        <i class="fa fa-trash"></i> 删除
+                    </button>
+                </div>
+            `;
+
+            // 弹窗内的编辑/删除
+            els.modalContent.querySelector('.modal-edit-btn')?.addEventListener('click', () => {
+                const idx = +els.modalContent.querySelector('.modal-edit-btn').dataset.idx;
+                closeModal();
+                editRecord(idx);
+            });
+            els.modalContent.querySelector('.modal-del-btn')?.addEventListener('click', () => {
+                const idx = +els.modalContent.querySelector('.modal-del-btn').dataset.idx;
+                closeModal();
+                deleteRecord(idx);
+            });
+
+            els.modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            els.modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        els.modalClose.addEventListener('click', closeModal);
+        els.modal.addEventListener('click', (e) => {
+            if (e.target === els.modal) closeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // =================================================================
+        //  导出 / 导入
+        // =================================================================
+        els.exportBtn.addEventListener('click', () => {
+            if (recordList.length === 0) {
+                return showToast('暂无数据可导出', 'warning');
+            }
+            const blob = new Blob([JSON.stringify(recordList, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            const uname = currentUser ? ('_' + currentUser) : '';
+            a.download = `沟通复盘${uname}_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast('导出成功', 'success');
+        });
+
+        els.importBtn.addEventListener('click', () => {
+            els.importFileInput.click();
+        });
+
+        els.importFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if (!Array.isArray(data)) throw new Error('数据格式错误');
+                    if (data.length === 0) {
+                        return showToast('导入文件为空', 'warning');
+                    }
+                    // 合并：去重（简单策略：替换全部）
+                    if (confirm(`将导入 ${data.length} 条记录，是否覆盖当前所有数据？\n（点击"取消"则追加合并）`)) {
+                        recordList = data;
+                    } else {
+                        // 追加，去重基于时间+目标 简单去重
+                        const existingKeys = new Set(recordList.map(r => `${r.time}|${r.target}`));
+                        let added = 0;
+                        data.forEach(item => {
+                            const key = `${item.time}|${item.target}`;
+                            if (!existingKeys.has(key)) {
+                                recordList.push(item);
+                                existingKeys.add(key);
+                                added++;
+                            }
+                        });
+                        showToast(`追加了 ${added} 条新记录（跳过 ${data.length - added} 条重复）`, 'success');
+                    }
+                    saveLocal();
+                    renderAll();
+                    showToast(`导入成功，共 ${recordList.length} 条记录`, 'success');
+                } catch (err) {
+                    showToast('导入失败：' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+            els.importFileInput.value = '';
+        });
+
+        // =================================================================
+        //  初始化
+        // =================================================================
+        function init() {
+            // 设置默认时间
+            const now = new Date();
+            els.time.value = now.toISOString().slice(0, 16);
+
+            renderUserSelect();
+            renderAll();
+
+            // 如果记录为空，显示提示
+            if (recordList.length === 0) {
+                // 可以添加示例数据？不自动添加，保持干净
+            }
+
+            // 控制台提示
+            console.log('💬 沟通复盘系统已加载' + (currentUser ? '（学员：' + currentUser + '）' : '（未选择学员，使用默认数据）') + '，数据条数:', recordList.length);
+        }
+
+        init();
+
+        // 暴露一些变量方便调试
+        window.__debug = { recordList, renderAll, showToast };
+    </script>
+
+</body>
+</html>
