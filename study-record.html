@@ -440,7 +440,121 @@
             body.sidebar-collapsed .app-main { padding-left: 8px; }
             .sidebar-mask.show { left: min(210px, 46vw); }
         }
-    </style>
+    
+/* ============================================================
+   深色模式补丁：修复「页面变色」仅第三个工具（情商club）生效的问题
+   原因：三个工具均通过给 <html> 切换 .dark 类来换肤，但 index /
+   study-record 页面缺少深色样式覆盖，故在此补一套与情商club
+   （slate + indigo 设计语言）一致的规则。无需改动 JS 逻辑。
+   ============================================================ */
+html.dark,
+html.dark body { background:#0f172a !important; color:#e2e8f0 !important; }
+
+/* 顶栏 */
+html.dark header { background:#1e293b !important; color:#e2e8f0 !important; box-shadow:0 2px 10px rgba(0,0,0,.45) !important; }
+
+/* 侧边栏 */
+html.dark .sidebar,
+html.dark .sidebar-inner { background:#1e293b !important; color:#e2e8f0 !important; border-color:#334155 !important; }
+html.dark .sidebar-header,
+html.dark .sidebar-section,
+html.dark .sidebar-section-title { border-color:#334155 !important; color:#94a3b8 !important; }
+html.dark .sidebar-item { color:#cbd5e1 !important; }
+html.dark .sidebar-item:hover { background:rgba(148,163,184,.12) !important; }
+html.dark .sidebar-item.active { background:rgba(99,102,241,.20) !important; color:#fff !important; }
+html.dark .sidebar-item .ico,
+html.dark .sidebar-item .name,
+html.dark .sidebar-account { color:inherit !important; }
+html.dark .sidebar-version { color:#64748b !important; }
+html.dark .sidebar-toggle { background:#1e293b !important; border-color:#334155 !important; color:#cbd5e1 !important; }
+html.dark .manage-btn { background:rgba(255,255,255,.06) !important; color:#cbd5e1 !important; border-color:#334155 !important; }
+
+/* 卡片 / 面板 / 区块 / 弹窗 */
+html.dark .card,
+html.dark .box,
+html.dark .section,
+html.dark .panel,
+html.dark .modal,
+html.dark .modal-card,
+html.dark .modal-body,
+html.dark .modal-header,
+html.dark .card-title,
+html.dark [class*="card"] { background:#1e293b !important; color:#e2e8f0 !important; border-color:#334155 !important; }
+html.dark .modal-mask { background:rgba(2,6,23,.6) !important; }
+
+/* 表单控件 */
+html.dark input,
+html.dark select,
+html.dark textarea { background:#0f172a !important; color:#e2e8f0 !important; border-color:#334155 !important; }
+html.dark input::placeholder,
+html.dark textarea::placeholder { color:#64748b !important; }
+html.dark input:focus,
+html.dark select:focus,
+html.dark textarea:focus { border-color:#818cf8 !important; box-shadow:0 0 0 3px rgba(129,140,248,.18) !important; }
+html.dark label,
+html.dark .form-label { color:#cbd5e1 !important; }
+
+/* 表格 */
+html.dark table,
+html.dark .table-wrap { background:#1e293b !important; color:#e2e8f0 !important; border-color:#334155 !important; }
+html.dark th { background:#334155 !important; color:#e2e8f0 !important; border-color:#475569 !important; }
+html.dark td { background:#1e293b !important; color:#e2e8f0 !important; border-color:#334155 !important; }
+html.dark tr { background:#1e293b !important; color:#e2e8f0 !important; }
+html.dark tbody tr:nth-child(even) { background:#172033 !important; }
+
+/* 按钮：主按钮保留主色；中性/次级按钮反色（排除彩色语义按钮与侧栏按钮） */
+html.dark .btn-primary,
+html.dark .primary,
+html.dark .btn-save { background:#2563eb !important; color:#fff !important; border-color:#2563eb !important; }
+html.dark .btn-primary:hover,
+html.dark .primary:hover { background:#1d4ed8 !important; }
+html.dark .btn:not(.btn-primary):not(.primary):not(.btn-save):not(.btn-success):not(.btn-danger):not(.btn-warning),
+html.dark button:not(.btn-primary):not(.primary):not(.btn-save):not(.btn-success):not(.btn-danger):not(.btn-warning):not(.sidebar-sync-btn):not(.sidebar-user-btn):not(.sidebar-theme-btn):not(.sidebar-manage-btn):not(.manage-btn) { background:#334155 !important; color:#e2e8f0 !important; border-color:#475569 !important; }
+
+/* 徽章 / 标签 / 胶囊 */
+html.dark .badge { background:#334155 !important; color:#cbd5e1 !important; border-color:#475569 !important; }
+html.dark .badge.has-data { background:rgba(16,185,129,.20) !important; color:#6ee7b7 !important; }
+html.dark .badge.no-data { background:#334155 !important; color:#94a3b8 !important; }
+html.dark .tag,
+html.dark .tag-pill,
+html.dark .chip,
+html.dark .pill { background:#334155 !important; color:#e2e8f0 !important; border-color:#475569 !important; }
+html.dark .tag.active,
+html.dark .tag-pill.active { background:#818cf8 !important; color:#0f172a !important; }
+
+/* tabs / 工具胶囊 */
+html.dark .tab,
+html.dark .tabs,
+html.dark .tool-switch { background:#1e293b !important; color:#cbd5e1 !important; border-color:#334155 !important; }
+html.dark .tab.active { background:#2563eb !important; color:#fff !important; }
+
+/* toast / 提示 */
+html.dark .toast { background:#1e293b !important; color:#e2e8f0 !important; border-color:#334155 !important; box-shadow:0 6px 24px rgba(0,0,0,.5) !important; }
+
+/* 链接 / 次要文字 */
+html.dark a { color:#93c5fd !important; }
+html.dark .sub,
+html.dark .meta,
+html.dark .text-muted,
+html.dark .muted,
+html.dark .desc { color:#94a3b8 !important; }
+html.dark hr,
+html.dark .divider { border-color:#334155 !important; }
+
+/* 内联浅色背景 / 文字兜底（覆盖行内 style 硬编码） */
+html.dark [style*="background:#fff"],
+html.dark [style*="background: #fff"],
+html.dark [style*="background:#ffffff"],
+html.dark [style*="background: #ffffff"],
+html.dark [style*="background:#f1f5f9"],
+html.dark [style*="background:#f8fafc"],
+html.dark [style*="background:white"],
+html.dark [style*="background: #fff;"] { background:#1e293b !important; color:#e2e8f0 !important; }
+html.dark [style*="color:#1e293b"],
+html.dark [style*="color: #1e293b"],
+html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
+
+</style>
 </head>
 <body>
     <!-- ===== 光阴の侧边栏（网页工具集） ===== -->
