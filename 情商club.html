@@ -414,6 +414,62 @@
             background: #818CF8;
             color: #0f172a;
         }
+
+        /* ===== 汉堡导航：与 child-growth-assistant 同款半圈 tab，可隐身 ===== */
+        .sidebar-toggle {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 22px;
+            height: 56px;
+            border-radius: 0 10px 10px 0;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #fff;
+            border: none;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 2px 0 12px rgba(99,102,241,.4);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-left: 2px;
+            writing-mode: vertical-rl;
+            letter-spacing: 1px;
+            transition: width .25s, padding-left .25s, transform .3s, opacity .2s;
+        }
+        .sidebar-toggle:hover { width: 26px; padding-left: 3px; }
+        .sidebar-toggle:active { transform: translateY(-50%) scale(.96); }
+        .sidebar-toggle.is-hidden { transform: translate(-100%, -50%); opacity: 0; pointer-events: none; }
+        /* 召唤条：隐身时露出的左缘细条 */
+        .sidebar-toggle-revive {
+            position: fixed; left: 0; top: 50%;
+            transform: translateY(-50%);
+            width: 4px; height: 44px;
+            background: rgba(99,102,241,.55);
+            border-radius: 0 4px 4px 0;
+            border: none; padding: 0; cursor: pointer;
+            z-index: 9998;
+            display: none;
+            transition: width .25s, background .15s, height .2s;
+        }
+        .sidebar-toggle-revive:hover { width: 10px; height: 56px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+        body.sidebar-toggle-hidden .sidebar-toggle-revive { display: block; }
+        /* × 隐藏小按钮（hover 才出现） */
+        .sidebar-toggle .toggle-hide-btn {
+            position: absolute; top: 4px; right: 2px;
+            width: 14px; height: 14px; border-radius: 50%;
+            background: rgba(0,0,0,.45); color: #fff;
+            border: none; font-size: 11px; line-height: 1;
+            cursor: pointer;
+            display: none; align-items: center; justify-content: center;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .sidebar-toggle:hover .toggle-hide-btn { display: inline-flex; }
+        .sidebar-toggle .toggle-hide-btn:hover { background: rgba(239,68,68,.95); }
     </style>
 </head>
 <body class="bg-[#F1F5F9] dark:bg-[#0F172A] text-[#0F172A] dark:text-[#F1F5F9] transition-colors duration-300 antialiased">
@@ -1471,6 +1527,57 @@
 
         // 暴露一些变量方便调试
         window.__debug = { recordList, renderAll, showToast };
+    </script>
+
+    <!-- 汉堡导航：同 child-growth-assistant/index.html 半圈 tab，点 → 跳回主页 -->
+    <button class="sidebar-toggle" id="sidebarToggle" title="返回主页（hover 出现 × 可隐藏）" aria-label="返回主页">☰<span class="toggle-hide-btn" id="sidebarToggleHide" title="隐藏导航按钮（以后想打开可点屏幕左边细条）" aria-label="隐藏导航按钮">×</span></button>
+    <button class="sidebar-toggle-revive" id="sidebarToggleRevive" title="显示导航按钮" aria-label="显示导航按钮"></button>
+
+    <script>
+        // ============ 汉堡导航：隐身 / 召唤 / 点击回主页 ============
+        (function() {
+            var HIDE_KEY = 'sidebar_toggle_hidden_v1';
+            var toggle = document.getElementById('sidebarToggle');
+            var hideBtn = document.getElementById('sidebarToggleHide');
+            var reviveBtn = document.getElementById('sidebarToggleRevive');
+
+            function applyHidden(hidden) {
+                try { localStorage.setItem(HIDE_KEY, hidden ? '1' : '0'); } catch(e) {}
+                if (toggle) {
+                    if (hidden) toggle.classList.add('is-hidden');
+                    else toggle.classList.remove('is-hidden');
+                }
+                if (hidden) document.body.classList.add('sidebar-toggle-hidden');
+                else document.body.classList.remove('sidebar-toggle-hidden');
+            }
+            // 初始化：按上次状态决定是否隐身
+            try {
+                if (localStorage.getItem(HIDE_KEY) === '1') {
+                    setTimeout(function(){ applyHidden(true); }, 0);
+                }
+            } catch(e) {}
+            // 主按钮 → 跳回主页（这里是工具页，没有侧栏可展开）
+            if (toggle) {
+                toggle.addEventListener('click', function() {
+                    // 顺便把当前学员数据落盘（防止 users 切学员但本页未保存数据）
+                    try { if (typeof saveLocal === 'function') saveLocal(); } catch(e) {}
+                    window.location.href = './index.html';
+                });
+            }
+            // × 隐藏按钮：阻止冒泡 + 隐身
+            if (hideBtn) {
+                hideBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    applyHidden(true);
+                });
+            }
+            // 召唤条：点一下恢复
+            if (reviveBtn) {
+                reviveBtn.addEventListener('click', function() {
+                    applyHidden(false);
+                });
+            }
+        })();
     </script>
 
 </body>
