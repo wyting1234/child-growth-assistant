@@ -1072,21 +1072,33 @@
         //  主题
         // =================================================================
         function initTheme() {
-            // 新 key 'page_theme_v1' 优先；老 key 'theme' 兼容
-            var saved = localStorage.getItem('page_theme_v1') || localStorage.getItem('theme');
+            // 兼容新 key 'page_theme_v1' 与老 key 'theme'
+            var saved = null;
+            try { saved = localStorage.getItem('page_theme_v1') || localStorage.getItem('theme'); } catch (e) {}
             if (saved === 'dark') document.documentElement.classList.add('dark');
             else if (saved === 'light') document.documentElement.classList.remove('dark');
             else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
                 document.documentElement.classList.add('dark');
             }
+            // 同步按钮文字
+            var tb = document.getElementById('sidebarThemeBtn');
+            if (tb) tb.textContent = document.documentElement.classList.contains('dark') ? '🌙 页面变色' : '☀️ 页面变色';
         }
         initTheme();
 
-        els.themeToggle.addEventListener('click', () => {
+        function eqTogglePageTheme() {
             document.documentElement.classList.toggle('dark');
             var isDark = document.documentElement.classList.contains('dark');
-            try { localStorage.setItem('page_theme_v1', isDark ? 'dark' : 'light'); } catch (e) {}
-        });
+            try {
+                localStorage.setItem('page_theme_v1', isDark ? 'dark' : 'light');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light'); // 同步老 key
+            } catch (e) {}
+            var tb = document.getElementById('sidebarThemeBtn');
+            if (tb) tb.textContent = isDark ? '🌙 页面变色' : '☀️ 页面变色';
+        }
+        // 侧栏按钮绑定
+        var sidebarThemeBtn = document.getElementById('sidebarThemeBtn');
+        if (sidebarThemeBtn) sidebarThemeBtn.addEventListener('click', eqTogglePageTheme);
         // 跨标签页同步
         window.addEventListener('storage', (ev) => {
             if (ev.key === 'page_theme_v1') {
