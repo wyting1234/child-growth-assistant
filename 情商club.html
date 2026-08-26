@@ -1869,8 +1869,12 @@
             function bindFooterActions() {
                 var sync = document.getElementById('sidebarCloudSyncBtn');
                 if (sync) sync.addEventListener('click', function() {
-                    // 云端同步只能在主页里进行：跳过去并带上 ?sync=1 让主页自动打开同步弹窗
-                    window.location.href = './index.html?sync=1';
+                    // 直接在子页打开云同步弹窗，不跳主页
+                    if (typeof window.EqSyncManager === 'object' && window.EqSyncManager.open) {
+                        window.EqSyncManager.open();
+                    } else if (typeof showToast === 'function') {
+                        showToast('云同步模块加载中…');
+                    }
                 });
                 var userMgr = document.getElementById('sidebarUserManagerBtn');
                 if (userMgr) userMgr.addEventListener('click', function() {
@@ -1901,6 +1905,182 @@
 
     <!-- 共享的学员管理 modal：侧栏 👤 学员管理 一键打开 -->
     <script src="./account-manager.js"></script>
+
+    <!-- 云同步（GitHub Gist）modal：侧栏 ☁️ 云端同步 一键打开，直接在子页同步 -->
+    <script>
+        (function () {
+            'use strict';
+            var CLOUD_CONFIG_KEY = 'cloud_sync_config_v1';
+            var CLOUD_SYNC_TIME_KEY = 'cloud_sync_time_v1';
+            function getCloudConfig() {
+                try { return JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY) || '{}'); } catch (e) { return {}; }
+            }
+            function setCloudConfig(cfg) { localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cfg)); }
+            function setSyncStatus(msg, type) {
+                var el = document.getElementById('eqCloudSyncStatus');
+                if (el) { el.textContent = msg; el.className = 'eq-sync-status ' + (type || 'info'); }
+            }
+            function collectSyncData() {
+                var data = {};
+                for (var i = 0; i < localStorage.length; i++) {
+                    var key = localStorage.key(i);
+                    if (key && (key.indexOf('communication_record_data') === 0 || key.indexOf('eq_club_opt') === 0 || key.indexOf('child_account') === 0)) {
+                        data[key] = localStorage.getItem(key);
+                    }
+                }
+                return data;
+            }
+            function applySyncData(data) {
+                var applied = 0;
+                Object.keys(data || {}).forEach(function (key) {
+                    if (key.indexOf('communication_record_data') === 0 || key.indexOf('eq_club_opt') === 0 || key.indexOf('child_account') === 0) {
+                        localStorage.setItem(key, data[key]);
+                        applied++;
+                    }
+                });
+                return applied;
+            }
+            function cloudApi(method, url, token, body) {
+                return fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': 'token ' + token,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: body ? JSON.stringify(body) : undefined
+                }).then(function (r) {
+                    if (!r.ok) {
+                        return r.json().then(function (j) { throw new Error((j && j.message) || ('HTTP ' + r.status)); })
+                            .catch(function () { throw new Error('HTTP ' + r.status); });
+                    }
+                    return r.json();
+                });
+            }
+            function ensureModal() {
+                if (document.getElementById('eqCloudSyncModal')) return;
+                var css = '<style id="eq-sync-style">' +
+                    '#eqCloudSyncModal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:99998;align-items:center;justify-content:center;}' +
+                    '#eqCloudSyncModal.show{display:flex;}' +
+                    '#eqCloudSyncModal .eq-sync-box{background:#fff;border-radius:16px;padding:24px;max-width:480px;width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.3);}' +
+                    '.dark #eqCloudSyncModal .eq-sync-box{background:#1e293b;color:#e2e8f0;}' +
+                    '#eqCloudSyncModal .eq-sync-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}' +
+                    '#eqCloudSyncModal .eq-sync-title{font-size:17px;font-weight:700;}' +
+                    '#eqCloudSyncModal .eq-sync-x{background:none;border:none;font-size:22px;color:#94a3b8;cursor:pointer;line-height:1;padding:0 4px;}' +
+                    '#eqCloudSyncModal .eq-sync-x:hover{color:#475569;}' +
+                    '#eqCloudSyncModal .eq-sync-status{padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;background:#f1f5f9;color:#475569;}' +
+                    '#eqCloudSyncModal .eq-sync-status.ok{background:#ecfdf5;color:#065f46;}' +
+                    '#eqCloudSyncModal .eq-sync-status.err{background:#fef2f2;color:#991b1b;}' +
+                    '#eqCloudSyncModal .eq-sync-status.info{background:#eff6ff;color:#1e40af;}' +
+                    '#eqCloudSyncModal label{display:block;font-size:12px;color:#64748b;margin-bottom:4px;}' +
+                    '#eqCloudSyncModal input[type=text],#eqCloudSyncModal input[type=password]{width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;outline:none;margin-bottom:10px;background:#fff;color:#1e293b;}' +
+                    '.dark #eqCloudSyncModal input[type=text],.dark #eqCloudSyncModal input[type=password]{background:#0f172a;border-color:#475569;color:#e2e8f0;}' +
+                    '#eqCloudSyncModal input:focus{border-color:#4F46E5;}' +
+                    '#eqCloudSyncModal .eq-sync-actions{display:flex;gap:8px;margin:14px 0 10px;}' +
+                    '#eqCloudSyncModal .eq-sync-btn{flex:1;padding:9px 0;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;color:#fff;}' +
+                    '#eqCloudSyncModal .eq-sync-btn.up{background:#2563eb;}' +
+                    '#eqCloudSyncModal .eq-sync-btn.down{background:#10b981;}' +
+                    '#eqCloudSyncModal .eq-sync-btn.save{background:#64748b;}' +
+                    '#eqCloudSyncModal .eq-sync-hint{font-size:12px;color:#94a3b8;margin-top:6px;}' +
+                    '</style>';
+                document.head.insertAdjacentHTML('beforeend', css);
+                var html =
+                    '<div class="modal-mask" id="eqCloudSyncModal" onclick="if(event.target===this)window.EqSyncManager.close()">' +
+                        '<div class="eq-sync-box">' +
+                            '<div class="eq-sync-head">' +
+                                '<span class="eq-sync-title">☁️ 云端数据同步</span>' +
+                                '<button class="eq-sync-x" type="button" onclick="window.EqSyncManager.close()" aria-label="关闭">×</button>' +
+                            '</div>' +
+                            '<div class="eq-sync-status" id="eqCloudSyncStatus">尚未同步</div>' +
+                            '<label>GitHub Token（仅保存在本机浏览器）</label>' +
+                            '<input type="password" id="eqCloudTokenInput" placeholder="ghp_xxxxxxxx">' +
+                            '<label>Gist ID（留空则自动创建）</label>' +
+                            '<input type="text" id="eqCloudGistIdInput" placeholder="留空则自动创建">' +
+                            '<div class="eq-sync-actions">' +
+                                '<button class="eq-sync-btn up" type="button" id="eqUploadCloudBtn">⬆️ 上传到云端</button>' +
+                                '<button class="eq-sync-btn down" type="button" id="eqDownloadCloudBtn">⬇️ 从云端下载</button>' +
+                            '</div>' +
+                            '<div style="text-align:center;"><button class="eq-sync-btn save" type="button" id="eqSaveCloudBtn" style="width:100%;">保存配置</button></div>' +
+                            '<div class="eq-sync-hint">同步范围：沟通记录、下拉选项、学员管理。数据存私有 Gist，仅自己可见。</div>' +
+                        '</div>' +
+                    '</div>';
+                document.body.insertAdjacentHTML('beforeend', html);
+                document.getElementById('eqUploadCloudBtn').onclick = upload;
+                document.getElementById('eqDownloadCloudBtn').onclick = download;
+                document.getElementById('eqSaveCloudBtn').onclick = saveConfig;
+            }
+            function upload() {
+                var cfg = getCloudConfig();
+                var token = (document.getElementById('eqCloudTokenInput').value || '').trim() || cfg.token || '';
+                if (!token) { setSyncStatus('请先填写 GitHub Token', 'err'); return; }
+                var data = collectSyncData();
+                var content = JSON.stringify({ timestamp: new Date().toISOString(), data: data }, null, 2);
+                setSyncStatus('正在上传…', 'info');
+                var gistId = cfg.gistId || (document.getElementById('eqCloudGistIdInput').value || '').trim();
+                var file = { 'eq-club-backup.json': { content: content } };
+                var p;
+                if (gistId) {
+                    p = cloudApi('PATCH', 'https://api.github.com/gists/' + gistId, token, { files: file });
+                } else {
+                    p = cloudApi('POST', 'https://api.github.com/gists', token, { description: '情商club 云端备份', public: false, files: file });
+                }
+                p.then(function (res) {
+                    var gid = res.id || gistId;
+                    if (gid) {
+                        cfg.token = token;
+                        cfg.gistId = gid;
+                        setCloudConfig(cfg);
+                        document.getElementById('eqCloudGistIdInput').value = gid;
+                    }
+                    localStorage.setItem(CLOUD_SYNC_TIME_KEY, new Date().toISOString());
+                    setSyncStatus('✅ 上传成功（' + Object.keys(data).length + ' 项数据）', 'ok');
+                }).catch(function (err) {
+                    setSyncStatus('❌ 上传失败：' + err.message, 'err');
+                });
+            }
+            function download() {
+                var cfg = getCloudConfig();
+                var token = (document.getElementById('eqCloudTokenInput').value || '').trim() || cfg.token || '';
+                var gistId = cfg.gistId || (document.getElementById('eqCloudGistIdInput').value || '').trim();
+                if (!token) { setSyncStatus('请先填写 GitHub Token', 'err'); return; }
+                if (!gistId) { setSyncStatus('请先上传一次或填写 Gist ID', 'err'); return; }
+                if (!confirm('从云端下载将覆盖本机数据，确定继续？')) return;
+                setSyncStatus('正在下载…', 'info');
+                cloudApi('GET', 'https://api.github.com/gists/' + gistId, token).then(function (res) {
+                    var file = res.files && res.files['eq-club-backup.json'];
+                    if (!file || !file.content) { setSyncStatus('❌ 云端未找到备份文件', 'err'); return; }
+                    var parsed = JSON.parse(file.content);
+                    var applied = applySyncData(parsed.data || {});
+                    localStorage.setItem(CLOUD_SYNC_TIME_KEY, parsed.timestamp || new Date().toISOString());
+                    setSyncStatus('✅ 下载成功（恢复 ' + applied + ' 项数据），即将刷新…', 'ok');
+                    setTimeout(function () { location.reload(); }, 1200);
+                }).catch(function (err) {
+                    setSyncStatus('❌ 下载失败：' + err.message, 'err');
+                });
+            }
+            function saveConfig() {
+                var token = (document.getElementById('eqCloudTokenInput').value || '').trim();
+                var gistId = (document.getElementById('eqCloudGistIdInput').value || '').trim();
+                if (!token) { setSyncStatus('请输入 GitHub Token', 'err'); return; }
+                setCloudConfig({ token: token, gistId: gistId });
+                setSyncStatus('✅ 配置已保存（仅存本机浏览器）', 'ok');
+            }
+            function open() {
+                ensureModal();
+                var cfg = getCloudConfig();
+                if (cfg.token) document.getElementById('eqCloudTokenInput').value = cfg.token;
+                if (cfg.gistId) document.getElementById('eqCloudGistIdInput').value = cfg.gistId;
+                var lastSync = localStorage.getItem(CLOUD_SYNC_TIME_KEY);
+                setSyncStatus(lastSync ? ('上次同步：' + lastSync.replace('T', ' ').slice(0, 19)) : '尚未同步', 'info');
+                document.getElementById('eqCloudSyncModal').classList.add('show');
+            }
+            function close() {
+                var m = document.getElementById('eqCloudSyncModal');
+                if (m) m.classList.remove('show');
+            }
+            window.EqSyncManager = { open: open, close: close };
+        })();
+    </script>
 
     </div><!-- /max-w-7xl -->
     </main><!-- /app-main -->
