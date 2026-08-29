@@ -1668,25 +1668,19 @@
             width: 100%;
         }
         @media print {
-            body * {
-                display: none !important;
-            }
-            #summary-area,
-            #summary-area * {
-                display: block !important;
-            }
+            @page { size: A4; margin: 12mm; }
+            html, body { background:#fff !important; color:#000 !important; height:auto !important; overflow:visible !important; margin:0 !important; padding:0 !important; }
+            /* 打印前脚本会把 #summary-area 临时挂到 body 下，这里隐藏其余顶层区块，避免多打空白页 */
+            body > *:not(#summary-area) { display: none !important; }
             #summary-area {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                padding: 20px;
+                display:block !important; width:186mm !important; max-width:186mm !important;
+                margin:0 auto !important; padding:0 !important; background:#fff !important; color:#000 !important;
             }
-            .summary-actions,
-            .btn,
-            .toast {
-                display: none !important;
-            }
+            .summary-actions, .btn, .toast, .view-toggle, .temp-add-btn, #save-daily-new { display: none !important; }
+            #summary-area table { width:100% !important; border-collapse:collapse !important; table-layout:fixed; }
+            #summary-area th, #summary-area td { border:1px solid #666 !important; padding:3px 4px !important; font-size:9.5pt; }
+            #summary-area th { background:#f2f2f2 !important; }
+            #summary-area input { border:none !important; background:transparent !important; color:#000 !important; padding:0 !important; }
         }
         .custom-select-wrap {
             position: relative;
@@ -4025,6 +4019,8 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         }
 
         function addTempTask() {
+            // 先静默保存当前已填写的内容，避免添加新项后丢失
+            try { saveDailyRecord({ silent: true }); } catch (e) { console.warn('自动保存失败：', e); }
             var dateInput = document.getElementById('daily-date');
             var selectedDate = dateInput ? dateInput.value : today;
             var tempKey = 'daily_temp_' + selectedDate;
@@ -4034,10 +4030,12 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             Storage.set(tempKey, items);
             renderTempItems(items);
             populateCustomSelectSm();
-            showToast('✅ 已添加临时事项');
+            updateSummary();
+            showToast('✅ 已保存并添加临时事项');
         }
 
         window.deleteTempTask = function(id) {
+            try { saveDailyRecord({ silent: true }); } catch (e) { console.warn('自动保存失败：', e); }
             var dateInput = document.getElementById('daily-date');
             var selectedDate = dateInput ? dateInput.value : today;
             var tempKey = 'daily_temp_' + selectedDate;
@@ -4046,7 +4044,8 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             Storage.set(tempKey, items);
             renderTempItems(items);
             populateCustomSelectSm();
-            showToast('🗑️ 已删除临时事项');
+            updateSummary();
+            showToast('🗑️ 已保存并删除临时事项');
         };
 
         // ================================================================
@@ -4210,7 +4209,9 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         // ================================================================
         //  保存每日记录（修改版，支持 actualTime）
         // ================================================================
-        document.getElementById('save-daily-new').addEventListener('click', function() {
+        function saveDailyRecord(opts) {
+            opts = opts || {};
+            var silent = !!opts.silent;
             var dateInput = document.getElementById('daily-date');
             var selectedDate = dateInput ? dateInput.value : today;
             var fixedInfo = getFixedTaskList();
@@ -4311,37 +4312,102 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                     Storage.set('growth_month_days', monthDayList);
                 }
             }
-            showToast('✅ 今日记录保存成功！');
+            if (!silent) { showToast('✅ 今日记录保存成功！'); }
             updateSummary();
             populateCustomSelectSm();
             updateStats();
             renderRingChart();
             renderBarChart(currentFilter);
-        });
+            return true;
+        }
+        document.getElementById('save-daily-new').addEventListener('click', function() { saveDailyRecord(); });
 
         // ===== 打印和导出 =====
+        // 打印前把汇总区临时挂到 body 下，配合 @media print 只输出这一个区块，避免多余空白页
+        (function() {
+            var holder = null, nextNode = null;
+            window.addEventListener('beforeprint', function() {
+                var sa = document.getElementById('summary-area');
+                if (!sa || sa.parentNode === document.body) { return; }
+                holder = sa.parentNode;
+                nextNode = sa.nextSibling;
+                document.body.appendChild(sa);
+            });
+            window.addEventListener('afterprint', function() {
+                var sa = document.getElementById('summary-area');
+                if (!sa || !holder) { return; }
+                if (nextNode && nextNode.parentNode === holder) { holder.insertBefore(sa, nextNode); }
+                else { holder.appendChild(sa); }
+                holder = null; nextNode = null;
+            });
+        })();
+
         function printSummary() {
             var content = document.getElementById('summary-content');
             if (!content) { showToast('未找到汇总内容'); return; }
             var dateInput = document.getElementById('daily-date');
             var dateStr = dateInput ? dateInput.value : today;
             var accName = Storage.cur() || '';
-            var printWindow = window.open('', '_blank', 'width=1000,height=700');
-            if (!printWindow) { window.print(); return; }
-            var styles = document.querySelector('style').innerHTML;
+            var titleText = dateStr + (accName ? ' ' + accName : '') + ' 计划成长计划完成情况';
+
+            // 把汇总里的输入框换成纯文本，否则打印出来是一片空白的框
             var clone = content.cloneNode(true);
-            var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + dateStr + (accName ? ' ' + accName : '') + ' 计划成长计划完成情况</title>';
-            html += '<style>' + styles + '</style>';
-            html +=
-                '<style>body { padding:20px; } .summary-actions, .btn, .toast, .view-toggle, .temp-add-btn, #save-daily-new { display:none; } table { width:100%; border-collapse:collapse; } th, td { border:1px solid #ddd; padding:6px; } th { background:#f0f0f0; }</style>';
-            html += '</head><body>';
-            html += '<h2 style="text-align:center;">' + dateStr + (accName ? ' ' + accName : '') + ' 计划成长计划完成情况</h2>';
+            clone.querySelectorAll('input').forEach(function(inp) {
+                var txt = (inp.value || '').trim();
+                var span = document.createElement('span');
+                span.textContent = txt !== '' ? txt : '—';
+                if (inp.parentNode) { inp.parentNode.replaceChild(span, inp); }
+            });
+
+            var printWindow = window.open('', '_blank', 'width=900,height=1000');
+            if (!printWindow) { showToast('打印窗口被拦截，请允许弹窗后重试'); return; }
+
+            var printCss = [
+                '@page { size: A4; margin: 12mm; }',
+                '* { box-sizing: border-box; }',
+                'html, body { margin:0; padding:0; background:#fff !important; color:#000 !important;',
+                '  font-family:"Microsoft YaHei","微软雅黑",SimSun,sans-serif; font-size:10.5pt; line-height:1.45; }',
+                '#summary-area { width:186mm; max-width:186mm; margin:0 auto; }',
+                '.print-title { text-align:center; font-size:16pt; font-weight:700;',
+                '  margin:0 0 8mm; padding-bottom:3mm; border-bottom:1.5px solid #333; }',
+                'table { width:100% !important; border-collapse:collapse !important; table-layout:fixed; }',
+                'thead { display:table-header-group; }',
+                'tfoot { display:table-footer-group; }',
+                'tr { page-break-inside:avoid; page-break-after:auto; }',
+                'th, td { border:1px solid #666 !important; padding:3px 4px !important; font-size:9.5pt;',
+                '  vertical-align:middle; word-break:break-word; overflow-wrap:anywhere; text-align:center; }',
+                'th { background:#f2f2f2 !important; font-weight:600; }',
+                'td:nth-child(2) { text-align:left; }',
+                'th:nth-child(1), td:nth-child(1) { width:8mm; }',
+                'th:nth-child(3), td:nth-child(3) { width:14mm; }',
+                'th:nth-child(4), td:nth-child(4) { width:16mm; }',
+                'th:nth-child(5), td:nth-child(5) { width:17mm; }',
+                'th:nth-child(6), td:nth-child(6) { width:15mm; }',
+                'th:nth-child(10), td:nth-child(10) { width:13mm; }',
+                'p { font-size:9pt; margin-top:6px; }',
+                '.diff-display { white-space:nowrap; }'
+            ].join('\n');
+
+            var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + titleText + '</title>';
+            html += '<style>' + printCss + '</style></head><body>';
+            html += '<div id="summary-area">';
+            html += '<h1 class="print-title">' + titleText + '</h1>';
             html += clone.innerHTML;
-            html += '</body></html>';
+            html += '</div></body></html>';
+
+            printWindow.document.open();
             printWindow.document.write(html);
             printWindow.document.close();
-            printWindow.focus();
-            printWindow.print();
+
+            var fired = false;
+            var doPrint = function() {
+                if (fired) { return; }
+                fired = true;
+                try { printWindow.focus(); printWindow.print(); } catch (e) { console.error(e); }
+            };
+            // 等排版与字体就绪后再调起打印预览，避免预览空白
+            printWindow.onload = function() { setTimeout(doPrint, 300); };
+            setTimeout(doPrint, 1200);
         }
 
         function exportSummaryImage() {
