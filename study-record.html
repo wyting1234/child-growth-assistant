@@ -212,6 +212,21 @@
         .error-item .error-detail .field { margin-right:0.8rem; }
         .error-item .error-detail .field strong { color:#0f2b4a; }
 
+        /* 错题本：按题型切换的模板 */
+        .type-badge { display:inline-block; font-size:0.68rem; background:#dbeafe; color:#1d4ed8; padding:0.05rem 0.5rem; border-radius:10px; margin-left:0.4rem; vertical-align:middle; font-weight:500; }
+        #errorTypeTemplate { margin-bottom:0.3rem; }
+        .error-options { margin:0.35rem 0; padding:0.45rem 0.6rem; background:#fafcff; border:1px solid #e9edf4; border-radius:8px; }
+        .error-options .opt-block { font-size:0.85rem; margin-bottom:0.3rem; }
+        .error-options .opt-title { color:#64748b; }
+        .error-options .opt-val { font-weight:600; }
+        .error-options .opt-val.correct { color:#16a34a; }
+        .error-options .opt-val.wrong { color:#dc2626; }
+        .error-options .opt-row { display:flex; gap:0.35rem; align-items:flex-start; font-size:0.85rem; padding:0.12rem 0.35rem; border-radius:4px; }
+        .error-options .opt-row.is-correct { background:#f0fdf4; }
+        .error-options .opt-row.is-wrong { background:#fef2f2; }
+        .error-options .opt-letter { font-weight:600; min-width:1.1rem; color:#0f2b4a; }
+        .answer-pick { display:flex; flex-wrap:wrap; gap:0.4rem; flex:1; }
+
         /* 理论 */
         .theory-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:1.2rem; margin-bottom:1.5rem; }
         .theory-card { background:white; border-radius:14px; padding:1.2rem; border:1px solid #edf2f7; box-shadow:0 2px 8px rgba(0,0,0,0.04); transition:all 0.2s; }
@@ -904,12 +919,19 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             <div id="errorsContainer"></div>
             <div class="card">
                 <h3>➕ 添加错题</h3>
-                <div class="form-group"><label>题目</label><input type="text" id="errorTitle" placeholder="题目简述" style="flex:2;"></div>
-                <div class="form-group"><label>错误答案</label><input type="text" id="errorWrong" placeholder="你写的错误答案"></div>
-                <div class="form-group"><label>正确答案</label><input type="text" id="errorCorrect" placeholder="正确答案"></div>
+                <div class="form-group"><label>题型</label>
+                    <select id="errorType">
+                        <option value="单选">单选题（只有一个正确答案）</option>
+                        <option value="多选">多选题（多个正确答案）</option>
+                        <option value="判断">判断题（正确 / 错误）</option>
+                        <option value="简答">简答题（文字作答）</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>题目</label><input type="text" id="errorTitle" placeholder="题目内容" style="flex:2;"></div>
+                <!-- 按题型自动切换的模板区 -->
+                <div id="errorTypeTemplate"></div>
                 <div class="form-group"><label>错误原因分析</label><textarea id="errorReason" rows="2" placeholder="分析错误原因..."></textarea></div>
                 <div class="form-group"><label>知识点</label><input type="text" id="errorKnowledge" placeholder="涉及知识点"></div>
-                <div class="form-group"><label>题型</label><input type="text" id="errorType" placeholder="如：选择题、填空题"></div>
                 <div class="flex-row">
                     <select id="errorSemester" style="width:auto;min-width:100px;"></select>
                     <select id="errorSubject" style="width:auto;min-width:100px;"></select>
@@ -1047,6 +1069,8 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 if (!e.analysis) e.analysis = '';
                 if (!e.knowledgePoint) e.knowledgePoint = '';
                 if (!e.questionType) e.questionType = '';
+                if (!Array.isArray(e.options)) e.options = [];
+                if (!e.score) e.score = '';
             });
             return data;
         }
@@ -2288,6 +2312,165 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         };
 
         // ================================================================
+        // 错题本：按题型切换模板 + 选项管理
+        // ================================================================
+        var ERR_LETTERS = ['A','B','C','D','E','F','G','H','I','J'];
+        var errorOptions = ['', '', '', ''];   // 当前编辑的选项文本
+        var errorWrongSel = [];                // 「我的答案」选中的选项下标
+        var errorCorrectSel = [];              // 「正确答案」选中的选项下标
+
+        function esc(s) {
+            return String(s === undefined || s === null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function currentErrorType() {
+            var el = document.getElementById('errorType');
+            return el ? el.value : '单选';
+        }
+
+        // 按当前题型渲染不同的录入模板
+        function renderErrorTypeTemplate() {
+            var box = document.getElementById('errorTypeTemplate');
+            if (!box) { return; }
+            var type = currentErrorType();
+            if (type === '单选' || type === '多选') {
+                if (!errorOptions.length) { errorOptions = ['', '', '', '']; }
+                box.innerHTML =
+                    '<div class="option-manager">' +
+                        '<div class="option-label">选项 <span class="badge">' + (type === '单选' ? '单选' : '多选') + '</span>' +
+                        '<span style="font-weight:400;color:#64748b;font-size:0.72rem;">可增删选项，点下方字母选择答案</span></div>' +
+                        '<div id="errorOptionList"></div>' +
+                        '<div class="option-input-row" style="margin-top:0.4rem;">' +
+                            '<input type="text" id="errorNewOption" placeholder="输入新选项内容后回车"' +
+                            ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();addErrorOption();}">' +
+                            '<button class="btn small" type="button" onclick="addErrorOption()">+ 添加选项</button>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="form-group" style="margin-top:0.6rem;"><label>我的答案</label>' +
+                        '<div id="errorWrongAnswerBox" class="answer-pick"></div></div>' +
+                    '<div class="form-group"><label>正确答案</label>' +
+                        '<div id="errorCorrectAnswerBox" class="answer-pick"></div></div>';
+                renderErrorOptions();
+            } else if (type === '判断') {
+                box.innerHTML =
+                    '<div class="form-group"><label>我的答案</label><select id="errorWrongTF">' +
+                        '<option value="正确">正确</option><option value="错误">错误</option></select></div>' +
+                    '<div class="form-group"><label>正确答案</label><select id="errorCorrectTF">' +
+                        '<option value="正确">正确</option><option value="错误">错误</option></select></div>';
+            } else {
+                box.innerHTML =
+                    '<div class="form-group"><label>我的答案</label>' +
+                        '<textarea id="errorWrongText" rows="2" placeholder="写下你当时的作答..."></textarea></div>' +
+                    '<div class="form-group"><label>参考答案</label>' +
+                        '<textarea id="errorCorrectText" rows="2" placeholder="写下正确答案 / 得分要点..."></textarea></div>' +
+                    '<div class="form-group"><label>得分</label>' +
+                        '<input type="text" id="errorScoreText" placeholder="如 3/5（可留空）"></div>';
+            }
+        }
+
+        function renderErrorOptions() {
+            var list = document.getElementById('errorOptionList');
+            if (!list) { return; }
+            list.innerHTML = errorOptions.map(function(opt, i) {
+                return '<div class="option-input-row" style="margin-bottom:0.35rem;">' +
+                    '<span style="font-weight:600;min-width:1.3rem;">' + ERR_LETTERS[i] + '.</span>' +
+                    '<input type="text" value="' + esc(opt) + '" placeholder="选项 ' + ERR_LETTERS[i] + ' 的内容"' +
+                        ' oninput="onErrorOptionInput(' + i + ', this.value)">' +
+                    '<button class="btn small outline" type="button" onclick="removeErrorOption(' + i + ')">删除</button>' +
+                '</div>';
+            }).join('');
+            syncErrorAnswerBox();
+        }
+
+        window.onErrorOptionInput = function(i, val) { errorOptions[i] = val; syncErrorAnswerBox(); };
+
+        window.addErrorOption = function() {
+            var inp = document.getElementById('errorNewOption');
+            var v = inp ? (inp.value || '').trim() : '';
+            if (!v) { alert('请先输入选项内容'); return; }
+            errorOptions.push(v);
+            if (inp) { inp.value = ''; }
+            renderErrorOptions();
+        };
+
+        window.removeErrorOption = function(i) {
+            errorOptions.splice(i, 1);
+            // 删除后后续选项前移，同步修正已选中的下标
+            var fix = function(arr) {
+                return arr.map(function(x) { return x > i ? x - 1 : x; }).filter(function(x) { return x !== i; });
+            };
+            errorWrongSel = fix(errorWrongSel);
+            errorCorrectSel = fix(errorCorrectSel);
+            renderErrorOptions();
+        };
+
+        function mkErrorAnswerTags(sel, fnName) {
+            if (!errorOptions.length) {
+                return '<span class="text-muted" style="font-size:0.85rem;">请先添加选项</span>';
+            }
+            return errorOptions.map(function(opt, i) {
+                var on = sel.indexOf(i) >= 0;
+                return '<span class="option-tag' + (on ? ' selected' : '') + '" onclick="' + fnName + '(' + i + ')">' +
+                    '<span class="opt-label">' + ERR_LETTERS[i] + '.</span>' + esc(opt || '未填写') + '</span>';
+            }).join('');
+        }
+
+        function syncErrorAnswerBox() {
+            var wb = document.getElementById('errorWrongAnswerBox');
+            var cb = document.getElementById('errorCorrectAnswerBox');
+            if (wb) { wb.innerHTML = mkErrorAnswerTags(errorWrongSel, 'toggleErrorWrong'); }
+            if (cb) { cb.innerHTML = mkErrorAnswerTags(errorCorrectSel, 'toggleErrorCorrect'); }
+        }
+
+        function toggleErrorSel(which, i) {
+            var multi = currentErrorType() === '多选';
+            var arr = which === 'wrong' ? errorWrongSel : errorCorrectSel;
+            var at = arr.indexOf(i);
+            if (multi) {
+                if (at >= 0) { arr.splice(at, 1); } else { arr.push(i); }
+            } else {
+                arr = [i];
+            }
+            if (which === 'wrong') { errorWrongSel = arr; } else { errorCorrectSel = arr; }
+            syncErrorAnswerBox();
+        }
+        window.toggleErrorWrong = function(i) { toggleErrorSel('wrong', i); };
+        window.toggleErrorCorrect = function(i) { toggleErrorSel('correct', i); };
+
+        function resetErrorForm() {
+            errorOptions = ['', '', '', ''];
+            errorWrongSel = [];
+            errorCorrectSel = [];
+            renderErrorTypeTemplate();
+        }
+
+        // 列表里按题型展示答案 / 选项
+        function renderErrorAnswerBlock(e) {
+            var t = e.questionType;
+            if ((t === '单选' || t === '多选') && Array.isArray(e.options) && e.options.length) {
+                var wrongArr = (e.wrongAnswer || '').split(',').filter(Boolean);
+                var correctArr = (e.correctAnswer || '').split(',').filter(Boolean);
+                var opts = e.options.map(function(o, i) {
+                    var L = ERR_LETTERS[i];
+                    var isC = correctArr.indexOf(L) >= 0;
+                    var isW = wrongArr.indexOf(L) >= 0;
+                    var mark = isC ? ' ✅' : (isW ? ' ❌' : '');
+                    return '<div class="opt-row' + (isC ? ' is-correct' : '') + (isW ? ' is-wrong' : '') + '">' +
+                        '<span class="opt-letter">' + L + '.</span><span>' + esc(o) + '</span>' + mark + '</div>';
+                }).join('');
+                return '<div class="error-options">' +
+                    '<div class="opt-block"><span class="opt-title">我的答案：</span>' +
+                        '<span class="opt-val wrong">' + esc(e.wrongAnswer || '—') + '</span>' +
+                    '<span class="opt-title" style="margin-left:0.9rem;">正确答案：</span>' +
+                        '<span class="opt-val correct">' + esc(e.correctAnswer || '—') + '</span></div>' + opts + '</div>';
+            }
+            return '<div><span class="field"><strong>我的答案：</strong>' + esc(e.wrongAnswer || '—') + '</span>' +
+                   '<span class="field"><strong>正确答案：</strong>' + esc(e.correctAnswer || '—') + '</span></div>';
+        }
+
+        // ================================================================
         // 错题本（默认选中当前学期，丰富字段）
         // ================================================================
         function renderErrorsPage() {
@@ -2331,12 +2514,10 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 const label = getFullLabel(e.semesterId, e.subjectId);
                 return `<div class="error-item">
                     <div class="error-detail">
-                        <div><strong>题目：</strong>${e.title}</div>
-                        <div><span class="field"><strong>错误答案：</strong>${e.wrongAnswer || '—'}</span>
-                             <span class="field"><strong>正确答案：</strong>${e.correctAnswer || '—'}</span></div>
-                        <div><strong>错误原因分析：</strong>${e.analysis || '—'}</div>
-                        <div><span class="field"><strong>知识点：</strong>${e.knowledgePoint || '—'}</span>
-                             <span class="field"><strong>题型：</strong>${e.questionType || '—'}</span></div>
+                        <div><strong>题目：</strong>${esc(e.title)}<span class="type-badge">${esc(e.questionType || '未分类')}</span></div>
+                        ${renderErrorAnswerBlock(e)}
+                        <div><strong>错误原因分析：</strong>${esc(e.analysis || '—')}</div>
+                        <div><span class="field"><strong>知识点：</strong>${esc(e.knowledgePoint || '—')}</span>${e.score ? `<span class="field"><strong>得分：</strong>${esc(e.score)}</span>` : ''}</div>
                         <div style="font-size:0.8rem;color:#64748b;">${label}</div>
                     </div>
                     <button class="btn small outline" onclick="deleteError('${e.id}')">删除</button>
@@ -3070,34 +3251,55 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             // 错题本
             document.getElementById('errorAddBtn').onclick = function() {
                 const title = document.getElementById('errorTitle').value.trim();
-                const wrong = document.getElementById('errorWrong').value.trim();
-                const correct = document.getElementById('errorCorrect').value.trim();
                 const reason = document.getElementById('errorReason').value.trim();
                 const knowledge = document.getElementById('errorKnowledge').value.trim();
-                const type = document.getElementById('errorType').value.trim();
+                const type = document.getElementById('errorType').value;
                 const semId = document.getElementById('errorSemester').value;
                 const subjId = document.getElementById('errorSubject').value;
                 if (!title) { alert('请填写题目'); return; }
                 if (!semId || !subjId) { alert('请选择学期和科目'); return; }
+
+                let wrong = '', correct = '', options = [], score = '';
+                const toLetters = arr => arr.slice().sort((a, b) => a - b).map(i => ERR_LETTERS[i]).join(',');
+                if (type === '单选' || type === '多选') {
+                    const raw = errorOptions.map(o => (o || '').trim());
+                    if (raw.length < 2) { alert('请至少保留两个选项'); return; }
+                    if (raw.some(o => o === '')) { alert('请把选项内容填写完整，或删除多余选项'); return; }
+                    options = raw;
+                    wrong = toLetters(errorWrongSel);
+                    correct = toLetters(errorCorrectSel);
+                    if (!correct) { alert('请选择正确答案'); return; }
+                } else if (type === '判断') {
+                    wrong = document.getElementById('errorWrongTF').value;
+                    correct = document.getElementById('errorCorrectTF').value;
+                } else {
+                    wrong = document.getElementById('errorWrongText').value.trim();
+                    correct = document.getElementById('errorCorrectText').value.trim();
+                    score = (document.getElementById('errorScoreText').value || '').trim();
+                }
+
                 appData.errors.push({
                     id: genId(),
                     semesterId: semId,
                     subjectId: subjId,
                     title,
+                    questionType: type,
+                    options: options,
                     wrongAnswer: wrong,
                     correctAnswer: correct,
+                    score: score,
                     analysis: reason,
-                    knowledgePoint: knowledge,
-                    questionType: type
+                    knowledgePoint: knowledge
                 });
                 saveAndRender();
                 document.getElementById('errorTitle').value = '';
-                document.getElementById('errorWrong').value = '';
-                document.getElementById('errorCorrect').value = '';
                 document.getElementById('errorReason').value = '';
                 document.getElementById('errorKnowledge').value = '';
-                document.getElementById('errorType').value = '';
+                resetErrorForm();
+                alert('错题已添加！');
             };
+            document.getElementById('errorType').onchange = function() { resetErrorForm(); };
+            renderErrorTypeTemplate();
             document.getElementById('errorSemesterFilter').onchange = function() { renderErrorsPage(); };
             document.getElementById('errorSubjectFilter').onchange = function() { renderErrorsPage(); };
 
