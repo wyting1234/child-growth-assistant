@@ -1566,6 +1566,14 @@
             border: 1px solid var(--border);
             border-radius: 4px;
         }
+        .task-item .task-name .temp-content {
+            margin-top: 4px;
+            font-size: 12px;
+            color: var(--gray);
+            line-height: 1.5;
+            word-break: break-all;
+            padding: 2px 6px;
+        }
         .task-item .task-status select {
             padding: 4px 6px;
             border: 1px solid var(--border);
@@ -2866,8 +2874,10 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 </div>
                 <div class="diary-form-row">
                     <button class="btn btn-primary" id="hwAddBtn" style="flex:0 0 auto;white-space:nowrap;">+ 添加作业记录</button>
+                    <button class="btn btn-success" id="hwQuickAddBtn" onclick="hwQuickAdd()" style="flex:0 0 auto;white-space:nowrap;" title="识别「科目：语文 内容：1.xxx 2.xxx…」并自动拆解，同步加入总览待办 / 每日陪伴 / 作业记录">⚡ 一键添加</button>
                 </div>
-                <textarea id="hwContent" rows="4" class="hw-paste" placeholder="在此粘贴家长群 / 微信群里的作业通知内容，系统会保留换行…"></textarea>
+                <textarea id="hwContent" rows="4" class="hw-paste" placeholder="在此粘贴家长群 / 微信群里的作业通知内容，支持「科目：语文 内容：1.xxx 2.xxx…」自动拆解，系统会保留换行…"></textarea>
+                <p style="color:var(--gray);font-size:12px;margin:6px 0 0;">💡 ⚡ 一键添加：自动识别「科目：」与编号（1. / 1、 / （1））拆解成多条，并同步加入 <b>总览待办</b>（语文+1…）、<b>每日陪伴-临时事项</b>、<b>作业记录</b>。</p>
                 <div class="hw-filter-bar" style="display:flex;gap:8px;margin:12px 0 4px;flex-wrap:wrap;align-items:center;">
                     <select id="hwSubjectFilter" style="flex:1;min-width:120px;">
                         <option value="">全部科目</option>
@@ -4001,8 +4011,9 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 var estimate = item.estimate || '';
                 html += '<div class="task-item" data-id="' + item.id + '">';
                 html += '<span class="task-index">' + (index + 1) + '.</span>';
-                html += '<span class="task-name"><input type="text" class="temp-name" value="' + item.name +
-                    '" placeholder="事项名称"></span>';
+                html += '<span class="task-name"><input type="text" class="temp-name" value="' + esc(item.name) +
+                    '" placeholder="事项名称">' + (item.content ? '<div class="temp-content">' + esc(item.content) +
+                    '</div>' : '') + '</span>';
                 html += '<span class="task-status"><select class="temp-status">';
                 ['已完成', '部分完成', '未完成'].forEach(function(opt) {
                     html += '<option value="' + opt + '" ' + (status === opt ? 'selected' : '') + '>' + opt +
@@ -4262,6 +4273,8 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 var name = row.querySelector('.temp-name').value.trim() || '未命名';
                 var status = row.querySelector('.temp-status').value;
                 var estimate = row.querySelector('.temp-estimate').value;
+                var contentDiv = row.querySelector('.temp-content');
+                var content = contentDiv ? contentDiv.innerText : '';
                 var extra = { actualTime: '', completedContent: '', selfEvaluation: '', improvementPlan: '',
                     score: '' };
                 var summaryRowsAll = document.querySelectorAll('#summary-content table tbody tr');
@@ -4286,6 +4299,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 tempItems.push({
                     id: id,
                     name: name,
+                    content: content,
                     status: status,
                     estimate: estimate,
                     actualTime: extra.actualTime,
@@ -5993,6 +6007,156 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             });
         }
 
+        // ================================================================
+        //  作业文本智能解析：科目：X + 编号项拆解（1. / 1、 / 1． / （1））
+        // ================================================================
+        function parseHomeworkText(raw, fallbackSubject) {
+            raw = (raw || '').trim();
+            if (!raw) return null;
+            var text = raw;
+            var subject = '';
+            var m = text.match(/科目\s*[:：]\s*([^\s，,。；;、]+)/);
+            if (m) subject = m[1].trim();
+            else {
+                m = text.match(/【([^】]+)】/);
+                if (m) subject = m[1].trim();
+            }
+            if (!subject) subject = (fallbackSubject || '').trim();
+            // 去掉 科目：/【】/内容： 标签
+            text = text.replace(/科目\s*[:：]\s*[^\s，,。；;、]+/g, '');
+            text = text.replace(/【[^】]+】/g, '');
+            text = text.replace(/内容\s*[:：]/g, '');
+            text = text.replace(/^[\s:：、，,;；\n]+/, '');
+
+            // 收集编号起点：1. / 1、 / 1． / （1） / (1)
+            var marks = [];
+            var re = /(\d{1,2})\s*[.、．]\s*(?!\d)/g;
+            var mm;
+            while ((mm = re.exec(text)) !== null) {
+                marks.push({ no: parseInt(mm[1], 10), start: mm.index, contentStart: re.lastIndex });
+            }
+            var re2 = /[（(]\s*(\d{1,2})\s*[）)]\s*/g;
+            while ((mm = re2.exec(text)) !== null) {
+                marks.push({ no: parseInt(mm[1], 10), start: mm.index, contentStart: re2.lastIndex });
+            }
+            marks.sort(function(a, b) { return a.start - b.start; });
+
+            var items = [];
+            if (marks.length > 0) {
+                for (var i = 0; i < marks.length; i++) {
+                    var from = marks[i].contentStart;
+                    var to = (i + 1 < marks.length) ? marks[i + 1].start : text.length;
+                    var seg = text.slice(from, to).trim();
+                    seg = seg.replace(/^[\s：:、，,;；]+/, '').trim();
+                    if (seg) items.push({ no: marks[i].no, text: seg });
+                }
+            } else if (text.trim()) {
+                items.push({ no: 0, text: text.trim() });
+            }
+            return { subject: subject, items: items, raw: raw };
+        }
+
+        function getFormHomeworkBase() {
+            var sentEl = document.getElementById('hwSentTime');
+            var recvEl = document.getElementById('hwRecvTime');
+            var dueEl = document.getElementById('hwDue');
+            var impEl = document.getElementById('hwImportance');
+            var urgEl = document.getElementById('hwUrgency');
+            var importance = parseInt(impEl && impEl.value, 10) || 3;
+            var urgency = parseInt(urgEl && urgEl.value, 10) || 3;
+            return {
+                sentTime: sentEl ? sentEl.value || '' : '',
+                recvTime: recvEl ? (recvEl.value || nowLocal()) : nowLocal(),
+                due: dueEl ? dueEl.value || '' : '',
+                importance: importance,
+                urgency: urgency,
+                quadrant: computeQuadrant(importance, urgency)
+            };
+        }
+
+        function pushHomeworkItems(parsed, base) {
+            var list = getHomeworks();
+            parsed.items.forEach(function(it) {
+                list.push({
+                    id: genId(),
+                    sentTime: base.sentTime,
+                    recvTime: base.recvTime,
+                    subject: parsed.subject,
+                    due: base.due,
+                    content: it.text,
+                    importance: base.importance,
+                    urgency: base.urgency,
+                    quadrant: base.quadrant,
+                    done: false,
+                    createdAt: new Date().toISOString()
+                });
+            });
+            setHomeworks(list);
+        }
+
+        function pushTodoItems(parsed, base) {
+            var todos = getTodos();
+            parsed.items.forEach(function(it) {
+                var label = (it.no > 0 && parsed.subject)
+                    ? parsed.subject + '+' + it.no + ' ' + it.text
+                    : (parsed.subject ? '【' + parsed.subject + '】' + it.text : it.text);
+                todos.push({
+                    id: genId(),
+                    text: label,
+                    completed: false,
+                    priority: base.quadrant,
+                    deadline: base.due ? base.due.slice(0, 10) : '',
+                    deadlineTime: base.due ? base.due.slice(11, 16) : '',
+                    source: 'homework',
+                    createdAt: new Date().toISOString()
+                });
+            });
+            setTodos(todos);
+            renderTodos();
+            if (typeof renderTodoMatrix === 'function') renderTodoMatrix();
+        }
+
+        function pushDailyTempItems(parsed) {
+            var dateInput = document.getElementById('daily-date');
+            var selectedDate = dateInput && dateInput.value ? dateInput.value : today;
+            var tempKey = 'daily_temp_' + selectedDate;
+            var items = Storage.get(tempKey) || [];
+            parsed.items.forEach(function(it) {
+                items.push({
+                    id: 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                    name: parsed.subject || ('任务' + (it.no || (items.length + 1))),
+                    content: it.text,
+                    status: '未完成',
+                    estimate: '',
+                    actualTime: ''
+                });
+            });
+            Storage.set(tempKey, items);
+            try { if (typeof loadDailyTasks === 'function') loadDailyTasks(); } catch (e) {}
+            try { if (typeof updateSummary === 'function') updateSummary(); } catch (e) {}
+        }
+
+        // ⚡ 一键添加：识别「科目：… 内容：1.… 2.…」→ 拆解 → 作业记录 + 总览待办 + 每日陪伴临时事项
+        window.hwQuickAdd = function() {
+            var contentEl = document.getElementById('hwContent');
+            var raw = (contentEl ? contentEl.value : '').trim();
+            if (!raw) { showToast('⚠️ 请先粘贴 / 填写作业内容'); return; }
+            var subjEl = document.getElementById('hwSubject');
+            var fallback = subjEl ? subjEl.value.trim() : '';
+            var parsed = parseHomeworkText(raw, fallback);
+            if (!parsed || parsed.items.length === 0) { showToast('⚠️ 无法识别可拆解的内容'); return; }
+            var base = getFormHomeworkBase();
+            var recvEl = document.getElementById('hwRecvTime');
+            if (recvEl) recvEl.value = base.recvTime;
+            pushHomeworkItems(parsed, base);
+            pushTodoItems(parsed, base);
+            pushDailyTempItems(parsed);
+            if (contentEl) contentEl.value = '';
+            renderHomeworks();
+            var subjectTxt = parsed.subject ? '（' + parsed.subject + '）' : '';
+            showToast('✅ 已拆解为 ' + parsed.items.length + ' 项' + subjectTxt + '：作业记录 + 总览待办 + 每日陪伴');
+        };
+
         function addHomework() {
             var sentEl = document.getElementById('hwSentTime');
             var recvEl = document.getElementById('hwRecvTime');
@@ -6002,51 +6166,20 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             var urgEl = document.getElementById('hwUrgency');
             var todoEl = document.getElementById('hwAddToTodo');
             var contentEl = document.getElementById('hwContent');
-            var content = (contentEl ? contentEl.value : '').trim();
-            if (!content) { showToast('⚠️ 请粘贴 / 填写作业内容'); return; }
+            var raw = (contentEl ? contentEl.value : '').trim();
+            if (!raw) { showToast('⚠️ 请粘贴 / 填写作业内容'); return; }
+            // 智能解析：科目：X + 编号项 → 拆解为多条
+            var fallback = subjEl ? subjEl.value.trim() : '';
+            var parsed = parseHomeworkText(raw, fallback);
+            if (!parsed || parsed.items.length === 0) { showToast('⚠️ 无法识别可拆解的内容'); return; }
+            var base = getFormHomeworkBase();
             // 接收时间默认此刻（如果用户没填）
-            var recvTime = recvEl ? (recvEl.value || nowLocal()) : nowLocal();
-            if (recvEl) recvEl.value = recvTime;
-            // 重要性 / 紧迫性 → 四象限
-            var importance = parseInt(impEl && impEl.value, 10) || 3;
-            var urgency = parseInt(urgEl && urgEl.value, 10) || 3;
-            var quadrant = computeQuadrant(importance, urgency);
-            // 摘要（用于一键加入待办）
-            var subject = subjEl ? subjEl.value.trim() : '';
-            var summary = (subject ? '【' + subject + '】' : '') + content.split('\n')[0].slice(0, 60);
+            if (recvEl) recvEl.value = base.recvTime;
+            pushHomeworkItems(parsed, base);
 
-            var list = getHomeworks();
-            list.push({
-                id: genId(),
-                sentTime: sentEl ? sentEl.value || '' : '',
-                recvTime: recvTime,
-                subject: subject,
-                due: dueEl ? dueEl.value || '' : '',
-                content: content,
-                importance: importance,
-                urgency: urgency,
-                quadrant: quadrant,
-                done: false,
-                createdAt: new Date().toISOString()
-            });
-            setHomeworks(list);
-
-            // 一键加入待办
+            // 一键加入待办：拆解后逐条加入完整待办（语文+N）
             if (todoEl && todoEl.checked) {
-                var todos = getTodos();
-                todos.push({
-                    id: genId(),
-                    text: summary,
-                    completed: false,
-                    priority: quadrant,
-                    deadline: dueEl && dueEl.value ? dueEl.value.slice(0, 10) : '',
-                    deadlineTime: dueEl && dueEl.value ? dueEl.value.slice(11, 16) : '',
-                    source: 'homework',
-                    createdAt: new Date().toISOString()
-                });
-                setTodos(todos);
-                renderTodos();
-                if (typeof renderTodoMatrix === 'function') renderTodoMatrix();
+                pushTodoItems(parsed, base);
             }
 
             // 清空表单（保留筛选与接收时间默认值）
@@ -6062,7 +6195,8 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             renderHomeworks();
             // 同步刷新顶栏学员 badge（addStorage 后侧栏账号旁 badge 可能显示数）
             try { if (typeof refreshSidebar === 'function') refreshSidebar(); } catch (e) {}
-            showToast('✅ 作业记录已添加' + (todoEl && todoEl.checked ? '，并加入待办' : ''));
+            var addedTxt = parsed.items.length > 1 ? '，拆解为 ' + parsed.items.length + ' 条' : '';
+            showToast('✅ 作业记录已添加' + addedTxt + (todoEl && todoEl.checked ? '，并加入待办' : ''));
         }
 
         // 重要性×紧迫性 → 四象限（与 todo 用同一套规则）
@@ -6130,21 +6264,48 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             var dueEl = document.getElementById('diaryHwDue');
             var text = (textEl ? textEl.value : '').trim();
             if (!text) { showToast('⚠️ 请输入作业内容'); return; }
+            // 智能解析：科目：X + 编号项 → 拆解为多条，并同步加入总览待办
+            var fallback = subjEl ? subjEl.value.trim() : '';
+            var parsed = parseHomeworkText(text, fallback);
+            if (!parsed || parsed.items.length === 0) { showToast('⚠️ 无法识别可拆解的内容'); return; }
             var list = getHomeworks();
-            list.push({
-                id: genId(),
-                sentTime: sentEl ? sentEl.value || '' : '',
-                recvTime: recvEl ? recvEl.value || '' : '',
-                subject: subjEl ? subjEl.value.trim() : '',
-                due: dueEl ? dueEl.value || '' : '',
-                content: text,
-                fromDiary: _currentDiaryHwId,
-                done: false,
-                createdAt: new Date().toISOString()
+            parsed.items.forEach(function(it) {
+                list.push({
+                    id: genId(),
+                    sentTime: sentEl ? sentEl.value || '' : '',
+                    recvTime: recvEl ? recvEl.value || '' : '',
+                    subject: parsed.subject,
+                    due: dueEl ? dueEl.value || '' : '',
+                    content: it.text,
+                    fromDiary: _currentDiaryHwId,
+                    done: false,
+                    createdAt: new Date().toISOString()
+                });
             });
             setHomeworks(list);
+            // 同步加入总览待办（语文+N 完整内容，不再截断）
+            var todos = getTodos();
+            parsed.items.forEach(function(it) {
+                var label = (it.no > 0 && parsed.subject)
+                    ? parsed.subject + '+' + it.no + ' ' + it.text
+                    : (parsed.subject ? '【' + parsed.subject + '】' + it.text : it.text);
+                todos.push({
+                    id: genId(),
+                    text: label,
+                    completed: false,
+                    priority: 'q2',
+                    deadline: dueEl && dueEl.value ? dueEl.value.slice(0, 10) : '',
+                    deadlineTime: dueEl && dueEl.value ? dueEl.value.slice(11, 16) : '',
+                    source: 'homework',
+                    createdAt: new Date().toISOString()
+                });
+            });
+            setTodos(todos);
+            renderTodos();
+            if (typeof renderTodoMatrix === 'function') renderTodoMatrix();
             closeDiaryHomeworkModal();
-            showToast('✅ 已添加到作业记录');
+            var addedTxt = parsed.items.length > 1 ? '（拆解为 ' + parsed.items.length + ' 条）' : '';
+            showToast('✅ 已添加到作业记录' + addedTxt + '，并同步总览待办');
         };
 
         function setupDiaryEventListeners() {
