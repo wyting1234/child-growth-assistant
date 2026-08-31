@@ -1,6 +1,6 @@
 /* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装）
-   v14：表头 8.5pt 防竖排；空行高度设 10mm 上限，长内容行不再导致底部大片留白 */
-const CACHE = 'child-growth-v14';
+   v15：HTML 改网络优先（1.5s 超时回退缓存），改完推送后打开即最新版，不必二次刷新 */
+const CACHE = 'child-growth-v15';
 const CORE = ['./', './index.html', './study-record.html', './情商club.html', './account-manager.js', './manifest.json'];
 
 self.addEventListener('install', function (e) {
@@ -23,7 +23,9 @@ self.addEventListener('activate', function (e) {
   );
 });
 
-/* HTML：缓存优先（秒开）→ 后台拉最新版更新缓存（stale-while-revalidate）
+/* HTML：网络优先（保证拿到最新版）→ 1.5s 内没回来就先用缓存秒开，
+   网络结果仍会写入缓存供下次/离线使用。
+   之前是「缓存优先」，导致改完推送后用户打开看到的还是旧页面，必须二次刷新才生效。
    其它资源：网络优先，失败回退缓存 */
 self.addEventListener('fetch', function (e) {
   var url;
@@ -35,18 +37,31 @@ self.addEventListener('fetch', function (e) {
 
   if (isHtml) {
     e.respondWith(
-      caches.match(e.request).then(function (cached) {
-        // 先返回缓存（如果有），让页面立刻显示
-        var networkFetch = fetch(e.request).then(function (res) {
+      new Promise(function (resolve) {
+        var settled = false;
+        // 网络偏慢时先用缓存秒开，不阻塞用户
+        var timer = setTimeout(function () {
+          if (settled) { return; }
+          caches.match(e.request).then(function (c) {
+            if (c && !settled) { settled = true; resolve(c); }
+          });
+        }, 1500);
+
+        fetch(e.request).then(function (res) {
+          clearTimeout(timer);
           if (res && res.status === 200) {
             var copy = res.clone();
             caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
           }
-          return res;
+          if (!settled) { settled = true; resolve(res); }
         }).catch(function () {
-          return cached || caches.match('./index.html');
+          clearTimeout(timer);
+          if (settled) { return; }
+          settled = true;
+          resolve(caches.match(e.request).then(function (c) {
+            return c || caches.match('./index.html');
+          }));
         });
-        return cached || networkFetch;
       })
     );
     return;
