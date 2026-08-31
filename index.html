@@ -6261,6 +6261,11 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 pushTodoItems(parsed, base);
             }
 
+            // 同步推进「每日陪伴-临时事项」：与 ⚡ 一键添加 同一套「追加不覆盖 + 指纹去重」逻辑
+            // 让作业记录这条新增也能像连续粘贴英语那样在已保存的基础上继续累加
+            var tempResult = null;
+            try { tempResult = pushDailyTempItems(parsed); } catch (e) { console.warn('同步临时事项失败:', e); }
+
             // 清空表单（保留筛选与接收时间默认值）
             if (contentEl) contentEl.value = '';
             if (subjEl) subjEl.value = '';
@@ -6275,7 +6280,12 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             // 同步刷新顶栏学员 badge（addStorage 后侧栏账号旁 badge 可能显示数）
             try { if (typeof refreshSidebar === 'function') refreshSidebar(); } catch (e) {}
             var addedTxt = parsed.items.length > 1 ? '，拆解为 ' + parsed.items.length + ' 条' : '';
-            showToast('✅ 作业记录已添加' + addedTxt + (todoEl && todoEl.checked ? '，并加入待办' : ''));
+            var tempTxt = (tempResult && typeof tempResult.total === 'number')
+                ? '，临时事项累计 ' + tempResult.total + ' 项'
+                : '';
+            showToast('✅ 作业记录已添加' + addedTxt
+                + (todoEl && todoEl.checked ? '，并加入待办' : '')
+                + tempTxt);
         }
 
         // 重要性×紧迫性 → 四象限（与 todo 用同一套规则）
