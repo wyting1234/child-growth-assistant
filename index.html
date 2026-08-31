@@ -4546,10 +4546,9 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                     nextNode = sa.nextSibling;
                     document.body.appendChild(sa);
                 }
-                // 按一页容量补空行，让表格铺满 A4
-                try { withPrintLayout(document, function() { fillSummaryBlankRows(document); }); } catch (e) { console.error(e); }
-                // 表单控件换成静态文本：input 打印可能只显示可见区域，textarea 更是只印出前两行
-                backupHtml = sa.innerHTML;
+                // 顺序很关键：必须先把控件换成静态文本，再补空行。
+                // textarea 是 rows="2"，只要它还在，每行都被撑成两行高，量出来的行高是
+                // 打印实际高度的近两倍 → 页数被高估 → 多补空行 → 凭空多出一张纸
                 Array.prototype.forEach.call(sa.querySelectorAll('input, textarea'), function(el) {
                     var raw = (el.value || '');
                     var span = document.createElement('span');
@@ -4557,6 +4556,9 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                     span.textContent = raw.trim() !== '' ? raw : '—';
                     if (el.parentNode) { el.parentNode.replaceChild(span, el); }
                 });
+                backupHtml = sa.innerHTML;
+                // 按一页容量补空行，让表格铺满 A4
+                try { withPrintLayout(document, function() { fillSummaryBlankRows(document); }); } catch (e) { console.error(e); }
             });
             window.addEventListener('afterprint', function() {
                 var sa = document.getElementById('summary-area');
