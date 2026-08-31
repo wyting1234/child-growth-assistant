@@ -1742,6 +1742,9 @@
             #summary-area th:nth-child(7), #summary-area td:nth-child(7) { width:auto !important; text-align:left; }
             #summary-area th:nth-child(8), #summary-area td:nth-child(8) { width:11mm !important; }
             #summary-area .diff-display { white-space:nowrap; }
+            /* 空值占位符：屏幕上用短横提示「没填」，打印时隐藏，纸上留空白。
+               用 visibility 而不是 display:none，位置仍占着，行高不会塌 */
+            #summary-area .cell-empty { visibility:hidden !important; }
         }
         .custom-select-wrap {
             position: relative;
@@ -4127,6 +4130,11 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         // ================================================================
         //  更新汇总表格（删除状态列，增加实际时间和差额）
         // ================================================================
+        /* 汇总表里「空值」的占位符。屏幕上显示短横（好看出这格没填），
+           打印时由 .cell-empty 规则隐藏，纸上留空白，不再出现一排「—」。
+           用 span 包一层是为了打印时只隐藏文字、不折叠单元格（visibility 保留占位高度） */
+        var EMPTY_MARK = '<span class="cell-empty">—</span>';
+
         function updateSummary() {
             var dateInput = document.getElementById('daily-date');
             var selectedDate = dateInput ? dateInput.value : today;
@@ -4217,7 +4225,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                     diffDisplay = '<span class="diff-display ' + diffClass + '">' + diffLabel + ' ' + (diff > 0 ? '+' :
                         '') + diff.toFixed(0) + 'm</span>';
                 } else {
-                    diffDisplay = '<span class="diff-display zero">—</span>';
+                    diffDisplay = '<span class="diff-display zero">' + EMPTY_MARK + '</span>';
                 }
 
                 var dataId = task.type === '临时事项' ? ('temp-' + idx) : 'fixed-' + task.name;
@@ -4225,7 +4233,8 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 html += '<td>' + (idx + 1) + '</td>';
                 html += '<td>' + task.name + '</td>';
                 html += '<td>' + task.type + '</td>';
-                html += '<td>' + (task.estimate ? task.estimate + ' min' : '—') + '</td>';
+                // 屏幕保留短横当占位，打印时由 .cell-empty 规则隐藏，纸上就是空白
+                html += '<td>' + (task.estimate ? task.estimate + ' min' : EMPTY_MARK) + '</td>';
                 html += '<td><input type="number" class="summary-actual" value="' + task.actualTime +
                     '" placeholder="分钟" min="0" step="1" style="width:70px;text-align:center;"></td>';
                 html += '<td>' + diffDisplay + '</td>';
@@ -4275,7 +4284,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                         diffTd.innerHTML = '<span class="diff-display ' + diffClass + '">' + diffLabel + ' ' +
                             (diff > 0 ? '+' : '') + diff.toFixed(0) + 'm</span>';
                     } else {
-                        diffTd.innerHTML = '<span class="diff-display zero">—</span>';
+                        diffTd.innerHTML = '<span class="diff-display zero">' + EMPTY_MARK + '</span>';
                     }
                 });
             });
@@ -4561,7 +4570,9 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                     var raw = (el.value || '');
                     var span = document.createElement('span');
                     span.style.whiteSpace = 'pre-wrap';
-                    span.textContent = raw.trim() !== '' ? raw : '—';
+                    // 没填的留空，不写「—」。用不换行空格占位，只是为了撑住行高，
+                    // 免得空单元格被压扁、整行忽高忽低
+                    span.textContent = raw.trim() !== '' ? raw : '\u00A0';
                     if (el.parentNode) { el.parentNode.replaceChild(span, el); }
                 });
                 backupHtml = sa.innerHTML;
@@ -4600,7 +4611,8 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 var span = document.createElement('span');
                 // pre-wrap 保留明细里的换行（如 "1. …\n2. …"）
                 span.style.whiteSpace = 'pre-wrap';
-                span.textContent = txt.trim() !== '' ? txt : '—';
+                // 没填的留空，不写「—」。用不换行空格占位，只是为了撑住行高
+                span.textContent = txt.trim() !== '' ? txt : '\u00A0';
                 if (inp.parentNode) { inp.parentNode.replaceChild(span, inp); }
             });
 
@@ -4645,6 +4657,8 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 'th:nth-child(8), td:nth-child(8) { width:11mm !important; }',
                 'p { font-size:9pt; margin:4px 0 0; }',
                 '.diff-display { white-space:nowrap; }',
+                /* 空值占位符：屏幕上是短横，打印时隐藏，纸上留空白（visibility 保留行高） */
+                '.cell-empty { visibility:hidden !important; }',
                 '.print-tip { max-width:190mm; margin:10px auto; padding:8px 12px; font-size:12px; line-height:1.6;',
                 '  color:#8a6d3b; background:#fff8e1; border:1px solid #f0c36d; border-radius:6px; }',
                 '@media print { .print-tip { display:none !important; } }'
