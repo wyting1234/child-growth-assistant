@@ -1573,6 +1573,33 @@
             line-height: 1.5;
             word-break: break-all;
             padding: 2px 6px;
+            background: var(--bg, #f8f9fa);
+            border-left: 3px solid var(--primary);
+            border-radius: 3px;
+            white-space: pre-wrap;
+        }
+        .task-item .task-name .temp-src-badge {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 1px 6px;
+            font-size: 11px;
+            color: #fff;
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            border-radius: 10px;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        .task-item .task-name .temp-dup-badge {
+            display: inline-block;
+            margin-left: 4px;
+            padding: 1px 6px;
+            font-size: 11px;
+            color: var(--primary);
+            background: rgba(74, 144, 226, 0.12);
+            border: 1px solid var(--primary);
+            border-radius: 10px;
+            vertical-align: middle;
+            white-space: nowrap;
         }
         .task-item .task-status select {
             padding: 4px 6px;
@@ -4001,23 +4028,35 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
 
         function renderTempItems(items) {
             var container = document.getElementById('daily-temp-tasks');
-            if (items.length === 0) {
+            if (!container) return;
+            if (!items || items.length === 0) {
                 container.innerHTML = '<p style="color:var(--gray);font-size:14px;">暂无临时事项</p>';
                 return;
             }
+            // 同名聚合统计（用于显示「语文 x5」徽章）
+            var nameCounts = {};
+            items.forEach(function(it){ var k = it.name || ''; nameCounts[k] = (nameCounts[k]||0) + 1; });
             var html = '';
             items.forEach(function(item, index) {
                 var status = item.status || '未完成';
                 var estimate = item.estimate || '';
+                var src = item.source || '';
+                var srcBadge = (src === 'homework-quick-add')
+                    ? '<span class="temp-src-badge" title="来自一键添加">⚡来源</span>'
+                    : '';
+                var dupBadge = (nameCounts[item.name || ''] > 1)
+                    ? '<span class="temp-dup-badge" title="同日同科目聚合">×' + nameCounts[item.name || ''] + '</span>'
+                    : '';
                 html += '<div class="task-item" data-id="' + item.id + '">';
                 html += '<span class="task-index">' + (index + 1) + '.</span>';
-                html += '<span class="task-name"><input type="text" class="temp-name" value="' + esc(item.name) +
-                    '" placeholder="事项名称">' + (item.content ? '<div class="temp-content">' + esc(item.content) +
-                    '</div>' : '') + '</span>';
+                html += '<span class="task-name">';
+                html += '<input type="text" class="temp-name" value="' + esc(item.name) + '" placeholder="事项名称"' + (src === 'homework-quick-add' ? ' readonly style="background:transparent;border:none;font-weight:600;color:var(--primary);"' : '') + '>';
+                html += srcBadge + dupBadge;
+                html += (item.content ? '<div class="temp-content">' + esc(item.content) + '</div>' : '');
+                html += '</span>';
                 html += '<span class="task-status"><select class="temp-status">';
                 ['已完成', '部分完成', '未完成'].forEach(function(opt) {
-                    html += '<option value="' + opt + '" ' + (status === opt ? 'selected' : '') + '>' + opt +
-                        '</option>';
+                    html += '<option value="' + opt + '" ' + (status === opt ? 'selected' : '') + '>' + opt + '</option>';
                 });
                 html += '</select></span>';
                 html += '<span class="task-time"><input type="number" class="temp-estimate" value="' + estimate +
@@ -6117,23 +6156,56 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         }
 
         function pushDailyTempItems(parsed) {
+            // 标准化日期键：无论从哪个 tab 触发，都写入「当前日期」（顶栏 / daily-date 输入框 / 全局 today 三级回退）
             var dateInput = document.getElementById('daily-date');
-            var selectedDate = dateInput && dateInput.value ? dateInput.value : today;
+            var selectedDate = (dateInput && dateInput.value) || (typeof today !== 'undefined' ? today : new Date().toISOString().slice(0, 10));
             var tempKey = 'daily_temp_' + selectedDate;
             var items = Storage.get(tempKey) || [];
+
+            // 标准化每条已有项，给老数据补字段（向后兼容）
+            items.forEach(function(it) {
+                if (typeof it.name !== 'string') it.name = '';
+                if (typeof it.content !== 'string') it.content = '';
+                if (!it.status) it.status = '未完成';
+                if (!('estimate' in it)) it.estimate = '';
+                if (!('actualTime' in it)) it.actualTime = '';
+            });
+
+            var subject = parsed.subject || ('任务' + (items.length + 1));
+            var noSubject = !parsed.subject;
+            var existingFingerprints = {};
+            items.forEach(function(it) { existingFingerprints[(it.name || '') + '\u241F' + (it.content || '')] = true; });
+
+            var added = 0, skipped = 0;
             parsed.items.forEach(function(it) {
+                // 序号 + 内容（与页面渲染对齐）
+                var content = (it.no ? (it.no + '. ') : '') + it.text;
+                var fp = subject + '\u241F' + content;
+                if (existingFingerprints[fp]) { skipped++; return; }
+                existingFingerprints[fp] = true;
                 items.push({
-                    id: 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-                    name: parsed.subject || ('任务' + (it.no || (items.length + 1))),
-                    content: it.text,
+                    id: 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6) + '_' + added,
+                    name: subject,
+                    content: content,
                     status: '未完成',
                     estimate: '',
-                    actualTime: ''
+                    actualTime: '',
+                    source: 'homework-quick-add',
+                    fromHomework: true,
+                    no: it.no || 0,
+                    createdAt: new Date().toISOString()
                 });
+                added++;
             });
+
             Storage.set(tempKey, items);
+
+            // UI 刷新（双保险）
+            try { if (typeof renderTempItems === 'function') renderTempItems(items); } catch (e) {}
             try { if (typeof loadDailyTasks === 'function') loadDailyTasks(); } catch (e) {}
             try { if (typeof updateSummary === 'function') updateSummary(); } catch (e) {}
+
+            return { added: added, skipped: skipped, subject: subject, total: items.length, selectedDate: selectedDate };
         }
 
         // ⚡ 一键添加：识别「科目：… 内容：1.… 2.…」→ 拆解 → 作业记录 + 总览待办 + 每日陪伴临时事项
@@ -6154,7 +6226,14 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             if (contentEl) contentEl.value = '';
             renderHomeworks();
             var subjectTxt = parsed.subject ? '（' + parsed.subject + '）' : '';
-            showToast('✅ 已拆解为 ' + parsed.items.length + ' 项' + subjectTxt + '：作业记录 + 总览待办 + 每日陪伴');
+            var tempTxt = '';
+            try {
+                // 由于 pushDailyTempItems 返回了结果，但当前调用没用变量接，这里只做轻量重读
+                var td = (document.getElementById('daily-date') && document.getElementById('daily-date').value) || (typeof today !== 'undefined' ? today : '');
+                var arr = td ? (Storage.get('daily_temp_' + td) || []) : [];
+                tempTxt = '，临时事项累计 ' + arr.length + ' 项';
+            } catch (e) {}
+            showToast('✅ 已拆解为 ' + parsed.items.length + ' 项' + subjectTxt + '：作业记录 + 总览待办 + 每日陪伴' + tempTxt);
         };
 
         function addHomework() {
@@ -6303,6 +6382,10 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             setTodos(todos);
             renderTodos();
             if (typeof renderTodoMatrix === 'function') renderTodoMatrix();
+
+            // 同步加入每日陪伴-临时事项（与一键添加一致的去重 + 追加逻辑）
+            try { pushDailyTempItems(parsed); } catch (e) { console.warn('同步临时事项失败:', e); }
+
             closeDiaryHomeworkModal();
             var addedTxt = parsed.items.length > 1 ? '（拆解为 ' + parsed.items.length + ' 条）' : '';
             showToast('✅ 已添加到作业记录' + addedTxt + '，并同步总览待办');
