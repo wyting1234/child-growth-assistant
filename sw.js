@@ -1,6 +1,6 @@
 /* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装）
-   v9：作业记录 addHomework 同步推进临时事项 + toast 显示累计条数 */
-const CACHE = 'child-growth-v9';
+   v10：每日陪伴打印铺满 A4（页边距/列宽/自动补空行）+ 临时事项明细回填「完成内容」 */
+const CACHE = 'child-growth-v10';
 const CORE = ['./', './index.html', './study-record.html', './情商club.html', './account-manager.js', './manifest.json'];
 
 self.addEventListener('install', function (e) {

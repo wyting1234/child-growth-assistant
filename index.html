@@ -1703,19 +1703,38 @@
             width: 100%;
         }
         @media print {
-            @page { size: A4; margin: 12mm; }
-            html, body { background:#fff !important; color:#000 !important; height:auto !important; overflow:visible !important; margin:0 !important; padding:0 !important; }
+            @page { size: A4 portrait; margin: 10mm; }
+            html, body { background:#fff !important; color:#000 !important; height:100% !important; overflow:visible !important; margin:0 !important; padding:0 !important; }
             /* 打印前脚本会把 #summary-area 临时挂到 body 下，这里隐藏其余顶层区块，避免多打空白页 */
             body > *:not(#summary-area) { display: none !important; }
             #summary-area {
-                display:block !important; width:186mm !important; max-width:186mm !important;
+                /* A4 可用区域：210-20=190mm 宽，297-20=277mm 高；用 min-height 让表格撑满整页，避免下方大片留白 */
+                display:flex !important; flex-direction:column !important;
+                width:190mm !important; max-width:190mm !important; min-height:277mm !important;
                 margin:0 auto !important; padding:0 !important; background:#fff !important; color:#000 !important;
             }
+            #summary-title { flex:0 0 auto !important; font-size:17pt !important; margin-bottom:5mm !important; }
             .summary-actions, .btn, .toast, .view-toggle, .temp-add-btn, #save-daily-new { display: none !important; }
-            #summary-area table { width:100% !important; border-collapse:collapse !important; table-layout:fixed; }
-            #summary-area th, #summary-area td { border:1px solid #666 !important; padding:3px 4px !important; font-size:9.5pt; }
-            #summary-area th { background:#f2f2f2 !important; }
+            /* 表格外面还包了一层 #summary-content，只有它才是 flex 子项，拉伸要作用在这一层 */
+            #summary-content { flex:1 1 auto !important; display:flex !important; flex-direction:column !important; width:100% !important; }
+            #summary-area table { width:100% !important; border-collapse:collapse !important; table-layout:fixed; flex:0 0 auto !important; }
+            #summary-area p { flex:0 0 auto !important; }
+            #summary-area th, #summary-area td { border:1px solid #666 !important; padding:2.6mm 1.6mm !important; font-size:10.5pt; vertical-align:middle; word-break:break-word; overflow-wrap:anywhere; text-align:center; }
+            #summary-area th { background:#f2f2f2 !important; font-weight:600; }
             #summary-area input { border:none !important; background:transparent !important; color:#000 !important; padding:0 !important; }
+            /* 用 !important 覆盖表头内联的 px 宽度，否则内容列被挤成 15mm */
+            #summary-area th { width:auto !important; }
+            #summary-area th:nth-child(1), #summary-area td:nth-child(1) { width:10mm !important; }
+            #summary-area th:nth-child(2), #summary-area td:nth-child(2) { width:auto !important; text-align:left; }
+            #summary-area th:nth-child(3), #summary-area td:nth-child(3) { width:16mm !important; }
+            #summary-area th:nth-child(4), #summary-area td:nth-child(4) { width:17mm !important; }
+            #summary-area th:nth-child(5), #summary-area td:nth-child(5) { width:17mm !important; }
+            #summary-area th:nth-child(6), #summary-area td:nth-child(6) { width:15mm !important; }
+            #summary-area th:nth-child(7), #summary-area td:nth-child(7) { width:auto !important; text-align:left; }
+            #summary-area th:nth-child(8), #summary-area td:nth-child(8) { width:16mm !important; }
+            #summary-area th:nth-child(9), #summary-area td:nth-child(9) { width:auto !important; text-align:left; }
+            #summary-area th:nth-child(10), #summary-area td:nth-child(10) { width:14mm !important; }
+            #summary-area .diff-display { white-space:nowrap; }
         }
         .custom-select-wrap {
             position: relative;
@@ -4141,7 +4160,8 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                     name: item.name || '未命名',
                     estimate: item.estimate || '',
                     actualTime: item.actualTime || '',
-                    completedContent: item.completedContent || '',
+                    // 临时事项输入框里的明细（如 "1. 完成稿纸本"）默认填充到「完成内容」列
+                    completedContent: item.completedContent || item.content || '',
                     selfEvaluation: item.selfEvaluation || '',
                     improvementPlan: item.improvementPlan || '',
                     score: item.score || ''
@@ -4376,6 +4396,125 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         document.getElementById('save-daily-new').addEventListener('click', function() { saveDailyRecord(); });
 
         // ===== 打印和导出 =====
+        // beforeprint 阶段浏览器还没切到 print 媒体（实测 matchMedia('print') 为 false，
+        // 量到的是屏幕行高，比打印行高矮一半），所以先把 @media print 里的规则临时注入再测量
+        function withPrintLayout(doc, fn) {
+            var rules = [];
+            try {
+                var sheets = doc.styleSheets;
+                for (var i = 0; i < sheets.length; i++) {
+                    var list;
+                    try { list = sheets[i].cssRules; } catch (e) { continue; }
+                    if (!list) { continue; }
+                    for (var j = 0; j < list.length; j++) {
+                        var rule = list[j];
+                        if (rule.type !== 4) { continue; }                  // 4 = CSSRule.MEDIA_RULE
+                        var cond = rule.conditionText || (rule.media && rule.media.mediaText) || '';
+                        if (!/print/i.test(cond)) { continue; }
+                        var inner = rule.cssRules || [];
+                        for (var k = 0; k < inner.length; k++) {
+                            if (inner[k].type === 6) { continue; }          // 6 = CSSRule.PAGE_RULE
+                            rules.push(inner[k].cssText);
+                        }
+                    }
+                }
+            } catch (e) { rules = []; }
+            if (!rules.length) { fn(); return; }
+            var style = doc.createElement('style');
+            style.setAttribute('data-print-measure', '1');
+            style.textContent = rules.join('\n');
+            doc.head.appendChild(style);
+            try { fn(); }
+            finally {
+                if (style.parentNode) { style.parentNode.removeChild(style); }
+            }
+        }
+
+        // 打印补白：一行一行试填，把表格撑到接近满页，避免内容只占 A4 顶部一小块
+        function fillSummaryBlankRows(doc) {
+            var area = doc.getElementById('summary-area');
+            var table = area ? area.querySelector('table') : null;
+            var tbody = table ? table.querySelector('tbody') : null;
+            if (!tbody) { return; }
+            if (tbody.querySelectorAll('tr').length === 0) { return; }
+
+            var MM = 96 / 25.4;            // 1mm 对应的 css px
+            var PAGE_USABLE = 277 * MM;    // A4 297mm 减去上下各 10mm 页边距
+            var win = doc.defaultView || window;
+
+            var title = area.querySelector('.print-title') || doc.getElementById('summary-title');
+            var thead = table.querySelector('thead');
+            var tfoot = table.querySelector('tfoot');
+            var tail = area.querySelector('p');
+            var boxH = function(el) {
+                if (!el) { return 0; }
+                var cs = win.getComputedStyle(el);
+                return el.getBoundingClientRect().height +
+                       (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+            };
+            // 表头 / 表尾每页都会重复，标题与底部说明只出现一次
+            var repeatH = (thead ? thead.getBoundingClientRect().height : 0) +
+                          (tfoot ? tfoot.getBoundingClientRect().height : 0);
+            var oneOffH = boxH(title) + boxH(tail);
+            var perPageH = PAGE_USABLE - repeatH;      // 每页留给数据行的净高
+            if (perPageH <= 0) { return; }
+
+            var bodyHeight = function() { return tbody.getBoundingClientRect().height; };
+
+            var colCount = table.querySelectorAll('thead th').length || 10;
+            // 空行沿用数据行的高度，避免出现「数据行高、空行矮」的参差
+            var dataRows = tbody.querySelectorAll('tr:not(.filler-row)');
+            var rowH = 0;
+            for (var d = 0; d < dataRows.length; d++) {
+                rowH = Math.max(rowH, dataRows[d].getBoundingClientRect().height);
+            }
+            var addRow = function() {
+                var tr = doc.createElement('tr');
+                tr.className = 'filler-row';
+                for (var c = 0; c < colCount; c++) {
+                    var td = doc.createElement('td');
+                    td.innerHTML = '&nbsp;';
+                    if (rowH > 0) { td.style.height = rowH + 'px'; }
+                    tr.appendChild(td);
+                }
+                tbody.appendChild(tr);
+            };
+            var dropLastFiller = function() {
+                var f = tbody.querySelectorAll('tr.filler-row');
+                if (!f.length) { return false; }
+                var last = f[f.length - 1];
+                if (last.parentNode) { last.parentNode.removeChild(last); }
+                return true;
+            };
+
+            // 先估页数，把空行补到「页数 × 每页净高」，补完页数可能变化，最多迭代 8 次
+            var pages = Math.max(1, Math.ceil((bodyHeight() + oneOffH) / perPageH));
+            for (var iter = 0; iter < 8; iter++) {
+                // 留一行余量：分页时放不下的整行会跳到下一页，余量用尽就可能多打一张只有底部说明的纸
+                var limit = pages * perPageH - oneOffH - (rowH > 0 ? rowH : 0);
+                // 先按行高粗估一次，再逐行试填，避免一行一行加导致过多重排
+                if (rowH > 0 && isFinite(rowH) && rowH < 40 * MM) {
+                    var guess = Math.floor((limit - bodyHeight()) / rowH);
+                    for (var i = 0; i < guess && i < 60; i++) { addRow(); }
+                }
+                while (bodyHeight() > limit) {
+                    if (!dropLastFiller()) { break; }
+                }
+                var guard = 0;
+                while (guard++ < 80) {
+                    var before = bodyHeight();
+                    if (before >= limit) { break; }
+                    addRow();
+                    var after = bodyHeight();
+                    if (after > limit) { dropLastFiller(); break; }
+                    if (after - before < 0.5) { break; }     // 加行不再增高，停止
+                }
+                var nextPages = Math.max(1, Math.ceil((bodyHeight() + oneOffH) / perPageH));
+                if (nextPages === pages) { break; }
+                pages = nextPages;
+            }
+        }
+
         // 打印前把汇总区临时挂到 body 下，配合 @media print 只输出这一个区块，避免多余空白页
         (function() {
             var holder = null, nextNode = null;
@@ -4385,9 +4524,14 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 holder = sa.parentNode;
                 nextNode = sa.nextSibling;
                 document.body.appendChild(sa);
+                try { withPrintLayout(document, function() { fillSummaryBlankRows(document); }); } catch (e) { console.error(e); }
             });
             window.addEventListener('afterprint', function() {
                 var sa = document.getElementById('summary-area');
+                var fillers = sa ? sa.querySelectorAll('.filler-row') : [];
+                for (var i = 0; i < fillers.length; i++) {
+                    if (fillers[i].parentNode) { fillers[i].parentNode.removeChild(fillers[i]); }
+                }
                 if (!sa || !holder) { return; }
                 if (nextNode && nextNode.parentNode === holder) { holder.insertBefore(sa, nextNode); }
                 else { holder.appendChild(sa); }
@@ -4415,34 +4559,47 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             var printWindow = window.open('', '_blank', 'width=900,height=1000');
             if (!printWindow) { showToast('打印窗口被拦截，请允许弹窗后重试'); return; }
 
+            // A4 可用区域 190mm × 277mm（210/297 减去四边 10mm 页边距），据此铺满整张纸
             var printCss = [
-                '@page { size: A4; margin: 12mm; }',
+                '@page { size: A4 portrait; margin: 10mm; }',
                 '* { box-sizing: border-box; }',
-                'html, body { margin:0; padding:0; background:#fff !important; color:#000 !important;',
-                '  font-family:"Microsoft YaHei","微软雅黑",SimSun,sans-serif; font-size:10.5pt; line-height:1.45; }',
-                '#summary-area { width:186mm; max-width:186mm; margin:0 auto; }',
-                '.print-title { text-align:center; font-size:16pt; font-weight:700;',
-                '  margin:0 0 8mm; padding-bottom:3mm; border-bottom:1.5px solid #333; }',
-                'table { width:100% !important; border-collapse:collapse !important; table-layout:fixed; }',
+                'html, body { height:100%; margin:0; padding:0; background:#fff !important; color:#000 !important;',
+                '  font-family:"Microsoft YaHei","微软雅黑",SimSun,sans-serif; font-size:10.5pt; line-height:1.5; }',
+                '#summary-area { width:190mm; max-width:190mm; min-height:277mm; margin:0 auto;',
+                '  display:flex; flex-direction:column; }',
+                '#summary-area.measuring { min-height:0; }',
+                '#summary-area.measuring table { flex:0 0 auto; }',
+                '.print-title { flex:0 0 auto; text-align:center; font-size:17pt; font-weight:700;',
+                '  margin:0 0 5mm; padding-bottom:3mm; border-bottom:1.5px solid #333; }',
+                'table { width:100% !important; border-collapse:collapse !important; table-layout:fixed; flex:0 0 auto; }',
                 'thead { display:table-header-group; }',
                 'tfoot { display:table-footer-group; }',
                 'tr { page-break-inside:avoid; page-break-after:auto; }',
-                'th, td { border:1px solid #666 !important; padding:3px 4px !important; font-size:9.5pt;',
+                'th, td { border:1px solid #666 !important; padding:2.6mm 1.6mm !important; font-size:10.5pt;',
                 '  vertical-align:middle; word-break:break-word; overflow-wrap:anywhere; text-align:center; }',
                 'th { background:#f2f2f2 !important; font-weight:600; }',
-                'td:nth-child(2) { text-align:left; }',
-                'th:nth-child(1), td:nth-child(1) { width:8mm; }',
-                'th:nth-child(3), td:nth-child(3) { width:14mm; }',
-                'th:nth-child(4), td:nth-child(4) { width:16mm; }',
-                'th:nth-child(5), td:nth-child(5) { width:17mm; }',
-                'th:nth-child(6), td:nth-child(6) { width:15mm; }',
-                'th:nth-child(10), td:nth-child(10) { width:13mm; }',
-                'p { font-size:9pt; margin-top:6px; }',
-                '.diff-display { white-space:nowrap; }'
+                /* 表头带内联 width:xxpx，必须用 !important 覆盖，否则内容列被挤成 15mm */
+                'th { width:auto !important; }',
+                'th:nth-child(1), td:nth-child(1) { width:10mm !important; }',
+                'th:nth-child(2), td:nth-child(2) { width:auto !important; text-align:left; }',
+                'th:nth-child(3), td:nth-child(3) { width:16mm !important; }',
+                'th:nth-child(4), td:nth-child(4) { width:17mm !important; }',
+                'th:nth-child(5), td:nth-child(5) { width:17mm !important; }',
+                'th:nth-child(6), td:nth-child(6) { width:15mm !important; }',
+                'th:nth-child(7), td:nth-child(7) { width:auto !important; text-align:left; }',
+                'th:nth-child(8), td:nth-child(8) { width:16mm !important; }',
+                'th:nth-child(9), td:nth-child(9) { width:auto !important; text-align:left; }',
+                'th:nth-child(10), td:nth-child(10) { width:14mm !important; }',
+                'p { font-size:9pt; margin:4px 0 0; }',
+                '.diff-display { white-space:nowrap; }',
+                '.print-tip { max-width:190mm; margin:10px auto; padding:8px 12px; font-size:12px; line-height:1.6;',
+                '  color:#8a6d3b; background:#fff8e1; border:1px solid #f0c36d; border-radius:6px; }',
+                '@media print { .print-tip { display:none !important; } }'
             ].join('\n');
 
             var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + titleText + '</title>';
             html += '<style>' + printCss + '</style></head><body>';
+            html += '<div class="print-tip">🖨️ 打印建议：纸张 <b>A4</b>、边距设为 <b>「无」或「最小」</b>、缩放 <b>100%</b>、勾选 <b>背景图形</b>（表头灰底需要）。</div>';
             html += '<div id="summary-area">';
             html += '<h1 class="print-title">' + titleText + '</h1>';
             html += clone.innerHTML;
@@ -4451,6 +4608,9 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             printWindow.document.open();
             printWindow.document.write(html);
             printWindow.document.close();
+
+            // 按一页容量补齐空行，让表格铺满整张 A4（行数少时不会只剩顶部一小块）
+            try { fillSummaryBlankRows(printWindow.document); } catch (e) { console.error(e); }
 
             var fired = false;
             var doPrint = function() {
