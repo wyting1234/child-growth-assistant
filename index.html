@@ -1731,9 +1731,7 @@
             #summary-area th:nth-child(5), #summary-area td:nth-child(5) { width:17mm !important; }
             #summary-area th:nth-child(6), #summary-area td:nth-child(6) { width:15mm !important; }
             #summary-area th:nth-child(7), #summary-area td:nth-child(7) { width:auto !important; text-align:left; }
-            #summary-area th:nth-child(8), #summary-area td:nth-child(8) { width:16mm !important; }
-            #summary-area th:nth-child(9), #summary-area td:nth-child(9) { width:auto !important; text-align:left; }
-            #summary-area th:nth-child(10), #summary-area td:nth-child(10) { width:14mm !important; }
+            #summary-area th:nth-child(8), #summary-area td:nth-child(8) { width:14mm !important; }
             #summary-area .diff-display { white-space:nowrap; }
         }
         .custom-select-wrap {
@@ -4196,7 +4194,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
 
             var html = '<table>';
             html +=
-                '<thead><tr><th style="width:50px;">序号</th><th>任务名称</th><th style="width:80px;">类型</th><th style="width:90px;">预计时间</th><th style="width:90px;">实际时间</th><th style="width:80px;">差额</th><th>完成内容</th><th>自评</th><th>完善计划</th><th style="width:80px;">评分</th></tr></thead>';
+                '<thead><tr><th style="width:50px;">序号</th><th>任务名称</th><th style="width:80px;">类型</th><th style="width:90px;">预计时间</th><th style="width:90px;">实际时间</th><th style="width:80px;">差额</th><th>完成内容</th><th style="width:80px;">评分</th></tr></thead>';
             html += '<tbody>';
 
             allTasks.forEach(function(task, idx) {
@@ -4226,10 +4224,6 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 // 单行 input 会被 HTML 属性规范化吃掉换行，且打印时只显示可见区域
                 html += '<td><textarea class="summary-completed" rows="2" placeholder="完成内容">' +
                     esc(task.completedContent) + '</textarea></td>';
-                html += '<td><input type="text" class="summary-self" value="' + task.selfEvaluation +
-                    '" placeholder="自评"></td>';
-                html += '<td><input type="text" class="summary-improve" value="' + task.improvementPlan +
-                    '" placeholder="完善计划"></td>';
                 html += '<td><input type="number" class="summary-score" value="' + task.score +
                     '" placeholder="0-10" min="0" max="10" step="0.5" style="width:70px;text-align:center;"></td>';
                 html += '</tr>';
@@ -4237,7 +4231,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
 
             html += '</tbody>';
             html += '<tfoot>';
-            html += '<tr><td colspan="10" style="text-align:center;">';
+            html += '<tr><td colspan="8" style="text-align:center;">';
             html += '<strong>汇总</strong> &nbsp;|&nbsp; ';
             html += '总预计：' + totalHours + ' h &nbsp;|&nbsp; ';
             html += '总实际：' + actualHours + ' h &nbsp;|&nbsp; ';
@@ -4289,37 +4283,40 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             var fixedInfo = getFixedTaskList();
             var fixedTaskNames = fixedInfo.names;
             var fixedData = {};
+            // 打印表已移除「自评 / 完善计划」列，旧值从存档继承，避免保存时被清空
+            var prevFixed = Storage.get('daily_fixed_' + selectedDate) || {};
 
             fixedTaskNames.forEach(function(name) {
                 var statusEl = document.querySelector('.fixed-status[data-task="' + name + '"]');
                 var estimateEl = document.querySelector('.fixed-estimate[data-task="' + name + '"]');
                 var status = statusEl ? statusEl.value : '未完成';
                 var estimate = estimateEl ? estimateEl.value : '';
-                fixedData[name] = { status: status, estimate: estimate, actualTime: '' };
+                var prev = prevFixed[name] || {};
+                fixedData[name] = {
+                    status: status, estimate: estimate, actualTime: '',
+                    completedContent: prev.completedContent || '',
+                    selfEvaluation: prev.selfEvaluation || '',
+                    improvementPlan: prev.improvementPlan || '',
+                    score: prev.score || ''
+                };
             });
 
             var summaryRows = document.querySelectorAll('#summary-content table tbody tr');
             summaryRows.forEach(function(row) {
                 var cells = row.querySelectorAll('td');
-                if (cells.length < 10) return;
+                if (cells.length < 8) return;
                 var taskName = cells[1].innerText.trim();
                 var actualInput = cells[4].querySelector('input');
                 var completedInput = cells[6].querySelector('.summary-completed');
-                var selfInput = cells[7].querySelector('input');
-                var improveInput = cells[8].querySelector('input');
-                var scoreInput = cells[9].querySelector('input');
+                var scoreInput = cells[7].querySelector('input');
 
                 var actualTime = actualInput ? actualInput.value : '';
                 var completedContent = completedInput ? completedInput.value : '';
-                var selfEvaluation = selfInput ? selfInput.value : '';
-                var improvementPlan = improveInput ? improveInput.value : '';
                 var score = scoreInput ? scoreInput.value : '';
 
                 if (fixedData[taskName]) {
                     fixedData[taskName].actualTime = actualTime;
                     fixedData[taskName].completedContent = completedContent;
-                    fixedData[taskName].selfEvaluation = selfEvaluation;
-                    fixedData[taskName].improvementPlan = improvementPlan;
                     fixedData[taskName].score = score;
                 }
             });
@@ -4327,8 +4324,12 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             var fixedKey = 'daily_fixed_' + selectedDate;
             Storage.set(fixedKey, fixedData);
 
+            var tempKey = 'daily_temp_' + selectedDate;
             var tempItems = [];
             var tempRows = document.querySelectorAll('#daily-temp-tasks .task-item');
+            // 同上：自评 / 完善计划列已移除，旧值按 id 继承
+            var prevTempMap = {};
+            (Storage.get(tempKey) || []).forEach(function(it) { if (it && it.id) { prevTempMap[it.id] = it; } });
             tempRows.forEach(function(row) {
                 var id = row.getAttribute('data-id');
                 var name = row.querySelector('.temp-name').value.trim() || '未命名';
@@ -4336,24 +4337,23 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 var estimate = row.querySelector('.temp-estimate').value;
                 var contentDiv = row.querySelector('.temp-content');
                 var content = contentDiv ? contentDiv.innerText : '';
-                var extra = { actualTime: '', completedContent: '', selfEvaluation: '', improvementPlan: '',
+                var prevItem = prevTempMap[id] || {};
+                var extra = { actualTime: '', completedContent: '',
+                    selfEvaluation: prevItem.selfEvaluation || '',
+                    improvementPlan: prevItem.improvementPlan || '',
                     score: '' };
                 var summaryRowsAll = document.querySelectorAll('#summary-content table tbody tr');
                 summaryRowsAll.forEach(function(sr) {
                     var cells = sr.querySelectorAll('td');
-                    if (cells.length < 10) return;
+                    if (cells.length < 8) return;
                     var sName = cells[1].innerText.trim();
                     var sType = cells[2].innerText.trim();
                     if (sName === name && sType === '临时事项') {
                         var actualInput = cells[4].querySelector('input');
                         var completedInput = cells[6].querySelector('.summary-completed');
-                        var selfInput = cells[7].querySelector('input');
-                        var improveInput = cells[8].querySelector('input');
-                        var scoreInput = cells[9].querySelector('input');
+                        var scoreInput = cells[7].querySelector('input');
                         if (actualInput) extra.actualTime = actualInput.value;
                         if (completedInput) extra.completedContent = completedInput.value;
-                        if (selfInput) extra.selfEvaluation = selfInput.value;
-                        if (improveInput) extra.improvementPlan = improveInput.value;
                         if (scoreInput) extra.score = scoreInput.value;
                     }
                 });
@@ -4370,7 +4370,6 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                     score: extra.score
                 });
             });
-            var tempKey = 'daily_temp_' + selectedDate;
             Storage.set(tempKey, tempItems);
 
             var signKey = 'daily_sign_' + selectedDate;
@@ -4607,9 +4606,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 'th:nth-child(5), td:nth-child(5) { width:17mm !important; }',
                 'th:nth-child(6), td:nth-child(6) { width:15mm !important; }',
                 'th:nth-child(7), td:nth-child(7) { width:auto !important; text-align:left; }',
-                'th:nth-child(8), td:nth-child(8) { width:16mm !important; }',
-                'th:nth-child(9), td:nth-child(9) { width:auto !important; text-align:left; }',
-                'th:nth-child(10), td:nth-child(10) { width:14mm !important; }',
+                'th:nth-child(8), td:nth-child(8) { width:14mm !important; }',
                 'p { font-size:9pt; margin:4px 0 0; }',
                 '.diff-display { white-space:nowrap; }',
                 '.print-tip { max-width:190mm; margin:10px auto; padding:8px 12px; font-size:12px; line-height:1.6;',

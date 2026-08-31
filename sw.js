@@ -1,6 +1,6 @@
 /* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装）
-   v10：每日陪伴打印铺满 A4（页边距/列宽/自动补空行）+ 临时事项明细回填「完成内容」 */
-const CACHE = 'child-growth-v10';
+   v11：每日陪伴打印表移除「自评 / 完善计划」列，完成内容多行明细不再丢换行 */
+const CACHE = 'child-growth-v11';
 const CORE = ['./', './index.html', './study-record.html', './情商club.html', './account-manager.js', './manifest.json'];
 
 self.addEventListener('install', function (e) {
