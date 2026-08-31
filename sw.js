@@ -1,6 +1,6 @@
 /* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装）
-   v11：每日陪伴打印表移除「自评 / 完善计划」列，完成内容多行明细不再丢换行 */
-const CACHE = 'child-growth-v11';
+   v12：打印表加宽「完成内容」列、紧凑排版，修复大数据量下打印对话框不弹出问题 */
+const CACHE = 'child-growth-v12';
 const CORE = ['./', './index.html', './study-record.html', './情商club.html', './account-manager.js', './manifest.json'];
 
 self.addEventListener('install', function (e) {
