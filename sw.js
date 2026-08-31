@@ -1,6 +1,6 @@
 /* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装）
-   v13：修正打印高度测量（textarea 撑高导致页数高估、多打空白页） */
-const CACHE = 'child-growth-v13';
+   v14：表头 8.5pt 防竖排；空行高度设 10mm 上限，长内容行不再导致底部大片留白 */
+const CACHE = 'child-growth-v14';
 const CORE = ['./', './index.html', './study-record.html', './情商club.html', './account-manager.js', './manifest.json'];
 
 self.addEventListener('install', function (e) {

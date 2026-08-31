@@ -1719,25 +1719,28 @@
             #summary-content { flex:1 1 auto !important; display:flex !important; flex-direction:column !important; width:100% !important; }
             #summary-area table { width:100% !important; border-collapse:collapse !important; table-layout:fixed; flex:0 0 auto !important; }
             #summary-area p { flex:0 0 auto !important; }
-            /* 字号/内边距/行高压到紧凑档：同样一页能多放约 30% 文字，明细少跨行 */
+            /* 字号/内边距/行高压到紧凑档：同样一页能多放约 30% 文字，明细少跨行。
+               表头比内容再小 1pt，确保「预计时间」「实际时间」「临时事项」等四字表头不竖排 */
             #summary-area th, #summary-area td { border:1px solid #666 !important; padding:1.6mm 1.0mm !important;
                 font-size:9.5pt; line-height:1.38; vertical-align:middle; word-break:break-word;
                 overflow-wrap:anywhere; text-align:center; }
-            #summary-area th { background:#f2f2f2 !important; font-weight:600; }
+            #summary-area th { background:#f2f2f2 !important; font-weight:600; font-size:8.5pt !important; }
+            #summary-area td { font-size:9.5pt !important; }
             /* 覆盖单元格里 input 的内联 width:70px，否则会撑破窄列 */
             #summary-area input, #summary-area textarea { border:none !important; background:transparent !important;
                 color:#000 !important; padding:0 !important; width:100% !important; max-width:100% !important; }
             /* 用 !important 覆盖表头内联的 px 宽度，否则内容列被挤成 15mm。
-               除「完成内容」外全部给定宽，省下的 85mm 全给完成内容，明细才不会挤成几十行 */
+               除「完成内容」外全部给定宽，省下的 ~78mm 全给完成内容，明细才不会挤成几十行。
+               注意：9.5pt 内容列的最小安全宽度以实测为准；表头用 8.5pt 防止竖排 */
             #summary-area th { width:auto !important; }
-            #summary-area th:nth-child(1), #summary-area td:nth-child(1) { width:7mm !important; }
-            #summary-area th:nth-child(2), #summary-area td:nth-child(2) { width:32mm !important; text-align:left; }
+            #summary-area th:nth-child(1), #summary-area td:nth-child(1) { width:10mm !important; }
+            #summary-area th:nth-child(2), #summary-area td:nth-child(2) { width:30mm !important; text-align:left; }
             #summary-area th:nth-child(3), #summary-area td:nth-child(3) { width:17mm !important; }
             #summary-area th:nth-child(4), #summary-area td:nth-child(4) { width:14mm !important; }
-            #summary-area th:nth-child(5), #summary-area td:nth-child(5) { width:9mm !important; }
+            #summary-area th:nth-child(5), #summary-area td:nth-child(5) { width:14mm !important; }
             #summary-area th:nth-child(6), #summary-area td:nth-child(6) { width:16mm !important; }
             #summary-area th:nth-child(7), #summary-area td:nth-child(7) { width:auto !important; text-align:left; }
-            #summary-area th:nth-child(8), #summary-area td:nth-child(8) { width:8mm !important; }
+            #summary-area th:nth-child(8), #summary-area td:nth-child(8) { width:11mm !important; }
             #summary-area .diff-display { white-space:nowrap; }
         }
         .custom-select-wrap {
@@ -4475,13 +4478,18 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             for (var d = 0; d < dataRows.length; d++) {
                 rowH = Math.max(rowH, dataRows[d].getBoundingClientRect().height);
             }
+            // 空行高度：默认跟数据行一致（表格看起来整齐）。
+            // 但只要有一行内容特别长，rowH 就会被它拉高，剩余空间不够再塞一个这么高的空行，
+            // 结果一个都不补、底部白留一大块。所以给空行高度设上限 10mm（约一行文字高），
+            // 让它既能填满剩余空间，又不至于比数据行矮太多显得突兀
+            var fillH = rowH > 0 ? Math.min(rowH, 10 * MM) : 0;
             var makeRow = function() {
                 var tr = doc.createElement('tr');
                 tr.className = 'filler-row';
                 for (var c = 0; c < colCount; c++) {
                     var td = doc.createElement('td');
                     td.innerHTML = '&nbsp;';
-                    if (rowH > 0) { td.style.height = rowH + 'px'; }
+                    if (fillH > 0) { td.style.height = fillH + 'px'; }
                     tr.appendChild(td);
                 }
                 return tr;
@@ -4516,11 +4524,11 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             for (var iter = 0; iter < 6; iter++) {
                 // 留出一点安全边距，避免一行刚好跨在分页线上被挤到下一页。
                 // 小字版 rowH 变小，若仍留一整行会浪费半页，所以用 8mm 或 60% 行高（取小）
-                var buffer = Math.min(rowH > 0 ? rowH * 0.6 : 8 * MM, 8 * MM);
+                var buffer = Math.min(fillH > 0 ? fillH * 0.6 : 8 * MM, 8 * MM);
                 var limit = targetPages * perPageH - oneOffH - buffer;
-                if (rowH > 0 && isFinite(rowH)) {
+                if (fillH > 0 && isFinite(fillH)) {
                     var room = limit - bodyHeight();
-                    if (room > 0) { addRows(Math.min(Math.floor(room / rowH), 300)); }
+                    if (room > 0) { addRows(Math.min(Math.floor(room / fillH), 300)); }
                 }
                 // 如果超出目标页数，把最后补的 filler 撤掉，直到 fit
                 var guard = 0;
@@ -4618,21 +4626,23 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 'th, td { border:1px solid #666 !important; padding:1.6mm 1.0mm !important;',
                 '  font-size:9.5pt; line-height:1.38; vertical-align:middle; word-break:break-word;',
                 '  overflow-wrap:anywhere; text-align:center; }',
-                'th { background:#f2f2f2 !important; font-weight:600; }',
+                'th { background:#f2f2f2 !important; font-weight:600; font-size:8.5pt !important; }',
+                'td { font-size:9.5pt !important; }',
                 /* 覆盖单元格里 input 的内联 width:70px，否则会撑破窄列 */
                 'input, textarea { border:none !important; background:transparent !important; color:#000 !important;',
                 '  padding:0 !important; width:100% !important; max-width:100% !important; font-size:9.5pt; }',
                 /* 表头带内联 width:xxpx，必须用 !important 覆盖，否则内容列被挤成 15mm。
-                   除「完成内容」外全部定宽，省下的 85mm 全给完成内容，明细才不会挤成几十行 */
+                   除「完成内容」外全部定宽，省下的 ~78mm 全给完成内容，明细才不会挤成几十行。
+                   表头用 8.5pt，防止四字表头竖排 */
                 'th { width:auto !important; }',
-                'th:nth-child(1), td:nth-child(1) { width:7mm !important; }',
-                'th:nth-child(2), td:nth-child(2) { width:32mm !important; text-align:left; }',
+                'th:nth-child(1), td:nth-child(1) { width:10mm !important; }',
+                'th:nth-child(2), td:nth-child(2) { width:30mm !important; text-align:left; }',
                 'th:nth-child(3), td:nth-child(3) { width:17mm !important; }',
                 'th:nth-child(4), td:nth-child(4) { width:14mm !important; }',
-                'th:nth-child(5), td:nth-child(5) { width:9mm !important; }',
+                'th:nth-child(5), td:nth-child(5) { width:14mm !important; }',
                 'th:nth-child(6), td:nth-child(6) { width:16mm !important; }',
                 'th:nth-child(7), td:nth-child(7) { width:auto !important; text-align:left; }',
-                'th:nth-child(8), td:nth-child(8) { width:8mm !important; }',
+                'th:nth-child(8), td:nth-child(8) { width:11mm !important; }',
                 'p { font-size:9pt; margin:4px 0 0; }',
                 '.diff-display { white-space:nowrap; }',
                 '.print-tip { max-width:190mm; margin:10px auto; padding:8px 12px; font-size:12px; line-height:1.6;',
