@@ -1,6 +1,6 @@
 /* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装）
-   v15：HTML 改网络优先（1.5s 超时回退缓存），改完推送后打开即最新版，不必二次刷新 */
-const CACHE = 'child-growth-v15';
+   v16：HTML 网络优先（失败才回退缓存），确保在线时永远拿到最新版 */
+const CACHE = 'child-growth-v16';
 const CORE = ['./', './index.html', './study-record.html', './情商club.html', './account-manager.js', './manifest.json'];
 
 self.addEventListener('install', function (e) {
@@ -23,9 +23,9 @@ self.addEventListener('activate', function (e) {
   );
 });
 
-/* HTML：网络优先（保证拿到最新版）→ 1.5s 内没回来就先用缓存秒开，
-   网络结果仍会写入缓存供下次/离线使用。
-   之前是「缓存优先」，导致改完推送后用户打开看到的还是旧页面，必须二次刷新才生效。
+/* HTML：严格网络优先。在线时先请求网络，拿到最新版就展示并更新缓存；
+   只有网络真正失败（断网/超时等）才回退缓存。去掉 1.5s 提前回退，避免在
+   GitHub Pages 部署延迟或网络抖动时把旧版秒开展示给用户。
    其它资源：网络优先，失败回退缓存 */
 self.addEventListener('fetch', function (e) {
   var url;
@@ -37,30 +37,17 @@ self.addEventListener('fetch', function (e) {
 
   if (isHtml) {
     e.respondWith(
-      new Promise(function (resolve) {
-        var settled = false;
-        // 网络偏慢时先用缓存秒开，不阻塞用户
-        var timer = setTimeout(function () {
-          if (settled) { return; }
-          caches.match(e.request).then(function (c) {
-            if (c && !settled) { settled = true; resolve(c); }
-          });
-        }, 1500);
-
-        fetch(e.request).then(function (res) {
-          clearTimeout(timer);
-          if (res && res.status === 200) {
-            var copy = res.clone();
-            caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
-          }
-          if (!settled) { settled = true; resolve(res); }
-        }).catch(function () {
-          clearTimeout(timer);
-          if (settled) { return; }
-          settled = true;
-          resolve(caches.match(e.request).then(function (c) {
-            return c || caches.match('./index.html');
-          }));
+      fetch(e.request).then(function (res) {
+        // 网络正常：展示新版并写入缓存
+        if (res && res.status === 200) {
+          var copy = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
+        }
+        return res;
+      }).catch(function () {
+        // 网络真正失败：回退缓存，保证离线可用
+        return caches.match(e.request).then(function (c) {
+          return c || caches.match('./index.html');
         });
       })
     );

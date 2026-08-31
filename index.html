@@ -4202,8 +4202,9 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             });
             var totalHours = (totalMinutes / 60).toFixed(1);
             var actualHours = (totalActual / 60).toFixed(1);
+            // 平均分：没评分时留空，不要打印出短横
             var avgScore = scores.length > 0 ? (scores.reduce(function(a, b) { return a + b; }, 0) / scores.length).toFixed(
-                1) : '-';
+                1) : '';
             var signKey = 'daily_sign_' + selectedDate;
             var signData = Storage.get(signKey) || { completer: '', reviewer: '' };
             var completer = signData.completer || '';
@@ -7146,7 +7147,8 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             function init() {
                 // PWA：注册 Service Worker（离线可用 + 可安装）
                 if ('serviceWorker' in navigator && location.protocol === 'https:') {
-                    navigator.serviceWorker.register('sw.js').catch(function(e) {
+                    // 加版本号防止浏览器 HTTP 缓存旧的 sw.js，确保 SW 更新能尽快下发
+                    navigator.serviceWorker.register('sw.js?v=16').catch(function(e) {
                         console.warn('[SW] 注册失败:', e);
                     });
                 }
