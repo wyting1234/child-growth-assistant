@@ -1,6 +1,6 @@
 /* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装）
-   v6：HTML 走 stale-while-revalidate，页面切换秒开；汉堡常驻、无隐身逻辑 */
-const CACHE = 'child-growth-v6';
+   v7：HTML 走 stale-while-revalidate，页面切换秒开；汉堡常驻、无隐身逻辑 */
+const CACHE = 'child-growth-v7';
 const CORE = ['./', './index.html', './study-record.html', './情商club.html', './account-manager.js', './manifest.json'];
 
 self.addEventListener('install', function (e) {
