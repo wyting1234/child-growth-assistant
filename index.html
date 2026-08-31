@@ -1721,7 +1721,7 @@
             #summary-area p { flex:0 0 auto !important; }
             #summary-area th, #summary-area td { border:1px solid #666 !important; padding:2.6mm 1.6mm !important; font-size:10.5pt; vertical-align:middle; word-break:break-word; overflow-wrap:anywhere; text-align:center; }
             #summary-area th { background:#f2f2f2 !important; font-weight:600; }
-            #summary-area input { border:none !important; background:transparent !important; color:#000 !important; padding:0 !important; }
+            #summary-area input, #summary-area textarea { border:none !important; background:transparent !important; color:#000 !important; padding:0 !important; }
             /* 用 !important 覆盖表头内联的 px 宽度，否则内容列被挤成 15mm */
             #summary-area th { width:auto !important; }
             #summary-area th:nth-child(1), #summary-area td:nth-child(1) { width:10mm !important; }
@@ -4222,8 +4222,10 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 html += '<td><input type="number" class="summary-actual" value="' + task.actualTime +
                     '" placeholder="分钟" min="0" step="1" style="width:70px;text-align:center;"></td>';
                 html += '<td>' + diffDisplay + '</td>';
-                html += '<td><input type="text" class="summary-completed" value="' + task.completedContent +
-                    '" placeholder="完成内容"></td>';
+                // 完成内容可能是多行明细（如临时事项里的 "1. …\n2. …"），用 textarea 承载：
+                // 单行 input 会被 HTML 属性规范化吃掉换行，且打印时只显示可见区域
+                html += '<td><textarea class="summary-completed" rows="2" placeholder="完成内容">' +
+                    esc(task.completedContent) + '</textarea></td>';
                 html += '<td><input type="text" class="summary-self" value="' + task.selfEvaluation +
                     '" placeholder="自评"></td>';
                 html += '<td><input type="text" class="summary-improve" value="' + task.improvementPlan +
@@ -4302,7 +4304,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 if (cells.length < 10) return;
                 var taskName = cells[1].innerText.trim();
                 var actualInput = cells[4].querySelector('input');
-                var completedInput = cells[6].querySelector('input');
+                var completedInput = cells[6].querySelector('.summary-completed');
                 var selfInput = cells[7].querySelector('input');
                 var improveInput = cells[8].querySelector('input');
                 var scoreInput = cells[9].querySelector('input');
@@ -4344,7 +4346,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                     var sType = cells[2].innerText.trim();
                     if (sName === name && sType === '临时事项') {
                         var actualInput = cells[4].querySelector('input');
-                        var completedInput = cells[6].querySelector('input');
+                        var completedInput = cells[6].querySelector('.summary-completed');
                         var selfInput = cells[7].querySelector('input');
                         var improveInput = cells[8].querySelector('input');
                         var scoreInput = cells[9].querySelector('input');
@@ -4517,25 +4519,41 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
 
         // 打印前把汇总区临时挂到 body 下，配合 @media print 只输出这一个区块，避免多余空白页
         (function() {
-            var holder = null, nextNode = null;
+            var holder = null, nextNode = null, backupHtml = null;
             window.addEventListener('beforeprint', function() {
                 var sa = document.getElementById('summary-area');
-                if (!sa || sa.parentNode === document.body) { return; }
-                holder = sa.parentNode;
-                nextNode = sa.nextSibling;
-                document.body.appendChild(sa);
+                if (!sa) { return; }
+                if (sa.parentNode !== document.body) {
+                    holder = sa.parentNode;
+                    nextNode = sa.nextSibling;
+                    document.body.appendChild(sa);
+                }
+                // 按一页容量补空行，让表格铺满 A4
                 try { withPrintLayout(document, function() { fillSummaryBlankRows(document); }); } catch (e) { console.error(e); }
+                // 表单控件换成静态文本：input 打印可能只显示可见区域，textarea 更是只印出前两行
+                backupHtml = sa.innerHTML;
+                Array.prototype.forEach.call(sa.querySelectorAll('input, textarea'), function(el) {
+                    var raw = (el.value || '');
+                    var span = document.createElement('span');
+                    span.style.whiteSpace = 'pre-wrap';
+                    span.textContent = raw.trim() !== '' ? raw : '—';
+                    if (el.parentNode) { el.parentNode.replaceChild(span, el); }
+                });
             });
             window.addEventListener('afterprint', function() {
                 var sa = document.getElementById('summary-area');
-                var fillers = sa ? sa.querySelectorAll('.filler-row') : [];
-                for (var i = 0; i < fillers.length; i++) {
-                    if (fillers[i].parentNode) { fillers[i].parentNode.removeChild(fillers[i]); }
+                // 直接还原成打印前的 HTML，补白行和控件替换一并撤销
+                if (sa && backupHtml !== null) {
+                    sa.innerHTML = backupHtml;
+                    backupHtml = null;
                 }
-                if (!sa || !holder) { return; }
-                if (nextNode && nextNode.parentNode === holder) { holder.insertBefore(sa, nextNode); }
-                else { holder.appendChild(sa); }
+                if (sa && holder) {
+                    if (nextNode && nextNode.parentNode === holder) { holder.insertBefore(sa, nextNode); }
+                    else { holder.appendChild(sa); }
+                }
                 holder = null; nextNode = null;
+                // 重建表格，恢复事件绑定
+                try { if (typeof updateSummary === 'function') { updateSummary(); } } catch (e) { console.error(e); }
             });
         })();
 
@@ -4547,12 +4565,14 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             var accName = Storage.cur() || '';
             var titleText = dateStr + (accName ? ' ' + accName : '') + ' 计划成长计划完成情况';
 
-            // 把汇总里的输入框换成纯文本，否则打印出来是一片空白的框
+            // 把汇总里的输入框换成纯文本，否则打印出来是一片空白的框（textarea 还只显示可见区域）
             var clone = content.cloneNode(true);
-            clone.querySelectorAll('input').forEach(function(inp) {
-                var txt = (inp.value || '').trim();
+            clone.querySelectorAll('input, textarea').forEach(function(inp) {
+                var txt = (inp.value || '');
                 var span = document.createElement('span');
-                span.textContent = txt !== '' ? txt : '—';
+                // pre-wrap 保留明细里的换行（如 "1. …\n2. …"）
+                span.style.whiteSpace = 'pre-wrap';
+                span.textContent = txt.trim() !== '' ? txt : '—';
                 if (inp.parentNode) { inp.parentNode.replaceChild(span, inp); }
             });
 
