@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="description" content="儿童成长助手 · 导航中心：成长主页 / 学习记录 / 情商club / 时间统计" />
+    <meta name="description" content="儿童成长助手 · 导航中心：成长复盘 / 学习记录 / 情商club / 时间统计" />
     <meta name="theme-color" content="#2563eb" />
     <title>儿童成长助手 · 导航中心</title>
     <style>
@@ -948,13 +948,13 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             <div class="hero">
                 <div class="logo">🌱</div>
                 <h1>儿童成长助手 · 导航中心</h1>
-                <div class="sub">五个入口，一个中心：成长主页 / 导航 / 学习记录 / 情商club / 时间统计</div>
+                <div class="sub">五个入口，一个中心：成长复盘 / 导航 / 学习记录 / 情商club / 时间统计</div>
             </div>
             <div class="tool-grid">
-                <a class="tool-card" href="./主页.html">
+                <a class="tool-card" href="./成长复盘.html">
                     <span class="ico">🌱</span>
                     <span class="info">
-                        <span class="name">成长主页</span>
+                        <span class="name">成长复盘</span>
                         <span class="desc">全周期学习成长计划：目标、打卡、复盘、档案、日记</span>
                     </span>
                     <span class="arrow">➜</span>
@@ -1646,7 +1646,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             // 网页工具定义：后续新增网页工具只需在下面追加一条
             var TOOL_DEFS = [
                 { key: 'nav',   ico: '🧭', name: '导航中心', href: './index.html' },
-                { key: 'main',  ico: '🌱', name: '成长主页', href: './主页.html' },
+                { key: 'main',  ico: '🌱', name: '成长复盘', href: './成长复盘.html' },
                 { key: 'study', ico: '📚', name: '儿童学习记录', href: './study-record.html' },
                 { key: 'eq', ico: '💬', name: '情商club', href: './情商club.html' },
                 { key: 'time', ico: '⏱️', name: '时间统计', href: './时间统计.html' }
@@ -1655,7 +1655,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             // 当前所在网页
             function currentKey() {
                 var p = window.location.pathname.split('/').pop() || 'index.html';
-                if (p === '主页.html') return 'main';
+                if (p === '成长复盘.html') return 'main';
                 if (p === 'study-record.html') return 'study';
                 if (p === '情商club.html') return 'eq';
                 if (p === '时间统计.html') return 'time';
