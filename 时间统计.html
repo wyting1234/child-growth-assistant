@@ -1151,6 +1151,50 @@
 </head>
 <body>
 
+    <!-- ===== 汉堡抽屉：全站导航（云备份/学员管理/变色请在导航中心使用） ===== -->
+    <div id="siteDrawerMask" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:299;"></div>
+    <div id="siteDrawer" style="display:none;position:fixed;top:0;left:0;bottom:0;width:300px;max-width:86vw;background:#0f172a;color:#cbd5e1;z-index:300;padding:20px 16px;box-shadow:4px 0 24px rgba(0,0,0,.3);overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="font-weight:700;color:#fff;font-size:16px;">🌱 全部网页</div>
+            <button id="siteDrawerClose" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer;line-height:1;">✕</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+            <a href="./index.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">🧭 导航中心</a>
+            <a href="./成长复盘.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">🌱 成长复盘</a>
+            <a href="./study-record.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">📚 学习记录</a>
+            <a href="./情商club.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">💬 情商club</a>
+            <a href="./时间统计.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">⏱️ 时间统计</a>
+        </div>
+        <div style="margin-top:14px;border-top:1px solid #334155;padding-top:12px;display:flex;flex-direction:column;gap:6px;">
+            <button onclick="alert('☁️ 云备份功能请在导航中心使用')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:rgba(255,255,255,.06);color:#e2e8f0;font-size:14px;cursor:pointer;text-align:left;">☁️ 云备份</button>
+            <button onclick="alert('👤 学员管理功能请在导航中心使用')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:rgba(255,255,255,.06);color:#e2e8f0;font-size:14px;cursor:pointer;text-align:left;">👤 学员管理</button>
+            <button onclick="alert('🌗 页面变色功能请在导航中心使用')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:rgba(255,255,255,.06);color:#e2e8f0;font-size:14px;cursor:pointer;text-align:left;">🌗 页面变色</button>
+        </div>
+    </div>
+    <script>
+        (function() {
+            function bindDrawer() {
+                var toggle = document.getElementById('siteDrawerToggle');
+                var drawer = document.getElementById('siteDrawer');
+                var mask = document.getElementById('siteDrawerMask');
+                function close() { if (drawer) drawer.style.display = 'none'; if (mask) mask.style.display = 'none'; }
+                if (toggle) toggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (drawer && drawer.style.display === 'block') close();
+                    else { if (drawer) drawer.style.display = 'block'; if (mask) mask.style.display = 'block'; }
+                });
+                if (mask) mask.addEventListener('click', close);
+                var c = document.getElementById('siteDrawerClose');
+                if (c) c.addEventListener('click', close);
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bindDrawer);
+            } else {
+                bindDrawer();
+            }
+        })();
+    </script>
+
     <div id="app">
         <!-- HAMBURGER MENU -->
         <div class="hamburger-menu">
@@ -1172,6 +1216,7 @@
         <div class="app-header">
             <h1><i class="fas fa-clock" style="color:#3b82f6;margin-right:6px;"></i>时间统计</h1>
             <span class="date-badge" id="headerDate"></span>
+            <button id="siteDrawerToggle" title="全部网页" style="margin-left:auto;font-size:22px;background:none;border:none;cursor:pointer;padding:4px 10px;color:inherit;line-height:1;">☰</button>
         </div>
 
         <!-- TIMER CARD -->
