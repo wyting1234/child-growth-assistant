@@ -27,6 +27,8 @@
             --shadow: 0 2px 15px #00000008;
         }
         body {
+            display: flex;
+            min-height: 100vh;
             background-color: #f1f5f9;
             color: var(--dark);
             line-height: 1.7;
@@ -915,6 +917,10 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 <select id="editSemesterSelect" style="flex:1;">
                     <option value="上">上学期</option>
                     <option value="下">下学期</option>
+                </select>
+            </div>
+        </div>
+    </div>
     <!-- ===== 光阴の侧边栏（网页工具集） ===== -->
     <div class="sidebar-mask" id="sidebarMask"></div>
     <aside class="sidebar" id="appSidebar">
@@ -1037,7 +1043,6 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             toast._timer = setTimeout(function() { toast.classList.remove('show'); }, 1800);
         }
     </script>
-    <script>
     <script>
         /* ================================================================
          *  ☁️ 云端数据同步模块（GitHub Gist · 手动上传/下载）
@@ -1401,8 +1406,6 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             }
         })();
     </script>
-    </script>
-    <script>
     <script>
         /* ================================================================
          *  👦 多儿童账户管理
@@ -1947,7 +1950,6 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             // 数据变化时刷新徽章（包括跨 tab 存储事件）
             window.addEventListener('storage', function() { render(); });
         })();
-    </script>
     </script>
 </body>
 </html>
