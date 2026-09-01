@@ -572,34 +572,6 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
 </style>
 </head>
 <body>
-    <!-- ===== 光阴の侧边栏（网页工具集） ===== -->
-    <div class="sidebar-mask" id="sidebarMask"></div>
-    <aside class="sidebar" id="appSidebar">
-        <div class="sidebar-inner">
-            <div class="sidebar-header">
-                <div class="logo-icon">🌱</div>
-                <div class="meta">
-                    <div class="title">光阴の记事本</div>
-                    <div class="sub"><span id="sidebarToolCount">2</span> 个网页</div>
-                </div>
-            </div>
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">
-                    <span>网页工具</span>
-                    <button class="manage-btn" id="sidebarManageBtn" title="更多工具将陆续添加">＋ 管理</button>
-                </div>
-                <ul class="sidebar-list" id="sidebarTools"></ul>
-            </div>
-            <div class="sidebar-footer">
-                <button class="sidebar-sync-btn" id="sidebarCloudSyncBtn" title="数据云端同步">☁️ 云端同步</button>
-                <button class="sidebar-user-btn" id="sidebarUserManagerBtn" title="学员管理">👤 学员管理</button>
-                <button class="sidebar-theme-btn" id="sidebarThemeBtn" title="切换页面深色/浅色模式">🌗 页面变色</button>
-                <span class="sidebar-version">v3.1</span>
-            </div>
-        </div>
-    </aside>
-    <button class="sidebar-toggle" id="sidebarToggle" title="展开/收起侧边栏" aria-label="展开侧边栏">☰</button>
-
     <div class="app-shell">
     <main class="app-main">
     <!-- 导航栏 -->
@@ -612,6 +584,12 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             <button data-page="cards">🃏 知识卡</button>
             <button data-page="errors">❌ 错题本</button>
             <button data-page="logs">📝 学习日志</button>
+        </div>
+        <div class="nav-utils" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:auto;">
+            <a href="./index.html" title="返回导航中心" style="font-size:12px;padding:5px 10px;border:1px solid #e2e8f0;border-radius:20px;color:#475569;text-decoration:none;white-space:nowrap;background:#f8fafc;">🧭 导航中心</a>
+            <button id="sidebarCloudSyncBtn" title="数据云端同步" style="font-size:12px;padding:5px 10px;border:1px solid #bfdbfe;border-radius:20px;background:#eff6ff;color:#1d4ed8;cursor:pointer;">☁️ 云同步</button>
+            <button id="sidebarUserManagerBtn" title="学员管理" style="font-size:12px;padding:5px 10px;border:1px solid #ddd6fe;border-radius:20px;background:#f5f3ff;color:#6d28d9;cursor:pointer;">👤 学员</button>
+            <button id="sidebarThemeBtn" title="切换深色/浅色模式" style="font-size:12px;padding:5px 10px;border:1px solid #e2e8f0;border-radius:20px;background:#f8fafc;color:#475569;cursor:pointer;">🌗 主题</button>
         </div>
     </nav>
 
@@ -3435,6 +3413,10 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         // ================================================================
         (function() {
             'use strict';
+
+            // 本页已去掉侧边栏（导航统一由导航中心 index.html 负责），
+            // 无侧边栏元素时跳过工具列表渲染与绑定
+            if (!document.getElementById('sidebarTools')) { return; }
 
             var TOOL_DEFS = [
                 { key: 'main',  ico: '🌱', name: '儿童成长系统', href: './index.html' },
