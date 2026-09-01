@@ -12,9 +12,11 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>" />
     <title>儿童成长助手 | 全周期学习成长计划</title>
-    <!-- 预取其它两个工具页：切换时直接从缓存加载，减少白屏卡顿 -->
+    <!-- 预取其它工具页：切换时直接从缓存加载，减少白屏卡顿 -->
     <link rel="prefetch" href="./study-record.html">
     <link rel="prefetch" href="./情商club.html">
+    <link rel="prefetch" href="./时间统计.html">
+    <link rel="prefetch" href="./导航.html">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
     </script>
     <style>
@@ -7435,8 +7437,10 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             // 网页工具定义：后续新增网页工具只需在下面追加一条
             var TOOL_DEFS = [
                 { key: 'main',  ico: '🌱', name: '儿童成长系统', href: './index.html' },
+                { key: 'nav',   ico: '🧭', name: '导航中心', href: './导航.html' },
                 { key: 'study', ico: '📚', name: '儿童学习记录', href: './study-record.html' },
-                { key: 'eq', ico: '💬', name: '情商club', href: './情商club.html' }
+                { key: 'eq', ico: '💬', name: '情商club', href: './情商club.html' },
+                { key: 'time', ico: '⏱️', name: '时间统计', href: './时间统计.html' }
             ];
 
             // 当前所在网页
@@ -7444,13 +7448,21 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 var p = window.location.pathname.split('/').pop() || 'index.html';
                 if (p === 'study-record.html') return 'study';
                 if (p === '情商club.html') return 'eq';
+                if (p === '时间统计.html') return 'time';
+                if (p === '导航.html') return 'nav';
                 return 'main';
             }
 
             function getOrder() {
                 try {
                     var o = JSON.parse(localStorage.getItem('sidebar_order_v3') || 'null');
-                    if (Array.isArray(o) && o.length) return o;
+                    if (Array.isArray(o) && o.length) {
+                        // 兼容旧排序：新加入的工具自动追加到末尾，避免老用户看不到新入口
+                        var has = {};
+                        o.forEach(function(k) { has[k] = true; });
+                        TOOL_DEFS.forEach(function(t) { if (!has[t.key]) o.push(t.key); });
+                        return o;
+                    }
                 } catch (e) {}
                 return TOOL_DEFS.map(function(t) { return t.key; });
             }
