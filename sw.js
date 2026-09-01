@@ -1,7 +1,7 @@
 /* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装）
-   v17：HTML 网络优先（失败才回退缓存），确保在线时永远拿到最新版。新增「导航」「时间统计」入口页缓存 */
-const CACHE = 'child-growth-v17';
-const CORE = ['./', './index.html', './导航.html', './study-record.html', './情商club.html', './时间统计.html', './account-manager.js', './manifest.json'];
+   v18：HTML 网络优先（失败才回退缓存）。导航中心升级为默认首页 index.html，原主页更名 主页.html */
+const CACHE = 'child-growth-v18';
+const CORE = ['./', './index.html', './主页.html', './study-record.html', './情商club.html', './时间统计.html', './account-manager.js', './manifest.json'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
