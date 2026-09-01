@@ -4172,6 +4172,9 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             tempItems.forEach(function(item) {
                 allTasks.push({
                     type: '临时事项',
+                    // 临时事项的真实 id 透传到汇总行，保存回填时按 id 精确定位，
+                    // 避免同名临时事项（C++×6 / 语文×4）之间相互覆盖「完成内容 / 评分」
+                    id: item.id || '',
                     name: item.name || '未命名',
                     estimate: item.estimate || '',
                     actualTime: item.actualTime || '',
@@ -4229,7 +4232,10 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                     diffDisplay = '<span class="diff-display zero">' + EMPTY_MARK + '</span>';
                 }
 
-                var dataId = task.type === '临时事项' ? ('temp-' + idx) : 'fixed-' + task.name;
+                // 临时事项按真实 id 定位，固定任务按 name 定位（名字天然唯一）
+                var dataId = task.type === '临时事项'
+                    ? ('temp-' + (task.id || ('idx-' + idx)))
+                    : 'fixed-' + task.name;
                 html += '<tr data-id="' + dataId + '">';
                 html += '<td>' + (idx + 1) + '</td>';
                 html += '<td>' + task.name + '</td>';
@@ -4346,28 +4352,34 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             var tempKey = 'daily_temp_' + selectedDate;
             var tempItems = [];
             var tempRows = document.querySelectorAll('#daily-temp-tasks .task-item');
-            // 同上：自评 / 完善计划列已移除，旧值按 id 继承
+            // 自评 / 完善计划列已移除，旧值按 id 继承
             var prevTempMap = {};
             (Storage.get(tempKey) || []).forEach(function(it) { if (it && it.id) { prevTempMap[it.id] = it; } });
-            tempRows.forEach(function(row) {
-                var id = row.getAttribute('data-id');
-                var name = row.querySelector('.temp-name').value.trim() || '未命名';
-                var status = row.querySelector('.temp-status').value;
-                var estimate = row.querySelector('.temp-estimate').value;
-                var contentDiv = row.querySelector('.temp-content');
+            // 汇总表里的「临时事项」行，与 #daily-temp-tasks 的 .task-item 行顺序完全一致
+            // （都来自同一份 tempItems 存储、同序渲染）。直接按序号 k 对应，既不需要
+            // item.id 一定存在，也彻底避免同名临时事项（C++×6、语文×4）相互覆写完成内容。
+            var summaryTempRows = [];
+            summaryRows.forEach(function(row) {
+                var cells = row.querySelectorAll('td');
+                if (cells.length < 8) return;
+                if (cells[2].innerText.trim() === '临时事项') summaryTempRows.push(row);
+            });
+            tempRows.forEach(function(trow, k) {
+                var id = trow.getAttribute('data-id') || '';
+                var name = trow.querySelector('.temp-name').value.trim() || '未命名';
+                var status = trow.querySelector('.temp-status').value;
+                var estimate = trow.querySelector('.temp-estimate').value;
+                var contentDiv = trow.querySelector('.temp-content');
                 var content = contentDiv ? contentDiv.innerText : '';
                 var prevItem = prevTempMap[id] || {};
                 var extra = { actualTime: '', completedContent: '',
                     selfEvaluation: prevItem.selfEvaluation || '',
                     improvementPlan: prevItem.improvementPlan || '',
                     score: '' };
-                var summaryRowsAll = document.querySelectorAll('#summary-content table tbody tr');
-                summaryRowsAll.forEach(function(sr) {
-                    var cells = sr.querySelectorAll('td');
-                    if (cells.length < 8) return;
-                    var sName = cells[1].innerText.trim();
-                    var sType = cells[2].innerText.trim();
-                    if (sName === name && sType === '临时事项') {
+                var targetRow = summaryTempRows[k];
+                if (targetRow) {
+                    var cells = targetRow.querySelectorAll('td');
+                    if (cells.length >= 8) {
                         var actualInput = cells[4].querySelector('input');
                         var completedInput = cells[6].querySelector('.summary-completed');
                         var scoreInput = cells[7].querySelector('input');
@@ -4375,7 +4387,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                         if (completedInput) extra.completedContent = completedInput.value;
                         if (scoreInput) extra.score = scoreInput.value;
                     }
-                });
+                }
                 tempItems.push({
                     id: id,
                     name: name,
