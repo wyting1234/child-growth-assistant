@@ -30,96 +30,6 @@
             width: 100%;
         }
 
-        /* ===== HAMBURGER MENU ===== */
-        .hamburger-menu {
-            position: fixed;
-            top: 16px;
-            right: 16px;
-            z-index: 1000;
-        }
-        .hamburger-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: #fff;
-            border: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            transition: all 0.2s;
-        }
-        .hamburger-btn:hover {
-            background: #f8f9fa;
-            transform: scale(1.05);
-        }
-        .hamburger-btn span {
-            display: block;
-            width: 20px;
-            height: 2px;
-            background: #333;
-            border-radius: 2px;
-            transition: all 0.3s;
-        }
-        .hamburger-btn.active span:nth-child(1) {
-            transform: rotate(45deg) translate(4px, 4px);
-        }
-        .hamburger-btn.active span:nth-child(2) {
-            opacity: 0;
-        }
-        .hamburger-btn.active span:nth-child(3) {
-            transform: rotate(-45deg) translate(4px, -4px);
-        }
-        .hamburger-dropdown {
-            position: absolute;
-            top: 54px;
-            right: 0;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            padding: 8px 0;
-            min-width: 180px;
-            display: none;
-            animation: slideDown 0.2s ease;
-        }
-        .hamburger-dropdown.show {
-            display: block;
-        }
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .hamburger-dropdown button {
-            width: 100%;
-            padding: 12px 16px;
-            border: none;
-            background: transparent;
-            text-align: left;
-            font-size: 14px;
-            color: #333;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: background 0.15s;
-        }
-        .hamburger-dropdown button:hover {
-            background: #f5f5f5;
-        }
-        .hamburger-dropdown button i {
-            width: 20px;
-            color: #3b82f6;
-        }
-
         /* ===== HEADER ===== */
         .app-header {
             display: flex;
@@ -1151,72 +1061,22 @@
 </head>
 <body>
 
-    <!-- ===== 汉堡抽屉：全站导航（云备份/学员管理/变色请在导航中心使用） ===== -->
-    <div id="siteDrawerMask" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:299;"></div>
-    <div id="siteDrawer" style="display:none;position:fixed;top:0;left:0;bottom:0;width:300px;max-width:86vw;background:#0f172a;color:#cbd5e1;z-index:300;padding:20px 16px;box-shadow:4px 0 24px rgba(0,0,0,.3);overflow-y:auto;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <div style="font-weight:700;color:#fff;font-size:16px;">🌱 全部网页</div>
-            <button id="siteDrawerClose" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer;line-height:1;">✕</button>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;">
-            <a href="./index.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">🧭 导航中心</a>
-            <a href="./成长复盘.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">🌱 成长复盘</a>
-            <a href="./study-record.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">📚 学习记录</a>
-            <a href="./情商club.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">💬 情商club</a>
-            <a href="./时间统计.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">⏱️ 时间统计</a>
-        </div>
-        <div style="margin-top:14px;border-top:1px solid #334155;padding-top:12px;display:flex;flex-direction:column;gap:6px;">
-            <button onclick="alert('☁️ 云备份功能请在导航中心使用')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:rgba(255,255,255,.06);color:#e2e8f0;font-size:14px;cursor:pointer;text-align:left;">☁️ 云备份</button>
-            <button onclick="alert('👤 学员管理功能请在导航中心使用')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:rgba(255,255,255,.06);color:#e2e8f0;font-size:14px;cursor:pointer;text-align:left;">👤 学员管理</button>
-            <button onclick="alert('🌗 页面变色功能请在导航中心使用')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:rgba(255,255,255,.06);color:#e2e8f0;font-size:14px;cursor:pointer;text-align:left;">🌗 页面变色</button>
-        </div>
-    </div>
-    <script>
-        (function() {
-            function bindDrawer() {
-                var toggle = document.getElementById('siteDrawerToggle');
-                var drawer = document.getElementById('siteDrawer');
-                var mask = document.getElementById('siteDrawerMask');
-                function close() { if (drawer) drawer.style.display = 'none'; if (mask) mask.style.display = 'none'; }
-                if (toggle) toggle.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    if (drawer && drawer.style.display === 'block') close();
-                    else { if (drawer) drawer.style.display = 'block'; if (mask) mask.style.display = 'block'; }
-                });
-                if (mask) mask.addEventListener('click', close);
-                var c = document.getElementById('siteDrawerClose');
-                if (c) c.addEventListener('click', close);
-            }
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', bindDrawer);
-            } else {
-                bindDrawer();
-            }
-        })();
-    </script>
+    <!-- ===== 全站统一导航：左侧居中汉堡 → 返回导航中心 / 本页快捷 / 常用功能 ===== -->
+    <script src="./site-nav.js" data-title="时间统计"
+            data-sections='[
+                {"ico":"⏱️","name":"计时器","sel":"#timerSection"},
+                {"ico":"✅","name":"待办清单","sel":"#todoSection"},
+                {"ico":"📋","name":"时间记录","sel":"#recordsSection"},
+                {"ico":"📊","name":"时间分布","sel":"#chartSection"},
+                {"ico":"📈","name":"琐碎时间统计","sel":"#statsSection"},
+                {"ico":"📉","name":"按活动统计","sel":"#actStatsTitle"}
+            ]'></script>
 
     <div id="app">
-        <!-- HAMBURGER MENU -->
-        <div class="hamburger-menu">
-            <button class="hamburger-btn" id="hamburgerBtn" title="菜单">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
-            <div class="hamburger-dropdown" id="hamburgerDropdown">
-                <button id="menuTodos"><i class="fas fa-tasks"></i> 待办清单</button>
-                <button id="menuRecords"><i class="fas fa-list"></i> 时间记录</button>
-                <button id="menuTimeDist"><i class="fas fa-chart-pie"></i> 时间分布</button>
-                <button id="menuStats"><i class="fas fa-chart-bar"></i> 琐碎时间统计</button>
-                <button id="menuActStats"><i class="fas fa-chart-line"></i> 按活动统计</button>
-            </div>
-        </div>
-
         <!-- HEADER -->
         <div class="app-header">
             <h1><i class="fas fa-clock" style="color:#3b82f6;margin-right:6px;"></i>时间统计</h1>
             <span class="date-badge" id="headerDate"></span>
-            <button id="siteDrawerToggle" title="全部网页与功能" style="position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:200;width:36px;height:60px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:18px;border:none;border-radius:0 10px 10px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:2px 0 12px rgba(99,102,241,.4);">☰</button>
         </div>
 
         <!-- TIMER CARD -->
@@ -1626,10 +1486,6 @@
         const todoList = $('todoList');
         const todoQuadrant = $('todoQuadrant');
         
-        // 汉堡菜单
-        const hamburgerBtn = $('hamburgerBtn');
-        const hamburgerDropdown = $('hamburgerDropdown');
-        
         // 四象限视图
         const eisenhowerToggleBtn = $('eisenhowerToggleBtn');
         const eisenhowerView = $('eisenhowerView');
@@ -1977,55 +1833,6 @@
 
         // ============================================================
         //  HAMBURGER MENU
-        // ============================================================
-        function setupHamburgerMenu() {
-            hamburgerBtn.addEventListener('click', () => {
-                hamburgerBtn.classList.toggle('active');
-                hamburgerDropdown.classList.toggle('show');
-            });
-            
-            // 菜单项点击后关闭并滚动到对应区域
-            $('menuTimeDist').addEventListener('click', () => {
-                closeHamburger();
-                scrollToElement('chartSection');
-            });
-            $('menuStats').addEventListener('click', () => {
-                closeHamburger();
-                scrollToElement('statsSection');
-            });
-            $('menuActStats').addEventListener('click', () => {
-                closeHamburger();
-                $('actStatsTitle')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            });
-            $('menuRecords').addEventListener('click', () => {
-                closeHamburger();
-                scrollToElement('recordsSection');
-            });
-            $('menuTodos').addEventListener('click', () => {
-                closeHamburger();
-                scrollToElement('todoSection');
-            });
-            
-            // 点击外部关闭
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.hamburger-menu')) {
-                    closeHamburger();
-                }
-            });
-        }
-        
-        function closeHamburger() {
-            hamburgerBtn.classList.remove('active');
-            hamburgerDropdown.classList.remove('show');
-        }
-        
-        function scrollToElement(id) {
-            const el = $(id);
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-
         // ============================================================
         //  TIMER
         // ============================================================
@@ -3195,9 +3002,6 @@
 
             // 初始化统计功能
             initStatistics();
-            
-            // 初始化汉堡菜单
-            setupHamburgerMenu();
             
             // 初始化四象限视图
             setupEisenhower();

@@ -572,43 +572,17 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
 </style>
 </head>
 <body>
-    <!-- ===== 汉堡抽屉：全站导航 + 功能（唯一入口，其他位置不保留） ===== -->
-    <button id="siteDrawerToggle" title="全部网页与功能" style="position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:200;width:36px;height:60px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:18px;border:none;border-radius:0 10px 10px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:2px 0 12px rgba(99,102,241,.4);">☰</button>
-    <div id="siteDrawerMask" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:299;"></div>
-    <div id="siteDrawer" style="display:none;position:fixed;top:0;left:0;bottom:0;width:300px;max-width:86vw;background:#0f172a;color:#cbd5e1;z-index:300;padding:20px 16px;box-shadow:4px 0 24px rgba(0,0,0,.3);overflow-y:auto;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <div style="font-weight:700;color:#fff;font-size:16px;">🌱 全部网页</div>
-            <button id="siteDrawerClose" style="background:none;border:none;color:#94a3b8;font-size:22px;cursor:pointer;line-height:1;">✕</button>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;">
-            <a href="./index.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">🧭 导航中心</a>
-            <a href="./成长复盘.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">🌱 成长复盘</a>
-            <a href="./study-record.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">📚 学习记录</a>
-            <a href="./情商club.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">💬 情商club</a>
-            <a href="./时间统计.html" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#e2e8f0;text-decoration:none;font-size:14px;">⏱️ 时间统计</a>
-        </div>
-        <div style="margin-top:14px;border-top:1px solid #334155;padding-top:12px;display:flex;flex-direction:column;gap:6px;">
-            <button id="sidebarCloudSyncBtn" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:rgba(255,255,255,.06);color:#e2e8f0;font-size:14px;cursor:pointer;text-align:left;">☁️ 云备份</button>
-            <button id="sidebarUserManagerBtn" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:rgba(255,255,255,.06);color:#e2e8f0;font-size:14px;cursor:pointer;text-align:left;">👤 学员管理</button>
-            <button id="sidebarThemeBtn" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:none;background:rgba(255,255,255,.06);color:#e2e8f0;font-size:14px;cursor:pointer;text-align:left;">🌗 页面变色</button>
-        </div>
-    </div>
-    <script>
-        (function() {
-            var toggle = document.getElementById('siteDrawerToggle');
-            var drawer = document.getElementById('siteDrawer');
-            var mask = document.getElementById('siteDrawerMask');
-            function close() { if (drawer) drawer.style.display = 'none'; if (mask) mask.style.display = 'none'; }
-            if (toggle) toggle.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (drawer && drawer.style.display === 'block') close();
-                else { if (drawer) drawer.style.display = 'block'; if (mask) mask.style.display = 'block'; }
-            });
-            if (mask) mask.addEventListener('click', close);
-            var c = document.getElementById('siteDrawerClose');
-            if (c) c.addEventListener('click', close);
-        })();
-    </script>
+    <!-- ===== 全站统一导航：左侧居中汉堡 → 返回导航中心 / 本页快捷 / 常用功能 =====
+           本页自带学员管理与云备份弹窗，故用 data-actions="custom" 避免重复绑定 -->
+    <script src="./site-nav.js" data-title="学习记录" data-actions="custom"
+            data-sections='[
+                {"ico":"📊","name":"仪表盘","sel":".nav-links button[data-page=dashboard]","click":true},
+                {"ico":"🧠","name":"学习理论","sel":".nav-links button[data-page=theory]","click":true},
+                {"ico":"📖","name":"科目学习","sel":".nav-links button[data-page=subject]","click":true},
+                {"ico":"🃏","name":"知识卡","sel":".nav-links button[data-page=cards]","click":true},
+                {"ico":"❌","name":"错题本","sel":".nav-links button[data-page=errors]","click":true},
+                {"ico":"📝","name":"学习日志","sel":".nav-links button[data-page=logs]","click":true}
+            ]'></script>
     <div class="app-shell">
     <main class="app-main">
     <!-- 导航栏 -->
@@ -2933,7 +2907,6 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             document.getElementById('saveCloudConfigBtn').onclick = saveCloudConfig;
             document.getElementById('uploadCloudBtn').onclick = uploadToCloud;
             document.getElementById('downloadCloudBtn').onclick = downloadFromCloud;
-            initPageTheme();
             // 返回主系统：通过侧边栏「儿童成长系统」入口切换
             document.getElementById('closeUserModalBtn').onclick = function() {
                 document.getElementById('userManagerModal').classList.remove('open');
@@ -3327,38 +3300,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             document.getElementById('logSubjectFilter').onchange = function() { renderLogsPage(); };
         }
 
-        // ================================================================
-        //  页面变色（侧栏按钮触发）：统一三个文件 + 跨标签页同步
-        // ================================================================
-        function initPageTheme() {
-            // 兼容新 key 'page_theme_v1' 与老 key 'theme'
-            var saved = null;
-            try { saved = localStorage.getItem('page_theme_v1') || localStorage.getItem('theme'); } catch (e) {}
-            if (saved === 'light') document.documentElement.classList.remove('dark');
-            else document.documentElement.classList.add('dark');  // 新用户默认 dark
-            // 侧栏按钮绑定
-            var btn = document.getElementById('sidebarThemeBtn');
-            if (btn) {
-                btn.textContent = document.documentElement.classList.contains('dark') ? '🌙 页面变色' : '☀️ 页面变色';
-                btn.addEventListener('click', togglePageTheme);
-            }
-            // 跨标签页同步（其它 tab 切了 → 这里立即跟随）
-            window.addEventListener('storage', function(e) {
-                if (e.key === 'page_theme_v1' || e.key === 'theme') togglePageTheme(null, false);
-            });
-        }
-        function togglePageTheme(btn, persist) {
-            if (persist !== false) {
-                var willBeDark = !document.documentElement.classList.contains('dark');
-                try {
-                    localStorage.setItem('page_theme_v1', willBeDark ? 'dark' : 'light');
-                    localStorage.setItem('theme', willBeDark ? 'dark' : 'light'); // 同步老 key
-                } catch (e) {}
-            }
-            document.documentElement.classList.toggle('dark');
-            var tb = document.getElementById('sidebarThemeBtn');
-            if (tb) tb.textContent = document.documentElement.classList.contains('dark') ? '🌙 页面变色' : '☀️ 页面变色';
-        }
+        // 页面变色（深/浅）已统一由 site-nav.js 处理
 
         // ================================================================
         // 导航切换
@@ -3439,189 +3381,6 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         syncMainAccountList();
         console.log('📚 学习记录 v21.0 已加载 — 学员管理、仪表盘学期切换、错题本升级、默认学期');
 
-        // ================================================================
-        //  光阴の侧边栏（网页工具集，与儿童成长系统一致）
-        // ================================================================
-        (function() {
-            'use strict';
-
-            // 本页已去掉侧边栏（导航统一由导航中心 index.html 负责），
-            // 无侧边栏元素时跳过工具列表渲染与绑定
-            if (!document.getElementById('sidebarTools')) { return; }
-
-            var TOOL_DEFS = [
-                { key: 'main',  ico: '🌱', name: '儿童成长系统', href: './index.html' },
-                { key: 'study', ico: '📚', name: '儿童学习记录', href: './study-record.html' },
-                { key: 'eq', ico: '💬', name: '情商club', href: './情商club.html' }
-            ];
-
-            function currentKey() {
-                var p = decodeURIComponent(window.location.pathname.split('/').pop() || 'index.html');
-                if (p === 'study-record.html') return 'study';
-                if (p === '情商club.html') return 'eq';
-                return 'main';
-            }
-
-            function getOrder() {
-                try {
-                    var o = JSON.parse(localStorage.getItem('sidebar_order_v3') || 'null');
-                    if (Array.isArray(o) && o.length) return o;
-                } catch (e) {}
-                return TOOL_DEFS.map(function(t) { return t.key; });
-            }
-            function setOrder(o) {
-                try { localStorage.setItem('sidebar_order_v3', JSON.stringify(o)); } catch (e) {}
-            }
-            function isCollapsed() {
-                try {
-                    var v = localStorage.getItem('sidebar_collapsed_v3');
-                    if (v === null) return false;
-                    return v === '1';
-                } catch (e) { return false; }
-            }
-            function setCollapsed(v) {
-                try { localStorage.setItem('sidebar_collapsed_v3', v ? '1' : '0'); } catch (e) {}
-            }
-
-            function getToolDataCount(key) {
-                var total = 0;
-                try {
-                    if (key === 'main') {
-                        var acc = localStorage.getItem('child_account_current') || '';
-                        var rk = function(k) { return (acc && /^(time_records|todos|growth_diary|growth_homework|growth_milestone|growth_month_days|growth_week_review|growth_month_review|growth_goal)/.test(k)) ? (acc + '::' + k) : k; };
-                        ['time_records', 'todos', 'growth_diary', 'growth_homework', 'growth_milestone', 'growth_month_days'].forEach(function(k) {
-                            try {
-                                var v = JSON.parse(localStorage.getItem(rk(k)) || '[]');
-                                total += Array.isArray(v) ? v.length : 0;
-                            } catch (e) {}
-                        });
-                        ['growth_week_review', 'growth_month_review', 'growth_goal'].forEach(function(k) {
-                            try {
-                                var v = JSON.parse(localStorage.getItem(rk(k)) || 'null');
-                                if (v && Object.keys(v).length) total++;
-                            } catch (e) {}
-                        });
-                    } else if (key === 'study') {
-                        try { var u = JSON.parse(localStorage.getItem('studyUsers_v21') || '[]'); total = u.length; } catch (e) {}
-                    }
-                } catch (e) {}
-                return total;
-            }
-
-            function makeItemHTML(tool, isActive) {
-                var count = getToolDataCount(tool.key);
-                var badge = count > 0 ? '<span class="badge has-data">有数据</span>' : '<span class="badge no-data">未使用</span>';
-                return '<li class="sidebar-item' + (isActive ? ' active' : '') + '" data-tool="' + tool.key + '" data-href="' + tool.href + '">' +
-                    '<span class="drag-handle" title="拖动排序">⋮⋮</span>' +
-                    '<span class="ico">' + tool.ico + '</span>' +
-                    '<span class="name">' + tool.name + '</span>' +
-                    badge +
-                '</li>';
-            }
-
-            function render() {
-                var order = getOrder();
-                var map = {};
-                TOOL_DEFS.forEach(function(t) { map[t.key] = t; });
-
-                var toolsList = document.getElementById('sidebarTools');
-                if (toolsList) {
-                    var activeKey = currentKey();
-                    toolsList.innerHTML = order.filter(function(k) { return map[k]; }).map(function(k) {
-                        return makeItemHTML(map[k], k === activeKey);
-                    }).join('');
-                }
-
-                var countEl = document.getElementById('sidebarToolCount');
-                if (countEl) countEl.textContent = TOOL_DEFS.length;
-
-                var acc = '';
-                try { acc = localStorage.getItem('child_account_current') || ''; } catch (e) {}
-                var accEl = document.getElementById('sidebarAccount');
-                if (accEl) accEl.textContent = acc || '未选择';
-
-                var pillEl = document.getElementById('sidebarAccountPill');
-                if (pillEl) pillEl.innerHTML = acc ? '👦 <b>' + (acc.length > 6 ? acc.slice(0,6) + '…' : acc) + '</b>' : '📚 <b>未选择</b>';
-            }
-
-            function bindItemEvents() {
-                var toolsList = document.getElementById('sidebarTools');
-                if (!toolsList) return;
-                toolsList.addEventListener('click', function(e) {
-                    var item = e.target.closest('.sidebar-item');
-                    if (!item || item.querySelector('.drag-handle') === e.target) return;
-                    var href = item.getAttribute('data-href');
-                    if (href && window.location.pathname.split('/').pop() !== href.split('/').pop()) {
-                        window.location.href = href;
-                    } else {
-                        alert('当前就在此页面');
-                    }
-                });
-            }
-
-            function bindToggle() {
-                var sidebar = document.getElementById('appSidebar');
-                var toggle = document.getElementById('sidebarToggle');
-                var mask = document.getElementById('sidebarMask');
-                if (!sidebar || !toggle) return;
-
-                var isMobile = function() { return window.innerWidth <= 980; };
-
-                function apply(v) {
-                    if (v) {
-                        sidebar.classList.add('collapsed');
-                        document.body.classList.add('sidebar-collapsed');
-                        toggle.classList.add('collapsed-pos');
-                        if (mask) mask.classList.remove('show');
-                    } else {
-                        sidebar.classList.remove('collapsed');
-                        document.body.classList.remove('sidebar-collapsed');
-                        toggle.classList.remove('collapsed-pos');
-                        if (isMobile() && mask) mask.classList.add('show');
-                        else if (mask) mask.classList.remove('show');
-                    }
-                }
-
-                var firstTime = localStorage.getItem('sidebar_collapsed_v3') === null;
-                if (firstTime) apply(false);
-                else apply(isCollapsed());
-
-                toggle.addEventListener('click', function() {
-                    var willOpen = sidebar.classList.contains('collapsed');
-                    setCollapsed(!willOpen);
-                    apply(!willOpen);
-                });
-
-                if (mask) mask.addEventListener('click', function() {
-                    setCollapsed(true);
-                    apply(true);
-                });
-
-                if (isMobile()) {
-                    document.addEventListener('click', function(e) {
-                        var item = e.target.closest ? e.target.closest('.sidebar-item') : null;
-                        if (item) {
-                            setTimeout(function() {
-                                setCollapsed(true);
-                                apply(true);
-                            }, 120);
-                        }
-                    });
-                }
-            }
-
-            var manageBtn = document.getElementById('sidebarManageBtn');
-            if (manageBtn) manageBtn.addEventListener('click', function() {
-                alert('📌 当前 ' + TOOL_DEFS.length + ' 个网页工具，拖动 ⋮⋮ 可调整顺序');
-            });
-
-            function init() {
-                render();
-                bindItemEvents();
-                bindToggle();
-            }
-            init();
-        })();
     </script>
     <!-- 共享的学员管理 modal：侧栏 👤 学员管理 一键打开（与 index.html / 情商club 同一个） -->
     <script src="./account-manager.js"></script>
