@@ -31,7 +31,8 @@
         { file: '成长复盘.html',      ico: '🌱', name: '成长复盘' },
         { file: 'study-record.html', ico: '📚', name: '学习记录' },
         { file: '情商club.html',      ico: '💬', name: '情商club' },
-        { file: '时间统计.html',       ico: '⏱️', name: '时间统计' }
+        { file: '时间统计.html',       ico: '⏱️', name: '时间统计' },
+        { file: '朝暮计-双端适配版.html', ico: '🌅', name: '朝暮计' }
     ];
 
     var me = document.currentScript || (function () {
