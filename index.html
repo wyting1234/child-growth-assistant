@@ -15,6 +15,7 @@
     <!-- 预取其它两个工具页：切换时直接从缓存加载，减少白屏卡顿 -->
     <link rel="prefetch" href="./study-record.html">
     <link rel="prefetch" href="./情商club.html">
+    <link rel="prefetch" href="./learning-goal.html">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
     </script>
     <style>
@@ -7644,7 +7645,8 @@ var COMPLETION_FILTER_RANGE = 'all';
                 { key: 'main',  ico: '🌱', name: '儿童成长系统', href: './index.html' },
                 { key: 'study', ico: '📚', name: '儿童学习记录', href: './study-record.html' },
                 { key: 'eq', ico: '💬', name: '情商club', href: './情商club.html' },
-                { key: 'chaomu', ico: '🌅', name: '朝暮计', href: './朝暮计-双端适配版.html' }
+                { key: 'chaomu', ico: '🌅', name: '朝暮计', href: './朝暮计-双端适配版.html' },
+                { key: 'goal', ico: '🎯', name: '学习目标', href: './learning-goal.html' }
             ];
 
             // 当前所在网页
@@ -7653,6 +7655,7 @@ var COMPLETION_FILTER_RANGE = 'all';
                 if (p === 'study-record.html') return 'study';
                 if (p === '情商club.html') return 'eq';
                 if (p === '朝暮计-双端适配版.html') return 'chaomu';
+                if (p === 'learning-goal.html') return 'goal';
                 return 'main';
             }
 
