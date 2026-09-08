@@ -4287,6 +4287,11 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         // ================================================================
         //  更新汇总表格（删除状态列，增加实际时间和差额）
         // ================================================================
+        /* 汇总表里「空值」的占位符。屏幕上显示短横（好看出这格没填），
+           打印时由 .cell-empty 规则隐藏，纸上留空白，不再出现一排「—」。
+           用 span 包一层是为了打印时只隐藏文字、不折叠单元格（visibility 保留占位高度） */
+        var EMPTY_MARK = '<span class="cell-empty">—</span>';
+
         function updateSummary() {
             var dateInput = document.getElementById('daily-date');
             var selectedDate = dateInput ? dateInput.value : today;

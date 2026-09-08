@@ -1,6 +1,6 @@
 /* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装）
-   v12：默认首页修复为打印完善版；成长复盘.html 同步最新；朝暮计纳入缓存 */
-const CACHE = 'child-growth-v12';
+   v13：补回 EMPTY_MARK 定义，修复保存后汇总表不更新及作业粘贴拆分失效 */
+const CACHE = 'child-growth-v13';
 const CORE = ['./', './index.html', './study-record.html', './情商club.html', './成长复盘.html', './朝暮计-双端适配版.html', './account-manager.js', './manifest.json'];
 
 self.addEventListener('install', function (e) {
