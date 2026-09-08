@@ -1,7 +1,7 @@
 /* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装）
-   v11：新增「朝暮计」工具页并纳入离线缓存 */
-const CACHE = 'child-growth-v11';
-const CORE = ['./', './index.html', './study-record.html', './情商club.html', './朝暮计-双端适配版.html', './account-manager.js', './manifest.json'];
+   v12：默认首页修复为打印完善版；成长复盘.html 同步最新；朝暮计纳入缓存 */
+const CACHE = 'child-growth-v12';
+const CORE = ['./', './index.html', './study-record.html', './情商club.html', './成长复盘.html', './朝暮计-双端适配版.html', './account-manager.js', './manifest.json'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(

@@ -1778,19 +1778,48 @@
             width: 100%;
         }
         @media print {
-            @page { size: A4; margin: 12mm; }
-            html, body { background:#fff !important; color:#000 !important; height:auto !important; overflow:visible !important; margin:0 !important; padding:0 !important; }
+            @page { size: A4 portrait; margin: 10mm; }
+            html, body { background:#fff !important; color:#000 !important; height:100% !important; overflow:visible !important; margin:0 !important; padding:0 !important; }
             /* 打印前脚本会把 #summary-area 临时挂到 body 下，这里隐藏其余顶层区块，避免多打空白页 */
             body > *:not(#summary-area) { display: none !important; }
             #summary-area {
-                display:block !important; width:186mm !important; max-width:186mm !important;
+                /* A4 可用区域：210-20=190mm 宽，297-20=277mm 高；用 min-height 让表格撑满整页，避免下方大片留白 */
+                display:flex !important; flex-direction:column !important;
+                width:190mm !important; max-width:190mm !important; min-height:277mm !important;
                 margin:0 auto !important; padding:0 !important; background:#fff !important; color:#000 !important;
             }
+            #summary-title { flex:0 0 auto !important; font-size:17pt !important; margin-bottom:5mm !important; }
             .summary-actions, .btn, .toast, .view-toggle, .temp-add-btn, #save-daily-new { display: none !important; }
-            #summary-area table { width:100% !important; border-collapse:collapse !important; table-layout:fixed; }
-            #summary-area th, #summary-area td { border:1px solid #666 !important; padding:3px 4px !important; font-size:9.5pt; }
-            #summary-area th { background:#f2f2f2 !important; }
-            #summary-area input { border:none !important; background:transparent !important; color:#000 !important; padding:0 !important; }
+            /* 表格外面还包了一层 #summary-content，只有它才是 flex 子项，拉伸要作用在这一层 */
+            #summary-content { flex:1 1 auto !important; display:flex !important; flex-direction:column !important; width:100% !important; }
+            #summary-area table { width:100% !important; border-collapse:collapse !important; table-layout:fixed; flex:0 0 auto !important; }
+            #summary-area p { flex:0 0 auto !important; }
+            /* 字号/内边距/行高压到紧凑档：同样一页能多放约 30% 文字，明细少跨行。
+               表头比内容再小 1pt，确保「预计时间」「实际时间」「临时事项」等四字表头不竖排 */
+            #summary-area th, #summary-area td { border:1px solid #666 !important; padding:1.6mm 1.0mm !important;
+                font-size:9.5pt; line-height:1.38; vertical-align:middle; word-break:break-word;
+                overflow-wrap:anywhere; text-align:center; }
+            #summary-area th { background:#f2f2f2 !important; font-weight:600; font-size:8.5pt !important; }
+            #summary-area td { font-size:9.5pt !important; }
+            /* 覆盖单元格里 input 的内联 width:70px，否则会撑破窄列 */
+            #summary-area input, #summary-area textarea { border:none !important; background:transparent !important;
+                color:#000 !important; padding:0 !important; width:100% !important; max-width:100% !important; }
+            /* 用 !important 覆盖表头内联的 px 宽度，否则内容列被挤成 15mm。
+               除「完成内容」外全部给定宽，省下的 ~78mm 全给完成内容，明细才不会挤成几十行。
+               注意：9.5pt 内容列的最小安全宽度以实测为准；表头用 8.5pt 防止竖排 */
+            #summary-area th { width:auto !important; }
+            #summary-area th:nth-child(1), #summary-area td:nth-child(1) { width:10mm !important; }
+            #summary-area th:nth-child(2), #summary-area td:nth-child(2) { width:30mm !important; text-align:left; }
+            #summary-area th:nth-child(3), #summary-area td:nth-child(3) { width:17mm !important; }
+            #summary-area th:nth-child(4), #summary-area td:nth-child(4) { width:14mm !important; }
+            #summary-area th:nth-child(5), #summary-area td:nth-child(5) { width:14mm !important; }
+            #summary-area th:nth-child(6), #summary-area td:nth-child(6) { width:16mm !important; }
+            #summary-area th:nth-child(7), #summary-area td:nth-child(7) { width:auto !important; text-align:left; }
+            #summary-area th:nth-child(8), #summary-area td:nth-child(8) { width:11mm !important; }
+            #summary-area .diff-display { white-space:nowrap; }
+            /* 空值占位符：屏幕上用短横提示「没填」，打印时隐藏，纸上留空白。
+               用 visibility 而不是 display:none，位置仍占着，行高不会塌 */
+            #summary-area .cell-empty { visibility:hidden !important; }
         }
         .custom-select-wrap {
             position: relative;
@@ -4295,10 +4324,14 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             tempItems.forEach(function(item) {
                 allTasks.push({
                     type: '临时事项',
+                    // 临时事项的真实 id 透传到汇总行，保存回填时按 id 精确定位，
+                    // 避免同名临时事项（C++×6 / 语文×4）之间相互覆盖「完成内容 / 评分」
+                    id: item.id || '',
                     name: item.name || '未命名',
                     estimate: item.estimate || '',
                     actualTime: item.actualTime || '',
-                    completedContent: item.completedContent || '',
+                    // 临时事项输入框里的明细（如 "1. 完成稿纸本"）默认填充到「完成内容」列
+                    completedContent: item.completedContent || item.content || '',
                     selfEvaluation: item.selfEvaluation || '',
                     improvementPlan: item.improvementPlan || '',
                     score: item.score || ''
@@ -4324,8 +4357,9 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             });
             var totalHours = (totalMinutes / 60).toFixed(1);
             var actualHours = (totalActual / 60).toFixed(1);
+            // 平均分：没评分时留空，不要打印出短横
             var avgScore = scores.length > 0 ? (scores.reduce(function(a, b) { return a + b; }, 0) / scores.length).toFixed(
-                1) : '-';
+                1) : '';
             var signKey = 'daily_sign_' + selectedDate;
             var signData = Storage.get(signKey) || { completer: '', reviewer: '' };
             var completer = signData.completer || '';
@@ -4333,7 +4367,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
 
             var html = '<table>';
             html +=
-                '<thead><tr><th style="width:50px;">序号</th><th>任务名称</th><th style="width:80px;">类型</th><th style="width:90px;">预计时间</th><th style="width:90px;">实际时间</th><th style="width:80px;">差额</th><th>完成内容</th><th>自评</th><th>完善计划</th><th style="width:80px;">评分</th></tr></thead>';
+                '<thead><tr><th style="width:50px;">序号</th><th>任务名称</th><th style="width:80px;">类型</th><th style="width:90px;">预计时间</th><th style="width:90px;">实际时间</th><th style="width:80px;">差额</th><th>完成内容</th><th style="width:80px;">评分</th></tr></thead>';
             html += '<tbody>';
 
             allTasks.forEach(function(task, idx) {
@@ -4347,24 +4381,26 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                     diffDisplay = '<span class="diff-display ' + diffClass + '">' + diffLabel + ' ' + (diff > 0 ? '+' :
                         '') + diff.toFixed(0) + 'm</span>';
                 } else {
-                    diffDisplay = '<span class="diff-display zero">—</span>';
+                    diffDisplay = '<span class="diff-display zero">' + EMPTY_MARK + '</span>';
                 }
 
-                var dataId = task.type === '临时事项' ? ('temp-' + idx) : 'fixed-' + task.name;
+                // 临时事项按真实 id 定位，固定任务按 name 定位（名字天然唯一）
+                var dataId = task.type === '临时事项'
+                    ? ('temp-' + (task.id || ('idx-' + idx)))
+                    : 'fixed-' + task.name;
                 html += '<tr data-id="' + dataId + '">';
                 html += '<td>' + (idx + 1) + '</td>';
                 html += '<td>' + task.name + '</td>';
                 html += '<td>' + task.type + '</td>';
-                html += '<td>' + (task.estimate ? task.estimate + ' min' : '—') + '</td>';
+                // 屏幕保留短横当占位，打印时由 .cell-empty 规则隐藏，纸上就是空白
+                html += '<td>' + (task.estimate ? task.estimate + ' min' : EMPTY_MARK) + '</td>';
                 html += '<td><input type="number" class="summary-actual" value="' + task.actualTime +
                     '" placeholder="分钟" min="0" step="1" style="width:70px;text-align:center;"></td>';
                 html += '<td>' + diffDisplay + '</td>';
-                html += '<td><input type="text" class="summary-completed" value="' + task.completedContent +
-                    '" placeholder="完成内容"></td>';
-                html += '<td><input type="text" class="summary-self" value="' + task.selfEvaluation +
-                    '" placeholder="自评"></td>';
-                html += '<td><input type="text" class="summary-improve" value="' + task.improvementPlan +
-                    '" placeholder="完善计划"></td>';
+                // 完成内容可能是多行明细（如临时事项里的 "1. …\n2. …"），用 textarea 承载：
+                // 单行 input 会被 HTML 属性规范化吃掉换行，且打印时只显示可见区域
+                html += '<td><textarea class="summary-completed" rows="2" placeholder="完成内容">' +
+                    esc(task.completedContent) + '</textarea></td>';
                 html += '<td><input type="number" class="summary-score" value="' + task.score +
                     '" placeholder="0-10" min="0" max="10" step="0.5" style="width:70px;text-align:center;"></td>';
                 html += '</tr>';
@@ -4372,7 +4408,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
 
             html += '</tbody>';
             html += '<tfoot>';
-            html += '<tr><td colspan="10" style="text-align:center;">';
+            html += '<tr><td colspan="8" style="text-align:center;">';
             html += '<strong>汇总</strong> &nbsp;|&nbsp; ';
             html += '总预计：' + totalHours + ' h &nbsp;|&nbsp; ';
             html += '总实际：' + actualHours + ' h &nbsp;|&nbsp; ';
@@ -4407,7 +4443,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                         diffTd.innerHTML = '<span class="diff-display ' + diffClass + '">' + diffLabel + ' ' +
                             (diff > 0 ? '+' : '') + diff.toFixed(0) + 'm</span>';
                     } else {
-                        diffTd.innerHTML = '<span class="diff-display zero">—</span>';
+                        diffTd.innerHTML = '<span class="diff-display zero">' + EMPTY_MARK + '</span>';
                     }
                 });
             });
@@ -4424,37 +4460,40 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             var fixedInfo = getFixedTaskList();
             var fixedTaskNames = fixedInfo.names;
             var fixedData = {};
+            // 打印表已移除「自评 / 完善计划」列，旧值从存档继承，避免保存时被清空
+            var prevFixed = Storage.get('daily_fixed_' + selectedDate) || {};
 
             fixedTaskNames.forEach(function(name) {
                 var statusEl = document.querySelector('.fixed-status[data-task="' + name + '"]');
                 var estimateEl = document.querySelector('.fixed-estimate[data-task="' + name + '"]');
                 var status = statusEl ? statusEl.value : '未完成';
                 var estimate = estimateEl ? estimateEl.value : '';
-                fixedData[name] = { status: status, estimate: estimate, actualTime: '' };
+                var prev = prevFixed[name] || {};
+                fixedData[name] = {
+                    status: status, estimate: estimate, actualTime: '',
+                    completedContent: prev.completedContent || '',
+                    selfEvaluation: prev.selfEvaluation || '',
+                    improvementPlan: prev.improvementPlan || '',
+                    score: prev.score || ''
+                };
             });
 
             var summaryRows = document.querySelectorAll('#summary-content table tbody tr');
             summaryRows.forEach(function(row) {
                 var cells = row.querySelectorAll('td');
-                if (cells.length < 10) return;
+                if (cells.length < 8) return;
                 var taskName = cells[1].innerText.trim();
                 var actualInput = cells[4].querySelector('input');
-                var completedInput = cells[6].querySelector('input');
-                var selfInput = cells[7].querySelector('input');
-                var improveInput = cells[8].querySelector('input');
-                var scoreInput = cells[9].querySelector('input');
+                var completedInput = cells[6].querySelector('.summary-completed');
+                var scoreInput = cells[7].querySelector('input');
 
                 var actualTime = actualInput ? actualInput.value : '';
                 var completedContent = completedInput ? completedInput.value : '';
-                var selfEvaluation = selfInput ? selfInput.value : '';
-                var improvementPlan = improveInput ? improveInput.value : '';
                 var score = scoreInput ? scoreInput.value : '';
 
                 if (fixedData[taskName]) {
                     fixedData[taskName].actualTime = actualTime;
                     fixedData[taskName].completedContent = completedContent;
-                    fixedData[taskName].selfEvaluation = selfEvaluation;
-                    fixedData[taskName].improvementPlan = improvementPlan;
                     fixedData[taskName].score = score;
                 }
             });
@@ -4462,36 +4501,45 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             var fixedKey = 'daily_fixed_' + selectedDate;
             Storage.set(fixedKey, fixedData);
 
+            var tempKey = 'daily_temp_' + selectedDate;
             var tempItems = [];
             var tempRows = document.querySelectorAll('#daily-temp-tasks .task-item');
-            tempRows.forEach(function(row) {
-                var id = row.getAttribute('data-id');
-                var name = row.querySelector('.temp-name').value.trim() || '未命名';
-                var status = row.querySelector('.temp-status').value;
-                var estimate = row.querySelector('.temp-estimate').value;
-                var contentDiv = row.querySelector('.temp-content');
+            // 自评 / 完善计划列已移除，旧值按 id 继承
+            var prevTempMap = {};
+            (Storage.get(tempKey) || []).forEach(function(it) { if (it && it.id) { prevTempMap[it.id] = it; } });
+            // 汇总表里的「临时事项」行，与 #daily-temp-tasks 的 .task-item 行顺序完全一致
+            // （都来自同一份 tempItems 存储、同序渲染）。直接按序号 k 对应，既不需要
+            // item.id 一定存在，也彻底避免同名临时事项（C++×6、语文×4）相互覆写完成内容。
+            var summaryTempRows = [];
+            summaryRows.forEach(function(row) {
+                var cells = row.querySelectorAll('td');
+                if (cells.length < 8) return;
+                if (cells[2].innerText.trim() === '临时事项') summaryTempRows.push(row);
+            });
+            tempRows.forEach(function(trow, k) {
+                var id = trow.getAttribute('data-id') || '';
+                var name = trow.querySelector('.temp-name').value.trim() || '未命名';
+                var status = trow.querySelector('.temp-status').value;
+                var estimate = trow.querySelector('.temp-estimate').value;
+                var contentDiv = trow.querySelector('.temp-content');
                 var content = contentDiv ? contentDiv.innerText : '';
-                var extra = { actualTime: '', completedContent: '', selfEvaluation: '', improvementPlan: '',
+                var prevItem = prevTempMap[id] || {};
+                var extra = { actualTime: '', completedContent: '',
+                    selfEvaluation: prevItem.selfEvaluation || '',
+                    improvementPlan: prevItem.improvementPlan || '',
                     score: '' };
-                var summaryRowsAll = document.querySelectorAll('#summary-content table tbody tr');
-                summaryRowsAll.forEach(function(sr) {
-                    var cells = sr.querySelectorAll('td');
-                    if (cells.length < 10) return;
-                    var sName = cells[1].innerText.trim();
-                    var sType = cells[2].innerText.trim();
-                    if (sName === name && sType === '临时事项') {
+                var targetRow = summaryTempRows[k];
+                if (targetRow) {
+                    var cells = targetRow.querySelectorAll('td');
+                    if (cells.length >= 8) {
                         var actualInput = cells[4].querySelector('input');
-                        var completedInput = cells[6].querySelector('input');
-                        var selfInput = cells[7].querySelector('input');
-                        var improveInput = cells[8].querySelector('input');
-                        var scoreInput = cells[9].querySelector('input');
+                        var completedInput = cells[6].querySelector('.summary-completed');
+                        var scoreInput = cells[7].querySelector('input');
                         if (actualInput) extra.actualTime = actualInput.value;
                         if (completedInput) extra.completedContent = completedInput.value;
-                        if (selfInput) extra.selfEvaluation = selfInput.value;
-                        if (improveInput) extra.improvementPlan = improveInput.value;
                         if (scoreInput) extra.score = scoreInput.value;
                     }
-                });
+                }
                 tempItems.push({
                     id: id,
                     name: name,
@@ -4505,7 +4553,6 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                     score: extra.score
                 });
             });
-            var tempKey = 'daily_temp_' + selectedDate;
             Storage.set(tempKey, tempItems);
 
             var signKey = 'daily_sign_' + selectedDate;
@@ -4533,22 +4580,184 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         document.getElementById('save-daily-new').addEventListener('click', function() { saveDailyRecord(); });
 
         // ===== 打印和导出 =====
+        // beforeprint 阶段浏览器还没切到 print 媒体（实测 matchMedia('print') 为 false，
+        // 量到的是屏幕行高，比打印行高矮一半），所以先把 @media print 里的规则临时注入再测量
+        function withPrintLayout(doc, fn) {
+            var rules = [];
+            try {
+                var sheets = doc.styleSheets;
+                for (var i = 0; i < sheets.length; i++) {
+                    var list;
+                    try { list = sheets[i].cssRules; } catch (e) { continue; }
+                    if (!list) { continue; }
+                    for (var j = 0; j < list.length; j++) {
+                        var rule = list[j];
+                        if (rule.type !== 4) { continue; }                  // 4 = CSSRule.MEDIA_RULE
+                        var cond = rule.conditionText || (rule.media && rule.media.mediaText) || '';
+                        if (!/print/i.test(cond)) { continue; }
+                        var inner = rule.cssRules || [];
+                        for (var k = 0; k < inner.length; k++) {
+                            if (inner[k].type === 6) { continue; }          // 6 = CSSRule.PAGE_RULE
+                            rules.push(inner[k].cssText);
+                        }
+                    }
+                }
+            } catch (e) { rules = []; }
+            if (!rules.length) { fn(); return; }
+            var style = doc.createElement('style');
+            style.setAttribute('data-print-measure', '1');
+            style.textContent = rules.join('\n');
+            doc.head.appendChild(style);
+            try { fn(); }
+            finally {
+                if (style.parentNode) { style.parentNode.removeChild(style); }
+            }
+        }
+
+        // 打印补白：一行一行试填，把表格撑到接近满页，避免内容只占 A4 顶部一小块
+        function fillSummaryBlankRows(doc) {
+            var area = doc.getElementById('summary-area');
+            var table = area ? area.querySelector('table') : null;
+            var tbody = table ? table.querySelector('tbody') : null;
+            if (!tbody) { return; }
+            if (tbody.querySelectorAll('tr').length === 0) { return; }
+
+            var MM = 96 / 25.4;            // 1mm 对应的 css px
+            var PAGE_USABLE = 277 * MM;    // A4 297mm 减去上下各 10mm 页边距
+            var win = doc.defaultView || window;
+
+            var title = area.querySelector('.print-title') || doc.getElementById('summary-title');
+            var thead = table.querySelector('thead');
+            var tfoot = table.querySelector('tfoot');
+            var tail = area.querySelector('p');
+            var boxH = function(el) {
+                if (!el) { return 0; }
+                var cs = win.getComputedStyle(el);
+                return el.getBoundingClientRect().height +
+                       (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+            };
+            // 表头 / 表尾每页都会重复，标题与底部说明只出现一次
+            var repeatH = (thead ? thead.getBoundingClientRect().height : 0) +
+                          (tfoot ? tfoot.getBoundingClientRect().height : 0);
+            var oneOffH = boxH(title) + boxH(tail);
+            var perPageH = PAGE_USABLE - repeatH;      // 每页留给数据行的净高
+            if (perPageH <= 0) { return; }
+
+            var bodyHeight = function() { return tbody.getBoundingClientRect().height; };
+
+            var colCount = table.querySelectorAll('thead th').length || 10;
+            // 空行沿用数据行的高度，避免出现「数据行高、空行矮」的参差
+            var dataRows = tbody.querySelectorAll('tr:not(.filler-row)');
+            var rowH = 0;
+            for (var d = 0; d < dataRows.length; d++) {
+                rowH = Math.max(rowH, dataRows[d].getBoundingClientRect().height);
+            }
+            // 空行高度：默认跟数据行一致（表格看起来整齐）。
+            // 但只要有一行内容特别长，rowH 就会被它拉高，剩余空间不够再塞一个这么高的空行，
+            // 结果一个都不补、底部白留一大块。所以给空行高度设上限 10mm（约一行文字高），
+            // 让它既能填满剩余空间，又不至于比数据行矮太多显得突兀
+            var fillH = rowH > 0 ? Math.min(rowH, 10 * MM) : 0;
+            var makeRow = function() {
+                var tr = doc.createElement('tr');
+                tr.className = 'filler-row';
+                for (var c = 0; c < colCount; c++) {
+                    var td = doc.createElement('td');
+                    td.innerHTML = '&nbsp;';
+                    if (fillH > 0) { td.style.height = fillH + 'px'; }
+                    tr.appendChild(td);
+                }
+                return tr;
+            };
+            var dropLastFiller = function() {
+                var f = tbody.querySelectorAll('tr.filler-row');
+                if (!f.length) { return false; }
+                var last = f[f.length - 1];
+                if (last.parentNode) { last.parentNode.removeChild(last); }
+                return true;
+            };
+
+            // 空行高度一致，直接按「剩余空间 / 行高」一次算够，用 DocumentFragment 批量插入。
+            // 逐行试填每次都强制重排，大表下会拖死打印窗口，导致打印对话框迟迟不弹出
+            var addRows = function(n) {
+                if (n <= 0) { return; }
+                var frag = doc.createDocumentFragment();
+                for (var c = 0; c < n; c++) { frag.appendChild(makeRow()); }
+                tbody.appendChild(frag);          // 只触发一次重排
+            };
+            var trimTo = function(limit) {
+                var guard = 0;
+                while (bodyHeight() > limit && guard++ < 300) {
+                    if (!dropLastFiller()) { break; }
+                }
+            };
+
+            // 先估页数，把空行补到「页数 × 每页净高」。
+            // 小字版 rowH 变小，补到边界容易因一行放不下去而多出一整页；所以如果溢出，
+            // 就逐个撤回 filler，直到回到目标页数。
+            var targetPages = Math.max(1, Math.ceil((bodyHeight() + oneOffH) / perPageH));
+            for (var iter = 0; iter < 6; iter++) {
+                // 留出一点安全边距，避免一行刚好跨在分页线上被挤到下一页。
+                // 小字版 rowH 变小，若仍留一整行会浪费半页，所以用 8mm 或 60% 行高（取小）
+                var buffer = Math.min(fillH > 0 ? fillH * 0.6 : 8 * MM, 8 * MM);
+                var limit = targetPages * perPageH - oneOffH - buffer;
+                if (fillH > 0 && isFinite(fillH)) {
+                    var room = limit - bodyHeight();
+                    if (room > 0) { addRows(Math.min(Math.floor(room / fillH), 300)); }
+                }
+                // 如果超出目标页数，把最后补的 filler 撤掉，直到 fit
+                var guard = 0;
+                while (guard++ < 300) {
+                    var curPages = Math.max(1, Math.ceil((bodyHeight() + oneOffH) / perPageH));
+                    if (curPages <= targetPages) { break; }
+                    if (!dropLastFiller()) { break; }
+                }
+                var finalPages = Math.max(1, Math.ceil((bodyHeight() + oneOffH) / perPageH));
+                if (finalPages <= targetPages) { break; }
+                targetPages = finalPages;      // 数据行本身被挤到新页，目标页数 +1
+            }
+        }
+
         // 打印前把汇总区临时挂到 body 下，配合 @media print 只输出这一个区块，避免多余空白页
         (function() {
-            var holder = null, nextNode = null;
+            var holder = null, nextNode = null, backupHtml = null;
             window.addEventListener('beforeprint', function() {
                 var sa = document.getElementById('summary-area');
-                if (!sa || sa.parentNode === document.body) { return; }
-                holder = sa.parentNode;
-                nextNode = sa.nextSibling;
-                document.body.appendChild(sa);
+                if (!sa) { return; }
+                if (sa.parentNode !== document.body) {
+                    holder = sa.parentNode;
+                    nextNode = sa.nextSibling;
+                    document.body.appendChild(sa);
+                }
+                // 顺序很关键：必须先把控件换成静态文本，再补空行。
+                // textarea 是 rows="2"，只要它还在，每行都被撑成两行高，量出来的行高是
+                // 打印实际高度的近两倍 → 页数被高估 → 多补空行 → 凭空多出一张纸
+                Array.prototype.forEach.call(sa.querySelectorAll('input, textarea'), function(el) {
+                    var raw = (el.value || '');
+                    var span = document.createElement('span');
+                    span.style.whiteSpace = 'pre-wrap';
+                    // 没填的留空，不写「—」。用不换行空格占位，只是为了撑住行高，
+                    // 免得空单元格被压扁、整行忽高忽低
+                    span.textContent = raw.trim() !== '' ? raw : '\u00A0';
+                    if (el.parentNode) { el.parentNode.replaceChild(span, el); }
+                });
+                backupHtml = sa.innerHTML;
+                // 按一页容量补空行，让表格铺满 A4
+                try { withPrintLayout(document, function() { fillSummaryBlankRows(document); }); } catch (e) { console.error(e); }
             });
             window.addEventListener('afterprint', function() {
                 var sa = document.getElementById('summary-area');
-                if (!sa || !holder) { return; }
-                if (nextNode && nextNode.parentNode === holder) { holder.insertBefore(sa, nextNode); }
-                else { holder.appendChild(sa); }
+                // 直接还原成打印前的 HTML，补白行和控件替换一并撤销
+                if (sa && backupHtml !== null) {
+                    sa.innerHTML = backupHtml;
+                    backupHtml = null;
+                }
+                if (sa && holder) {
+                    if (nextNode && nextNode.parentNode === holder) { holder.insertBefore(sa, nextNode); }
+                    else { holder.appendChild(sa); }
+                }
                 holder = null; nextNode = null;
+                // 重建表格，恢复事件绑定
+                try { if (typeof updateSummary === 'function') { updateSummary(); } } catch (e) { console.error(e); }
             });
         })();
 
@@ -4560,46 +4769,69 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             var accName = Storage.cur() || '';
             var titleText = dateStr + (accName ? ' ' + accName : '') + ' 计划成长计划完成情况';
 
-            // 把汇总里的输入框换成纯文本，否则打印出来是一片空白的框
+            // 把汇总里的输入框换成纯文本，否则打印出来是一片空白的框（textarea 还只显示可见区域）
             var clone = content.cloneNode(true);
-            clone.querySelectorAll('input').forEach(function(inp) {
-                var txt = (inp.value || '').trim();
+            clone.querySelectorAll('input, textarea').forEach(function(inp) {
+                var txt = (inp.value || '');
                 var span = document.createElement('span');
-                span.textContent = txt !== '' ? txt : '—';
+                // pre-wrap 保留明细里的换行（如 "1. …\n2. …"）
+                span.style.whiteSpace = 'pre-wrap';
+                // 没填的留空，不写「—」。用不换行空格占位，只是为了撑住行高
+                span.textContent = txt.trim() !== '' ? txt : '\u00A0';
                 if (inp.parentNode) { inp.parentNode.replaceChild(span, inp); }
             });
 
             var printWindow = window.open('', '_blank', 'width=900,height=1000');
             if (!printWindow) { showToast('打印窗口被拦截，请允许弹窗后重试'); return; }
 
+            // A4 可用区域 190mm × 277mm（210/297 减去四边 10mm 页边距），据此铺满整张纸
             var printCss = [
-                '@page { size: A4; margin: 12mm; }',
+                '@page { size: A4 portrait; margin: 10mm; }',
                 '* { box-sizing: border-box; }',
-                'html, body { margin:0; padding:0; background:#fff !important; color:#000 !important;',
-                '  font-family:"Microsoft YaHei","微软雅黑",SimSun,sans-serif; font-size:10.5pt; line-height:1.45; }',
-                '#summary-area { width:186mm; max-width:186mm; margin:0 auto; }',
-                '.print-title { text-align:center; font-size:16pt; font-weight:700;',
-                '  margin:0 0 8mm; padding-bottom:3mm; border-bottom:1.5px solid #333; }',
-                'table { width:100% !important; border-collapse:collapse !important; table-layout:fixed; }',
+                'html, body { height:100%; margin:0; padding:0; background:#fff !important; color:#000 !important;',
+                '  font-family:"Microsoft YaHei","微软雅黑",SimSun,sans-serif; font-size:10.5pt; line-height:1.5; }',
+                '#summary-area { width:190mm; max-width:190mm; min-height:277mm; margin:0 auto;',
+                '  display:flex; flex-direction:column; }',
+                '#summary-area.measuring { min-height:0; }',
+                '#summary-area.measuring table { flex:0 0 auto; }',
+                '.print-title { flex:0 0 auto; text-align:center; font-size:17pt; font-weight:700;',
+                '  margin:0 0 5mm; padding-bottom:3mm; border-bottom:1.5px solid #333; }',
+                'table { width:100% !important; border-collapse:collapse !important; table-layout:fixed; flex:0 0 auto; }',
                 'thead { display:table-header-group; }',
                 'tfoot { display:table-footer-group; }',
                 'tr { page-break-inside:avoid; page-break-after:auto; }',
-                'th, td { border:1px solid #666 !important; padding:3px 4px !important; font-size:9.5pt;',
-                '  vertical-align:middle; word-break:break-word; overflow-wrap:anywhere; text-align:center; }',
-                'th { background:#f2f2f2 !important; font-weight:600; }',
-                'td:nth-child(2) { text-align:left; }',
-                'th:nth-child(1), td:nth-child(1) { width:8mm; }',
-                'th:nth-child(3), td:nth-child(3) { width:14mm; }',
-                'th:nth-child(4), td:nth-child(4) { width:16mm; }',
-                'th:nth-child(5), td:nth-child(5) { width:17mm; }',
-                'th:nth-child(6), td:nth-child(6) { width:15mm; }',
-                'th:nth-child(10), td:nth-child(10) { width:13mm; }',
-                'p { font-size:9pt; margin-top:6px; }',
-                '.diff-display { white-space:nowrap; }'
+                'th, td { border:1px solid #666 !important; padding:1.6mm 1.0mm !important;',
+                '  font-size:9.5pt; line-height:1.38; vertical-align:middle; word-break:break-word;',
+                '  overflow-wrap:anywhere; text-align:center; }',
+                'th { background:#f2f2f2 !important; font-weight:600; font-size:8.5pt !important; }',
+                'td { font-size:9.5pt !important; }',
+                /* 覆盖单元格里 input 的内联 width:70px，否则会撑破窄列 */
+                'input, textarea { border:none !important; background:transparent !important; color:#000 !important;',
+                '  padding:0 !important; width:100% !important; max-width:100% !important; font-size:9.5pt; }',
+                /* 表头带内联 width:xxpx，必须用 !important 覆盖，否则内容列被挤成 15mm。
+                   除「完成内容」外全部定宽，省下的 ~78mm 全给完成内容，明细才不会挤成几十行。
+                   表头用 8.5pt，防止四字表头竖排 */
+                'th { width:auto !important; }',
+                'th:nth-child(1), td:nth-child(1) { width:10mm !important; }',
+                'th:nth-child(2), td:nth-child(2) { width:30mm !important; text-align:left; }',
+                'th:nth-child(3), td:nth-child(3) { width:17mm !important; }',
+                'th:nth-child(4), td:nth-child(4) { width:14mm !important; }',
+                'th:nth-child(5), td:nth-child(5) { width:14mm !important; }',
+                'th:nth-child(6), td:nth-child(6) { width:16mm !important; }',
+                'th:nth-child(7), td:nth-child(7) { width:auto !important; text-align:left; }',
+                'th:nth-child(8), td:nth-child(8) { width:11mm !important; }',
+                'p { font-size:9pt; margin:4px 0 0; }',
+                '.diff-display { white-space:nowrap; }',
+                /* 空值占位符：屏幕上是短横，打印时隐藏，纸上留空白（visibility 保留行高） */
+                '.cell-empty { visibility:hidden !important; }',
+                '.print-tip { max-width:190mm; margin:10px auto; padding:8px 12px; font-size:12px; line-height:1.6;',
+                '  color:#8a6d3b; background:#fff8e1; border:1px solid #f0c36d; border-radius:6px; }',
+                '@media print { .print-tip { display:none !important; } }'
             ].join('\n');
 
             var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + titleText + '</title>';
             html += '<style>' + printCss + '</style></head><body>';
+            html += '<div class="print-tip">🖨️ 打印建议：纸张 <b>A4</b>、边距设为 <b>「无」或「最小」</b>、缩放 <b>100%</b>、勾选 <b>背景图形</b>（表头灰底需要）。</div>';
             html += '<div id="summary-area">';
             html += '<h1 class="print-title">' + titleText + '</h1>';
             html += clone.innerHTML;
@@ -4609,15 +4841,26 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             printWindow.document.write(html);
             printWindow.document.close();
 
-            var fired = false;
+            // 补空行必须在弹窗文档就绪后做，否则量到的是空文档；补完再弹打印框。
+            // 之前是固定 1.2s 盲等，数据多时补空行还没跑完就调 print()，弹窗主线程忙、
+            // 打印对话框就一直不出现
+            var filled = false, fired = false;
+            var doFill = function() {
+                if (filled) { return; }
+                filled = true;
+                try { fillSummaryBlankRows(printWindow.document); } catch (e) { console.error(e); }
+            };
             var doPrint = function() {
+                doFill();                                   // 兜底：onload 没触发也要补
                 if (fired) { return; }
                 fired = true;
-                try { printWindow.focus(); printWindow.print(); } catch (e) { console.error(e); }
+                // 再让出一帧，等浏览器完成布局后弹打印预览，避免预览空白
+                setTimeout(function() {
+                    try { printWindow.focus(); printWindow.print(); } catch (e) { console.error(e); }
+                }, 80);
             };
-            // 等排版与字体就绪后再调起打印预览，避免预览空白
-            printWindow.onload = function() { setTimeout(doPrint, 300); };
-            setTimeout(doPrint, 1200);
+            printWindow.onload = function() { doFill(); setTimeout(doPrint, 250); };
+            setTimeout(doPrint, 2500);                       // 兜底：onload 迟迟不来也照样打印
         }
 
         function exportSummaryImage() {
