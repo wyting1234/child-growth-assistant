@@ -873,6 +873,7 @@
         .qmeta .chip.recur { background: #f0f8f5; color: #16a085; }
         .qmeta .chip.tag { background: #f3f0fd; color: var(--main); }
         .qmeta .chip.foc { background: #fff7e8; color: #b7791f; font-variant-numeric: tabular-nums; }
+        .qmeta .chip.doneat { background: #ecf7f0; color: #1d9e75; }
         .qmeta .chip.overdue { background: #fdeee1; color: #e67e22; font-weight: 500; }
         .qmeta .chip.hit { background: #ece9fd; color: var(--main); font-style: normal; }
         .qmeta .chip .hl { background: #ffe9a8; color: inherit; padding: 0 1px; border-radius: 2px; }
@@ -5404,6 +5405,7 @@
         ['week', '本周'],
         ['month', '本月'],
         ['overdue', '逾期'],
+        ['archived', '已完成清单'],
         ['nodate', '无日期']
     ];
     const QUADS = [
@@ -5716,6 +5718,9 @@
         const d = today();
         const dt = new Date(d);
         if (filter === 'all') return true;
+        /* v46：已完成清单 = 完成满 ARCHIVE_DAYS 天的任务（含母子任务整体）
+           v47：开启「完成后立即归档」时，刚勾完的任务即刻进入已完成清单 */
+        if (filter === 'archived') return isArchivedOut(t);
         if (filter === 'nodate') return t.mode === 'none';
         const ds = taskDates(t);
         if (!ds.length) return false;
@@ -5766,7 +5771,10 @@
             if (t.doneDates.indexOf(d) < 0) t.doneDates.push(d);
         } else t.done = true;
         t.failed = false;
-        if ((t.subs || []).length) t.subs.forEach(s => s.done = true);
+        /* v46：记录完成时刻，供「子任务完成时间」与「3 天后归档」使用 */
+        stampDone(t);
+        if ((t.subs || []).length) t.subs.forEach(s => { s.done = true; stampDone(s); });
+        stopTimersOfTask(t);
     }
 
     function overdueDays(t) {
@@ -5795,6 +5803,106 @@
     const isPending = t => taskState(t) === 'todo';
     /* 未完成的异常终态：手动失败打卡 or 到期未打卡（逾期） */
     const isNegative = t => taskState(t) === 'failed' || taskState(t) === 'overdue';
+
+    /* ===== v46：母子任务完成时间 + 完成满 3 天自动归档 ===== */
+    const ARCHIVE_DAYS = 3;
+    function _p2(n) { return String(n).padStart(2, '0'); }
+    /* 完成时间戳：2026-09-07 15:20（本地时区） */
+    function nowStamp() {
+        const d = new Date();
+        return fmtDLocal(d) + ' ' + _p2(d.getHours()) + ':' + _p2(d.getMinutes());
+    }
+    function stampDone(o) { try { o.doneAt = nowStamp(); } catch (e) {} }
+    /* 任务完成日：优先完成时间戳，重复任务取最后一次打卡日，再退回到任务日期 */
+    function doneDayOf(t) {
+        if (!t) return '';
+        if (t.doneAt) return String(t.doneAt).slice(0, 10);
+        if (isRecur(t) && (t.doneDates || []).length) return t.doneDates.slice().sort().pop();
+        const ds = taskDates(t);
+        return ds.length ? ds.slice().sort().pop() : '';
+    }
+    /* 是否「实质完成」：一次性任务看 t.done；母子任务看子任务是否全部完成 */
+    function isEffectivelyDone(t) {
+        if (taskState(t) === 'done') return true;
+        if (t && t.subs && t.subs.length && t.subs.every(s => s.done)) return true;
+        return false;
+    }
+    /* 完成后已经过去的天数（未完成返回 -1） */
+    function archDays(t) {
+        if (!isEffectivelyDone(t)) return -1;
+        const day = doneDayOf(t);
+        if (!day) return -1;
+        return Math.round((Date.parse(today() + 'T00:00') - Date.parse(day + 'T00:00')) / 864e5);
+    }
+    /* 完成满 N 天 → 从常规清单与视图里隐去，只出现在「已完成清单」 */
+    function isArchivedDone(t) { return isEffectivelyDone(t) && archDays(t) >= ARCHIVE_DAYS; }
+
+    /* ============================================================
+       v47：完成后「立即」从清单 / 四象限隐去，转入「已完成清单」
+       —— 需求：清单任务勾完就从界面消失，不再留在原地（原来要等满 3 天）。
+       —— 可在「视图设置 → 完成后立即归档」关闭，退回 v46 的「满 3 天再归档」。
+       —— 只作用于清单 / 待办 / 分类 / 四象限；日 / 周 / 甘特等视图仍用
+          isArchivedDone（3 天规则），保证当天还能看见自己完成了什么。
+       ============================================================ */
+    function archiveImmediateOn() { return viewSettings().archiveImmediate !== false; }
+    /* 是否已「出列」：既不在常规清单里，又能在「已完成清单」里找到 */
+    function isArchivedOut(t) {
+        if (!isEffectivelyDone(t)) return false;
+        return archDays(t) >= ARCHIVE_DAYS || archiveImmediateOn();
+    }
+
+    /* ===== v46：母任务 + 子任务的整段时间线（取最小开始、最大结束） =====
+       只有母任务有时间 → 结果就是母任务本身；子任务在母任务之外另有时间 → 自动向两侧撑开。 */
+    function taskSpan(t) {
+        let sMin = null, eMin = null, isPoint = true;
+        const add = (tt, time, endTime) => {
+            if (tt === 'none' || !time) return;
+            const [h, m] = String(time).split(':').map(Number);
+            if (isNaN(h)) return;
+            const st = h * 60 + (m || 0);
+            let en = null;
+            if (tt === 'range' && endTime) {
+                const [eh, em] = String(endTime).split(':').map(Number);
+                if (!isNaN(eh)) en = eh * 60 + (em || 0);
+            }
+            if (en == null) en = st + 30; else isPoint = false;
+            if (tt === 'range') isPoint = false;
+            sMin = sMin == null ? st : Math.min(sMin, st);
+            eMin = eMin == null ? en : Math.max(eMin, en);
+        };
+        add(t.timeType, t.time, t.endTime);
+        (t.subs || []).forEach(s => add(s.timeType, s.time, s.endTime));
+        if (sMin == null) return null;
+        return { start: sMin, end: Math.max(eMin, sMin + 10), point: isPoint };
+    }
+    function spanMilestone(t) {
+        const sp = taskSpan(t);
+        if (!sp) return '';
+        const f = m => _p2(Math.min(23, Math.floor(m / 60))) + ':' + _p2(Math.max(0, m % 60));
+        return f(sp.start) + '~' + f(sp.end);
+    }
+
+    /* v46：母任务打钩完成 → 该任务（含子任务）上正在跑的计时整体停止 */
+    function stopTimersOfTask(t) {
+        try {
+            if (typeof fState !== 'undefined' && fState === 'run' && typeof linkTarget !== 'undefined' && linkTarget) {
+                const hit = linkTarget.taskId === t.id || linkTarget.id === t.id ||
+                    (t.subs || []).some(s => s.id === linkTarget.id);
+                if (hit && typeof giveUp === 'function') giveUp(true);
+            }
+        } catch (e) {}
+        try {
+            if (t.timerCfg) t.timerCfg.inFocus = false;
+            (t.subs || []).forEach(s => { if (s.timerCfg) s.timerCfg.inFocus = false; });
+        } catch (e) {}
+    }
+    /* v46：清单卡片上的「暂停 / 停止」是否与该任务相关 */
+    function focusLinkedTo(t) {
+        try {
+            return (typeof fState !== 'undefined' && fState === 'run' && typeof linkTarget !== 'undefined' && linkTarget &&
+                (linkTarget.taskId === t.id || linkTarget.id === t.id || (t.subs || []).some(s => s.id === linkTarget.id)));
+        } catch (e) { return false; }
+    }
 
     /* ===== 搜索解析：支持 #标签 前缀精确匹配 + 普通文本模糊匹配 ===== */
     let searchParsed = null;  // { text: '', tags: [], category: '' }
@@ -5876,10 +5984,12 @@
         // 搜索时全局查找（忽略当前周期筛选），否则按周期筛选
         if (searchQuery.trim()) {
             parseSearchQuery(searchQuery);
-            ts = S.tasks.filter(matchSearch);
+            ts = S.tasks.filter(t => matchSearch(t) && (filter === 'archived' || !isArchivedOut(t)));
         } else {
             searchParsed = null;
-            ts = S.tasks.filter(matchFilter);
+            /* v47：勾完即出列 —— 常规清单里不再留已完成任务，它们只在「已完成清单」中可见
+               （关闭「完成后立即归档」则退回 v46 的「满 3 天」规则） */
+            ts = S.tasks.filter(filter === 'archived' ? isArchivedOut : (t => !isArchivedOut(t))).filter(matchFilter);
         }
         if (sortBy === 'time-asc') ts.sort((a, b) => nextTaskDate(a).localeCompare(nextTaskDate(b)));
         else if (sortBy === 'time-desc') ts.sort((a, b) => nextTaskDate(b).localeCompare(nextTaskDate(a)));
@@ -5887,6 +5997,11 @@
         else if (sortBy === 'created-desc') ts.sort((a, b) => (b.id || '').localeCompare(a.id || ''));
         else if (sortBy === 'priority') ts.sort((a, b) => (a.priority || 4) - (b.priority || 4) || ((b.pinned ? 1 : 0) - (
             a.pinned ? 1 : 0)));
+        /* v47：已完成清单按「完成时间」倒序 —— 刚勾完的排最前，符合直觉 */
+        if (filter === 'archived') {
+            const key = t => String((t.doneAt || '') || doneDayOf(t) || '');
+            ts.sort((a, b) => key(b).localeCompare(key(a)));
+        }
         return ts;
     }
 
@@ -6019,10 +6134,12 @@
             const dropdown = `<div class="filter-dropdown" id="filterDropdownHeader">${filterHtml}</div>`;
             if (listView === 'quadrant') {
                 const filterLabel = getFilterLabel();
-                const todoCount = S.tasks.filter(isPending).length;
+                /* v47：从「已完成清单」进来时按归档口径计数与命名（仍保留四象限布局） */
+                const isArch = filter === 'archived';
+                const cnt = isArch ? S.tasks.filter(isArchivedOut).length : S.tasks.filter(isPending).length;
                 titleEl.innerHTML = `
                 <span class="title-text" style="display:flex;align-items:center;gap:6px;justify-content:center;width:100%;">
-                    <span>四象限 ${filterLabel}·${todoCount}待办</span>
+                    <span>${isArch ? '✅ 已完成清单·' + cnt + ' 项' : '四象限 ' + filterLabel + '·' + cnt + '待办'}</span>
                     <span class="filter-toggle" onclick="toggleFilter()">周期 <span class="arrow ${filter!=='all'?'open':''}">▾</span></span>
                     <span class="qfont-ctl" onclick="event.stopPropagation()"><span onclick="quadFontStep(-1)" title="缩小四象限字体">A−</span><span onclick="quadFontStep(1)" title="放大四象限字体">A+</span></span>
                 </span>
@@ -6238,12 +6355,31 @@
                 <span class="arrow">›</span>
             </div>
             <div class="s-item">
+                完成后立即归档
+                <span class="sw ${v.archiveImmediate !== false?'on':''}" id="vwarchiveImmediate" style="margin-left:auto" onclick="toggleViewBool('archiveImmediate')"></span>
+            </div>
+            <div class="s-item" style="padding-top:0">
+                <span style="font-size:10.5px;color:#a8a5ba;line-height:1.5">开：勾完即从清单 / 四象限移入「已完成清单」<br>关：沿用「完成满 3 天再归档」</span>
+            </div>
+            <div class="s-item">
                 显示已打卡清单
                 <span class="sw ${v.showDoneList?'on':''}" id="vwShowDoneList" style="margin-left:auto" onclick="toggleViewBool('showDoneList')"></span>
             </div>
             <div class="s-item">
                 显示已打卡习惯
                 <span class="sw ${v.showDoneHabit?'on':''}" id="vwShowDoneHabit" style="margin-left:auto" onclick="toggleViewBool('showDoneHabit')"></span>
+            </div>
+
+            <div class="s-section">清单数据</div>
+            <div class="s-item" onclick="goOverdue()">
+                逾期任务
+                <span class="count" id="sOverdueCount2">0</span>
+                <span class="arrow">›</span>
+            </div>
+            <div class="s-item" onclick="goArchived()">
+                已完成清单
+                <span class="count" id="sArchivedCount2">0</span>
+                <span class="arrow">›</span>
             </div>
         `;
     }
@@ -6270,6 +6406,11 @@
             <div class="s-item" onclick="goOverdue()">
                 逾期任务
                 <span class="count" id="sOverdueCount">0</span>
+                <span class="arrow">›</span>
+            </div>
+            <div class="s-item" onclick="goArchived()">
+                已完成清单
+                <span class="count" id="sArchivedCount">0</span>
                 <span class="arrow">›</span>
             </div>
 
@@ -6558,6 +6699,25 @@
         } catch (e) {}
     }
 
+    /* ===== v47：带「撤销」的提示条 =====
+       勾完的任务会立刻从清单里消失，给一次反悔的机会（4.5 秒内点「撤销」即可复原）。 */
+    function toastUndo(msg, undo) {
+        try {
+            const el = document.createElement('div');
+            el.style.cssText = 'position:fixed;left:50%;bottom:78px;transform:translateX(-50%);background:rgba(32,30,52,.94);color:#fff;padding:9px 14px;border-radius:20px;font-size:12px;z-index:9999;display:flex;align-items:center;gap:12px;box-shadow:0 10px 26px rgba(20,20,50,.3);max-width:88vw';
+            const sp = document.createElement('span');
+            sp.textContent = msg;
+            const bt = document.createElement('b');
+            bt.textContent = '撤销';
+            bt.style.cssText = 'color:#b9a8ff;cursor:pointer;font-weight:600;flex:none';
+            bt.onclick = () => { try { undo(); } catch (e) {} try { el.remove(); } catch (e) {} };
+            el.appendChild(sp); el.appendChild(bt);
+            document.body.appendChild(el);
+            setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0';
+                setTimeout(() => { try { el.remove(); } catch (e) {} }, 320); }, 4500);
+        } catch (e) {}
+    }
+
     /* ===== v33: 手机版 / 电脑版切换 ===== */
     var VIEW_MODE_KEY = 'zmv_view_mode';
     function getViewMode() { try { return localStorage.getItem(VIEW_MODE_KEY) || 'auto'; } catch (e) { return 'auto'; } }
@@ -6618,6 +6778,14 @@
         closeSidebar();
         if (page !== 'list') go('list');
         filter = 'overdue';
+        render();
+    }
+
+    /* v46：已完成清单 —— 完成满 ARCHIVE_DAYS 天的母子任务归档到这里 */
+    function goArchived() {
+        closeSidebar();
+        if (page !== 'list') go('list');
+        filter = 'archived';
         render();
     }
 
@@ -6988,16 +7156,35 @@
 
     function updateSidebarCounts() {
         const all = S.tasks;
-        const todo = all.filter(isPending);
-        const overdue = all.filter(t => taskState(t) === 'overdue');
+        /* v47：侧栏「清单列表 / 分类列表」计数与清单页实际可见条数保持一致
+           —— 已出列（勾完即归档）的任务不再计入，改计入「已完成清单」 */
+        let live = all;
+        try { live = all.filter(t => !isArchivedOut(t)); } catch (e) { live = all; }
+        const todo = live.filter(isPending);
+        const overdue = live.filter(t => taskState(t) === 'overdue');
         const elAll = document.getElementById('sAllCount');
-        if (elAll) elAll.textContent = all.length;
+        if (elAll) elAll.textContent = live.length;
         const elTodo = document.getElementById('sTodoCount');
         if (elTodo) elTodo.textContent = todo.length;
         const elCat = document.getElementById('sCatCount');
-        if (elCat) elCat.textContent = all.length;
+        if (elCat) elCat.textContent = live.length;
         const oc = document.getElementById('sOverdueCount');
         if (oc) oc.textContent = overdue.length;
+        const oc2 = document.getElementById('sOverdueCount2');
+        if (oc2) oc2.textContent = overdue.length;
+        /* v46：已完成清单计数（完成满 3 天的入档）；v47：开启立即归档后，刚勾完的也计入 */
+        const ac = document.getElementById('sArchivedCount');
+        if (ac) {
+            let n = 0;
+            try { n = all.filter(isArchivedOut).length; } catch (e) { n = 0; }
+            ac.textContent = n;
+        }
+        const ac2 = document.getElementById('sArchivedCount2');
+        if (ac2) {
+            let n = 0;
+            try { n = all.filter(isArchivedOut).length; } catch (e) { n = 0; }
+            ac2.textContent = n;
+        }
 
         // 高亮当前菜单（仅 default 侧边栏有 data-view）
         document.querySelectorAll('#sidebar .s-item[data-view]').forEach(el => {
@@ -7078,6 +7265,8 @@
         if (!v.doneStyle) v.doneStyle = 'strike';
         if (v.showDoneList === undefined) v.showDoneList = true;
         if (v.showDoneHabit === undefined) v.showDoneHabit = true;
+        /* v47：完成后立即从清单 / 四象限出列，转入「已完成清单」（默认开启） */
+        if (v.archiveImmediate === undefined) v.archiveImmediate = true;
         // v24：日 / 周视图时间轴起始小时（默认 7 点，⋯ 菜单可调 0~23）
         if (v.dayStartHour === undefined) v.dayStartHour = 7;
         {
@@ -7874,7 +8063,8 @@
         let items = [];
 
         if (view === 'all') {
-            title = searchQuery.trim() ? '🔍 搜索结果' : '📋 所有清单';
+            title = searchQuery.trim() ? '🔍 搜索结果'
+                : (filter === 'archived' ? '✅ 已完成清单' : '📋 所有清单');
             items = ts;
         } else if (view === 'todo') {
             title = '✅ 待办事项';
@@ -7950,6 +8140,11 @@
         // 详细模式补充展示：逾期 + 完成时间 + 标签 + 搜索命中（chip 单行排列）
         if (!isCompact) {
             if (od > 0) meta.push(`<span class="chip overdue">逾期${od}天</span>`);
+            /* v47：已完成清单里补一条「完成于 …」 */
+            if (filter === 'archived' && t.doneAt) {
+                const _dt = String(t.doneAt);
+                meta.push(`<span class="chip doneat">✅ 完成于 ${esc(_dt.length > 10 ? _dt.slice(5) : _dt)}</span>`);
+            }
             const dl = dateLabel(t);
             if (dl) meta.push(`<span class="chip date">🕐 ${esc(dl)}</span>`);
             /* v42：累计专注时长徽标（含子任务时长一并计入标题行） */
@@ -8045,6 +8240,7 @@
     function toggleTask(id, d) {
         const t = S.tasks.find(x => x.id === id);
         if (!t) return;
+        const _wasOut = isArchivedOut(t);          // v47：勾选前是否已出列
         if (isRecur(t)) {
             // 重复任务：只切换当天的这一实例
             t.doneDates = t.doneDates || [];
@@ -8055,16 +8251,24 @@
             } else {
                 t.doneDates.push(day);
                 t.failed = false;
-                if ((t.subs || []).length) t.subs.forEach(s => s.done = true);
+                stampDone(t);
+                if ((t.subs || []).length) t.subs.forEach(s => { s.done = true; stampDone(s); });
+                stopTimersOfTask(t);
             }
         } else {
             t.done = !t.done;
             if (t.done) {
                 t.failed = false;
-                if ((t.subs || []).length) t.subs.forEach(s => s.done = true);
+                stampDone(t);
+                if ((t.subs || []).length) t.subs.forEach(s => { s.done = true; stampDone(s); });
+                stopTimersOfTask(t);
             }
         }
         save();
+        /* v47：刚勾完就出列 → 提示 + 可撤销（避免误触后找不到任务） */
+        if (!_wasOut && isArchivedOut(t)) {
+            toastUndo('已完成，移入「已完成清单」', () => toggleTask(id, d));
+        }
         render();
     }
         try { rescheduleAllReminders(); } catch (e) {}
@@ -8074,17 +8278,28 @@
         if (!t) return;
         const s = t.subs.find(x => x.id === sid);
         if (!s) return;
+        const _wasOut = isArchivedOut(t);          // v47：父任务勾选前是否已出列
         s.done = !s.done;
+        /* v46：子任务完成时间 */
+        if (s.done) stampDone(s); else { try { s.doneAt = ''; } catch (e) {} }
         const allDone = (t.subs || []).length && t.subs.every(x => x.done);
         if (isRecur(t)) {
             // 重复任务：子任务全部勾完 → 视为当天这一实例完成
             t.doneDates = t.doneDates || [];
             const day = today();
             const i = t.doneDates.indexOf(day);
-            if (allDone && i < 0) { t.doneDates.push(day); t.failed = false; }
+            if (allDone && i < 0) { t.doneDates.push(day); t.failed = false; stampDone(t); stopTimersOfTask(t); }
             else if (!allDone && i >= 0) t.doneDates.splice(i, 1);
-        } else t.done = allDone;
+        } else {
+            const wasDone = !!t.done;
+            t.done = allDone;
+            if (allDone && !wasDone) { stampDone(t); stopTimersOfTask(t); }
+        }
         save();
+        /* v47：子任务全勾完 → 整个任务出列，同样给一次撤销机会 */
+        if (!_wasOut && isArchivedOut(t)) {
+            toastUndo('任务已全部完成，移入「已完成清单」', () => toggleSub(tid, sid));
+        }
         render();
     }
         try { rescheduleAllReminders(); } catch (e) {}
@@ -8482,6 +8697,21 @@
         const wasIn = !!fTimer.inFocus;
         const nowIn = inf ? inf.classList.contains('on') : false;
         fTimer.mode = (document.querySelector('#fTMode span.on') || {}).dataset?.v || fTimer.mode;
+        /* v48 修复：勾「添加至专注任务」但计时模块还是「不计时」时，
+           自动补默认番茄钟（25min × 1），否则专注列表会因 mode==='none' 把它过滤掉，
+           用户勾了却"没有添加成功" */
+        if (nowIn && (!fTimer.mode || fTimer.mode === 'none')) {
+            Object.assign(fTimer, { mode: 'pomodoro', dur: 25, num: 1, short: 5, long: 15, interval: 4, auto: true });
+            try {
+                document.querySelectorAll('#fTMode span').forEach(s => s.classList.toggle('on', s.dataset.v === 'pomodoro'));
+                const p = document.getElementById('fTPomo'), c = document.getElementById('fTCount');
+                if (p) p.style.display = 'block';
+                if (c) c.style.display = 'none';
+                const _sv = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+                _sv('fTDur', 25); _sv('fTNum', 1); _sv('fTShort', 5); _sv('fTLong', 15); _sv('fTInt', 4);
+            } catch (e) {}
+            try { showToast('已按默认番茄钟（25分钟）加入专注任务'); } catch (e) {}
+        }
         fTimer.dur = fTimer.mode === 'countdown' ? num('fTMin', 25) : num('fTDur', 25);
         fTimer.num = num('fTNum', 4); fTimer.short = num('fTShort', 5);
         fTimer.long = num('fTLong', 15); fTimer.interval = num('fTInt', 4);
@@ -8527,6 +8757,19 @@
         const nowIn = inf ? inf.classList.contains('on') : false;
         const on = document.querySelector('#hTMode span.on');
         hTimer.mode = on ? on.dataset.v : hTimer.mode;
+        /* v48 修复：同任务表单 —— 勾「添加至专注任务」但计时模块为「不计时」时补默认番茄钟 */
+        if (nowIn && (!hTimer.mode || hTimer.mode === 'none')) {
+            Object.assign(hTimer, { mode: 'pomodoro', dur: 25, num: 1, short: 5, long: 15, interval: 4, auto: true });
+            try {
+                document.querySelectorAll('#hTMode span').forEach(s => s.classList.toggle('on', s.dataset.v === 'pomodoro'));
+                const p = document.getElementById('hTPomo'), c = document.getElementById('hTCount');
+                if (p) p.style.display = 'block';
+                if (c) c.style.display = 'none';
+                const _sv = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+                _sv('hTDur', 25); _sv('hTNum', 1); _sv('hTShort', 5); _sv('hTLong', 15); _sv('hTInt', 4);
+            } catch (e) {}
+            try { showToast('已按默认番茄钟（25分钟）加入专注任务'); } catch (e) {}
+        }
         hTimer.dur = hTimer.mode === 'countdown' ? num('hTMin', 25) : num('hTDur', 25);
         hTimer.num = num('hTNum', 4); hTimer.short = num('hTShort', 5);
         hTimer.long = num('hTLong', 15); hTimer.interval = num('hTInt', 4);
@@ -9902,6 +10145,7 @@
         if (viewGanttTab !== 'habit') {
             /* —— 待办甘特：窗口内有日期的任务，连续日期连成一条 —— */
             const tasks = S.tasks
+                .filter(t => !isArchivedDone(t))
                 .map(t => { const dw = taskDates(t).filter(inWin).sort(); return { t, dw }; })
                 .filter(x => x.dw.length)
                 .sort((a, b) => a.dw[0] < b.dw[0] ? -1 : 1);
@@ -10268,7 +10512,8 @@
             const lu = getLunarInfo(ds);
             const lunarHTML = lu ? `<div class="lunar ${lu.cls}">${lu.tag}</div>` : '';
             // 当日任务
-            const dayTasks = S.tasks.filter(t => taskOnDate(t, ds));
+            /* v46：完成满 3 天的任务已入「已完成清单」，日程月格不再展示 */
+            const dayTasks = S.tasks.filter(t => taskOnDate(t, ds) && !isArchivedDone(t));
             /* v26：日历格里的任务可点击 → 直接打开编辑弹窗（原来没有 onclick，点了没反应） */
             const pills = dayTasks.slice(0, 3).map(t => `<div class="pill" style="background:${t.priority===1?'var(--p1)':t.priority===2?'var(--p2)':'var(--p3)'}" title="${esc(t.title)}" onclick="event.stopPropagation();openTask('${t.id}')">${esc(t.title)}</div>`).join('');
             const more = dayTasks.length > 3 ? `<div class="more">+${dayTasks.length - 3}</div>` : '';
@@ -10278,7 +10523,8 @@
             </div>`;
         }).join('');
         // 抽屉：3 段（任务 / 纪念日 / 习惯），每段带 ▷/▽ 展开收纳
-        const dayList = S.tasks.filter(t => taskOnDate(t, sel)).sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+        /* v46：完成满 3 天的任务已入「已完成清单」，日程抽屉不再展示 */
+        const dayList = S.tasks.filter(t => taskOnDate(t, sel) && !isArchivedDone(t)).sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
         // 当天的纪念日（recur=yearly 取今年，否则取原日）
         const annivList = (S.anniversaries || []).map(a => {
             if (!a.date) return null;
@@ -10456,7 +10702,8 @@
         const HOUR_START = dayHourStart();
         const bodyH = (HOUR_END - HOUR_START) * ROW_H;
         const td = today();
-        const dayTasks = S.tasks.filter(t => taskOnDate(t, ds));
+        /* v46：完成满 3 天的任务已入「已完成清单」，日历视图不再展示 */
+        const dayTasks = S.tasks.filter(t => taskOnDate(t, ds) && !isArchivedDone(t));
         const allDay = dayTasks.filter(t => t.timeType === 'none' || !t.time);
         const timed  = dayTasks.filter(t => t.timeType !== 'none' && t.time);
         const allDayHTML = allDay.map(t => {
@@ -10623,7 +10870,8 @@
             const isToday = ds === td;
             const lu = getLunarInfo(ds);
             const lunarHTML = lu ? `<div class="lunar ${lu.cls}">${lu.tag}</div>` : '';
-            const dayTasks = S.tasks.filter(t => taskOnDate(t, ds));
+            /* v46：完成满 3 天的任务已入「已完成清单」，月视图不再展示 */
+            const dayTasks = S.tasks.filter(t => taskOnDate(t, ds) && !isArchivedDone(t));
             const pills = dayTasks.slice(0, 3).map(t => {
                 const done = taskDoneOn(t, ds) ? ' done' : '';
                 return `<div class="v-pill p${t.priority||3}${done}" onclick="event.stopPropagation();openTask('${t.id}')" title="${esc(t.title)}">${esc(t.title)}</div>`;
@@ -10668,7 +10916,7 @@
             let count = 0;
             for (let d = 1; d <= lastDay; d++) {
                 const ds = `${key}-${String(d).padStart(2, '0')}`;
-                if (S.tasks.some(t => taskOnDate(t, ds))) count++;
+                if (S.tasks.some(t => taskOnDate(t, ds) && !isArchivedDone(t))) count++;
             }
             const isCur = td.slice(0, 7) === key;
             return `<div class="year-month ${isCur ? 'cur' : ''}" onclick="monthAnchor='${key}';viewMode='month';render()">
@@ -11420,7 +11668,7 @@
     /* v8: 专注页分组折叠 + 详情侧栏 */
     const FCD_COLORS = ['#f7f7fc','#fff7e6','#e8f5e9','#e3f2fd','#fce4ec','#f3e5f5','#f5f5f5','#fffbe6'];
     /* v13: 肉眼可见的版本号 —— 用于判断浏览器是否还在用旧缓存 */
-    const APP_VER = 'v45';
+    const APP_VER = 'v47';
     let focusDetailOpen = false,
         focusDetailPct = +((S.settings && S.settings.focusDetailPct) || 32),
         focusDetailColor = (S.settings && S.settings.focusDetailColor) || '#f7f7fc',
@@ -12910,10 +13158,12 @@
     function pickImpTab(t) { impPickTab(t); }
     function impPickTab(t) {
         impTab = t;
-        // 切 tab 时，按当前所有候选的 inFocus 状态预选
-        impSelected = {};
+        /* v47 修复：切换页签不再清空已勾选项（此前 impSelected = {} 会把其他页签
+           勾的任务/习惯全部丢掉，用户跨页签多选后点导入只剩最后一页签的结果）。
+           现改为惰性预选：仅对"从未出现过"的候选项按当前 inFocus 状态预选，
+           用户显式勾选/取消过的项跨页签保留，导入时一并生效 */
         const items = impItems(t);
-        items.forEach(it => { if (it.cur) impSelected[it.scope] = true; });
+        items.forEach(it => { if (impSelected[it.scope] === undefined) impSelected[it.scope] = !!it.cur; });
         // 高亮 tab
         document.querySelectorAll('#impTabs span').forEach(s => s.classList.toggle('on', s.dataset.tab === t));
         renderImpList();
@@ -12973,7 +13223,7 @@
         } else {
             list.innerHTML = items.map(it => {
                 const on = !!impSelected[it.scope];
-                const tag = on ? '已在专注' : (it.cur ? '已勾选' : '未导入');
+                const tag = on ? (it.cur ? '已在专注' : '将导入') : (it.cur ? '将移出' : '未导入');
                 return `<div class="imp-row ${on?'on':''}" onclick="impToggle('${esc(it.scope)}')">
                     <div class="imp-ck"></div>
                     <div class="imp-info">
@@ -12996,20 +13246,25 @@
         renderImpList();
     }
     function impSelectAll(mode) {
+        /* v48 修复：只在当前页签上改选择，不再重建整张选择表 ——
+           此前 newSel 只含当前页签，其他页签已勾的项会被悄悄清掉，
+           底部「已选 N 项」却按全量计数，导入结果与所选对不上 */
         const items = impItems(impTab);
-        const newSel = {};
         items.forEach(it => {
             const cur = !!impSelected[it.scope];
             const want = (mode === true) ? true
                        : (mode === false) ? !cur
                        : false;
-            if (want) newSel[it.scope] = true;
+            if (want) impSelected[it.scope] = true;
+            else delete impSelected[it.scope];
         });
-        impSelected = newSel;
         renderImpList();
     }
     function confirmImportFocus() {
-        const items = impItems(impTab);    // 当前 tab 的全部候选：基于勾选状态对比决定增删
+        /* v47 修复：一次性处理全部三个页签（清单/子任务/习惯）的候选项。
+           此前只处理当前页签 —— 用户在其他页签勾的项会被直接丢弃；
+           未打开过的页签按现状处理（不增不减），保证行为可预期 */
+        const items = impItems('task').concat(impItems('sub'), impItems('habit'));
         let added = 0, removed = 0, filledDefault = 0;
         const stamp = Date.now();
         const findNode = (scope) => {
@@ -13023,7 +13278,8 @@
             return null;
         };
         items.forEach(it => {
-            const want = !!impSelected[it.scope];
+            /* v47：从未出现过的候选项（未打开的页签）按当前状态处理，避免误增误删 */
+            const want = (impSelected[it.scope] === undefined) ? !!it.cur : !!impSelected[it.scope];
             const node = findNode(it.scope);
             if (!node) return;
             node.timerCfg = node.timerCfg || { mode: 'none', inFocus: false, order: 0 };
@@ -13040,9 +13296,8 @@
             } else if (!want && cur) {
                 node.timerCfg.inFocus = false;
                 removed++;
-            } else if (want && cur) {
-                added++;
             }
+            /* v47：want && cur（本来就在专注）不再计入 added，修复"已加入 N 项"虚报 */
         });
         save();
         closeM('mImportFocus');
@@ -13582,12 +13837,15 @@
                 if (s) {
                     s.done = true;
                     s.failed = false;
+                    stampDone(s);
                     const allDone = (t.subs || []).length && t.subs.every(x => x.done);
                     if (isRecur(t)) {
                         t.doneDates = t.doneDates || [];
                         const d = today();
                         if (allDone && t.doneDates.indexOf(d) < 0) t.doneDates.push(d);
-                    } else if (allDone) t.done = true;
+                        if (allDone) stampDone(t);
+                    } else if (allDone) { t.done = true; stampDone(t); }
+                    if (allDone) stopTimersOfTask(t);
                 }
             } else if (linkTarget.kind === 'task') { const t = S.tasks.find(x => x.id === linkTarget.id); if (t) markDoneToday(t); } else { const h = S.habits.find(x => x
                     .id === linkTarget.id); if (h) h.records[today()] = (h.records[today()] || 0) + 1 }
@@ -19287,7 +19545,7 @@
             return new Promise((resolve) => {
                 const mask = document.createElement('div');
                 mask.className = 'sync-mask';
-                mask.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+                mask.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:2147483000;display:flex;align-items:center;justify-content:center;';
                 const modal = document.createElement('div');
                 modal.style.cssText = 'background:white;border-radius:12px;padding:22px;max-width:440px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);';
                 modal.innerHTML = `
@@ -19320,7 +19578,7 @@
             closeTopModal();
             const mask = document.createElement('div');
             mask.className = 'sync-mask';
-            mask.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+            mask.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:2147483000;display:flex;align-items:center;justify-content:center;';
             const modal = document.createElement('div');
             modal.style.cssText = 'background:white;border-radius:12px;padding:24px;max-width:460px;width:92%;box-shadow:0 8px 32px rgba(0,0,0,.2);';
             const connState = isConnected ? '✅ 已连接' : (GITHUB_TOKEN ? '⚠️ 连接失败' : '⚙️ 未配置');
@@ -19357,7 +19615,7 @@
             closeTopModal();
             const mask = document.createElement('div');
             mask.className = 'sync-mask';
-            mask.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+            mask.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:2147483000;display:flex;align-items:center;justify-content:center;';
             const modal = document.createElement('div');
             modal.style.cssText = 'background:white;border-radius:12px;padding:24px;max-width:460px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);';
             modal.innerHTML = `
@@ -19598,5 +19856,10 @@
         return { upload: doUpload, download: doDownload, openPanel: openSyncPanel, isConnected: () => isConnected };
     })();
 </script>
+
+
+<!-- 统一数据备份中心：入口已集中到侧边栏「数据备份」 -->
+<script src="backup-hub.js"></script>
+<script>BackupHub.mount({id:'chaomu',name:'朝暮计'});</script>
 </body>
 </html>
