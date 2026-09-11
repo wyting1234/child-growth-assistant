@@ -3225,6 +3225,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 <div class="card-title">✅ 每日行为打分
                     <span style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                         <button class="btn btn-sm" onclick="jumpToBehaviorLib()">⚙ 管理行为库</button>
+                        <button class="btn btn-sm" onclick="printBehaviorDay()">🖨️ 打印 / 导出 PDF</button>
                         <span class="seg-toggle">
                             <button id="bsModeAvg" onclick="setBehaviorMode('avg')">☑ 勾选制</button>
                             <button id="bsModeCustom" onclick="setBehaviorMode('custom')">✎ 分值制</button>
@@ -4678,6 +4679,136 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             showToast('✅ ' + date + ' 已记录：' + fmtScore(total) + ' 分' +
                 (list.length ? '（完成 ' + done + '/' + list.length + '）' : ''));
         };
+
+        // ================================================================
+        //  行为清单 —— 打印 / 导出 PDF（复用「每日陪伴」的 A4 排版）
+        // ================================================================
+        // 与 printSummary 同一套骨架：弹窗写文档 → 补白行撑满 A4 → 弹打印框。
+        // 差异只在表格内容：每日陪伴是「任务/预计/实际/差额」，这里是「得分/满分/状态」。
+        function printBehaviorDay() {
+            var dateInput = document.getElementById('behavior-date');
+            var date = (dateInput && dateInput.value) ? dateInput.value : today;
+            var list = getBehaviors();
+            if (!list.length) { showToast('⚠️ 暂无行为条目，请先在「指标库 → 行为库」添加'); return; }
+
+            var day = getBehaviorDay(date);
+            var cfg = getBehaviorCfg();
+            var isAvg = (cfg.mode === 'avg');
+            var pt = fmtScore(100 / list.length);
+            var total = behaviorDayScore(date);
+            var done = behaviorDayDone(date);
+            var accName = Storage.cur() || '';
+            var titleText = date + (accName ? ' ' + accName : '') + ' 每日行为打分';
+
+            // 表格行：序号 / 行为名称 / 分类 / 得分 / 满分 / 状态
+            var rowsHtml = '';
+            list.forEach(function(b, i) {
+                var name = esc(b.name || '未命名');
+                var cat = b.cat ? esc(b.cat) : '';
+                var full = isAvg ? pt : fmtScore(b.score || 0);
+                var got, mark;
+                if (isAvg) {
+                    got = day[b.id] ? pt : '';
+                    mark = day[b.id] ? '✓' : '<span class="cell-empty">—</span>';
+                } else {
+                    var v = (b.id in day) ? Number(day[b.id]) : 0;
+                    if (isNaN(v) || v < 0) v = 0;
+                    got = v > 0 ? fmtScore(v) : '';
+                    mark = v > 0 ? '✓' : '<span class="cell-empty">—</span>';
+                }
+                rowsHtml += '<tr>'
+                    + '<td>' + (i + 1) + '</td>'
+                    + '<td class="cell-left">' + name + '</td>'
+                    + '<td>' + (cat || '<span class="cell-empty">—</span>') + '</td>'
+                    + '<td>' + (got !== '' ? got : '<span class="cell-empty">—</span>') + '</td>'
+                    + '<td>' + full + '</td>'
+                    + '<td class="cell-mark">' + mark + '</td>'
+                    + '</tr>';
+            });
+
+            var tableHtml = '<table id="behavior-print-table">'
+                + '<thead><tr>'
+                + '<th style="width:12mm;">序号</th>'
+                + '<th>行为名称</th>'
+                + '<th style="width:30mm;">分类</th>'
+                + '<th style="width:18mm;">得分</th>'
+                + '<th style="width:18mm;">满分</th>'
+                + '<th style="width:16mm;">状态</th>'
+                + '</tr></thead>'
+                + '<tbody>' + rowsHtml + '</tbody>'
+                + '<tfoot><tr>'
+                + '<td colspan="3" style="text-align:left;">合计（' + (isAvg ? '勾选制' : '分值制')
+                + ' · 完成 ' + done + '/' + list.length + ' 项）</td>'
+                + '<td><b>' + fmtScore(total) + '</b></td>'
+                + '<td>100</td>'
+                + '<td></td>'
+                + '</tr></tfoot>'
+                + '</table>';
+
+            var printWindow = window.open('', '_blank', 'width=900,height=1000');
+            if (!printWindow) { showToast('打印窗口被拦截，请允许弹窗后重试'); return; }
+
+            // 与每日陪伴一致的 A4 版式：190mm × 277mm（A4 减 10mm 页边距）
+            var printCss = [
+                '@page { size: A4 portrait; margin: 10mm; }',
+                '* { box-sizing: border-box; }',
+                'html, body { height:100%; margin:0; padding:0; background:#fff !important; color:#000 !important;',
+                '  font-family:"Microsoft YaHei","微软雅黑",SimSun,sans-serif; font-size:10.5pt; line-height:1.5; }',
+                '#summary-area { width:190mm; max-width:190mm; min-height:277mm; margin:0 auto;',
+                '  display:flex; flex-direction:column; }',
+                '#summary-area.measuring { min-height:0; }',
+                '#summary-area.measuring table { flex:0 0 auto; }',
+                '.print-title { flex:0 0 auto; text-align:center; font-size:17pt; font-weight:700;',
+                '  margin:0 0 5mm; padding-bottom:3mm; border-bottom:1.5px solid #333; }',
+                'table { width:100% !important; border-collapse:collapse !important; table-layout:fixed; flex:0 0 auto; }',
+                'thead { display:table-header-group; }',
+                'tfoot { display:table-footer-group; }',
+                'tr { page-break-inside:avoid; page-break-after:auto; }',
+                'th, td { border:1px solid #666 !important; padding:1.8mm 1.2mm !important;',
+                '  font-size:10pt; line-height:1.4; vertical-align:middle; word-break:break-word;',
+                '  overflow-wrap:anywhere; text-align:center; }',
+                'th { background:#f2f2f2 !important; font-weight:600; font-size:9pt !important; }',
+                'td { font-size:10pt !important; }',
+                /* 行为名称列左对齐且吃满剩余宽度，分类/得分等窄列定宽 */
+                '.cell-left { text-align:left !important; }',
+                '.cell-mark { font-size:12pt !important; }',
+                /* 空值占位符：屏幕上是短横，打印时隐藏，纸上留空白（visibility 保留行高） */
+                '.cell-empty { visibility:hidden !important; }',
+                '.print-tip { max-width:190mm; margin:10px auto; padding:8px 12px; font-size:12px; line-height:1.6;',
+                '  color:#8a6d3b; background:#fff8e1; border:1px solid #f0c36d; border-radius:6px; }',
+                '@media print { .print-tip { display:none !important; } }'
+            ].join('\n');
+
+            var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + titleText + '</title>';
+            html += '<style>' + printCss + '</style></head><body>';
+            html += '<div class="print-tip">🖨️ 打印建议：纸张 <b>A4</b>、边距设为 <b>「无」或「最小」</b>、缩放 <b>100%</b>、勾选 <b>背景图形</b>（表头灰底需要）。</div>';
+            html += '<div id="summary-area">';
+            html += '<h1 class="print-title">' + titleText + '</h1>';
+            html += tableHtml;
+            html += '</div></body></html>';
+
+            printWindow.document.open();
+            printWindow.document.write(html);
+            printWindow.document.close();
+
+            // 复用每日陪伴的通用补白：把表格撑到接近满页，避免只占 A4 顶部一小块
+            var filled = false, fired = false;
+            var doFill = function() {
+                if (filled) { return; }
+                filled = true;
+                try { fillSummaryBlankRows(printWindow.document); } catch (e) { console.error(e); }
+            };
+            var doPrint = function() {
+                doFill();
+                if (fired) { return; }
+                fired = true;
+                setTimeout(function() {
+                    try { printWindow.focus(); printWindow.print(); } catch (e) { console.error(e); }
+                }, 80);
+            };
+            printWindow.onload = function() { doFill(); setTimeout(doPrint, 250); };
+            setTimeout(doPrint, 2500);                        // 兜底：onload 迟迟不来也照样打印
+        }
 
         function behaviorDateList(n) {
             var arr = [];
