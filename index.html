@@ -2361,6 +2361,34 @@ html.dark [style*="color:#1e293b"],
 html.dark [style*="color: #1e293b"],
 html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
 
+        /* ===== 行为清单模块 ===== */
+        .behavior-list{display:flex;flex-direction:column;gap:10px}
+        .behavior-item{display:flex;align-items:center;gap:10px;background:#f8fafc;border:1px solid #eef1f6;border-radius:12px;padding:10px 12px}
+        .behavior-item .info{flex:1;min-width:0}
+        .behavior-item .info strong{font-size:15px}
+        .behavior-item .meta{font-size:12px;color:var(--gray,#94a3b8);margin-top:2px}
+        .behavior-item .actions{display:flex;gap:6px}
+        .behavior-date-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+        .behavior-today{font-size:14px;color:var(--gray,#94a3b8)}
+        .behavior-today b{color:#2563eb;font-size:20px}
+        .behavior-score-list{display:flex;flex-direction:column;gap:8px}
+        .behavior-score-row{display:flex;align-items:center;gap:8px;background:#f8fafc;border-radius:10px;padding:8px 10px}
+        .behavior-score-row .bs-name{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .behavior-score-row .bs-score{font-size:12px;color:var(--gray,#94a3b8);white-space:nowrap}
+        .behavior-score-row .bs-input{width:62px;text-align:center;border:1px solid #e2e8f0;border-radius:8px;padding:6px;font-size:15px}
+        .behavior-score-row .bs-step{width:34px;height:34px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;font-size:18px;cursor:pointer;color:var(--ink,#1c2333)}
+        .behavior-score-row .bs-full{margin-left:4px;padding:0 10px;height:34px;border-radius:8px;border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;font-size:13px;font-weight:600;cursor:pointer}
+        .behavior-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+        .stat-card-mini{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:14px;padding:14px;text-align:center}
+        .stat-card-mini .num{font-size:24px;font-weight:800;display:block;line-height:1.1}
+        .stat-card-mini div:last-child{font-size:12px;opacity:.9;margin-top:4px}
+        .behavior-avg-list{display:flex;flex-direction:column;gap:6px}
+        .behavior-avg-row{display:flex;align-items:center;gap:8px;font-size:13px;background:#f8fafc;border-radius:9px;padding:7px 10px}
+        .behavior-avg-row .ba-name{flex:1;min-width:0;font-weight:600}
+        .behavior-avg-row .ba-val{color:var(--gray,#94a3b8);white-space:nowrap}
+        .behavior-avg-row .ba-rate{color:#16a34a;font-weight:600;white-space:nowrap}
+        .behavior-chart{overflow-x:auto}
+        @media(max-width:768px){.behavior-stats{grid-template-columns:repeat(3,1fr)}.behavior-item .actions{flex-direction:column}}
 </style>
 </head>
 <body>
@@ -2662,6 +2690,26 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         </div>
     </div>
 
+
+    <!-- 行为清单 · 行为库 编辑弹窗 -->
+    <div class="modal-mask" id="behaviorModal" onclick="if(event.target===this)closeBehaviorModal()">
+        <div class="modal-card">
+            <h3><span id="behaviorModalTitle">📊 行为清单</span> <button class="close-x" onclick="closeBehaviorModal()">&times;</button></h3>
+            <input type="hidden" id="behavior-edit-id" />
+            <label>行为名称</label>
+            <input type="text" id="behavior-name" placeholder="如：自己收拾书包" maxlength="40" />
+            <label>每日满分分值</label>
+            <input type="number" id="behavior-score" value="5" min="0" max="100" />
+            <label>类别（可选）</label>
+            <input type="text" id="behavior-cat" placeholder="如：生活自理 / 礼貌 / 学习" maxlength="20" />
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="closeBehaviorModal()">取消</button>
+                <button class="btn-danger" id="behaviorDeleteBtn" style="display:none" onclick="deleteBehavior(document.getElementById('behavior-edit-id').value)">删除</button>
+                <button class="btn-save" id="behaviorSaveBtn">💾 保存行为</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== 主界面 ===== -->
     <header>
         <div class="container nav-wrap">
@@ -2680,6 +2728,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 <a href="javascript:;" data-target="archive">📂 成长档案</a>
                 <a href="javascript:;" data-target="diary">🌱 成长日记</a>
                 <a href="javascript:;" data-target="homework">📚 作业记录</a>
+<a href="javascript:;" data-target="behavior">📊 行为清单</a>
                 <a href="javascript:;" data-target="indicator">📋 指标库</a>
                 <!-- 顶部 ☁️ 云同步 已移除（同步入口已统一到侧边栏「☁️ 云端同步」按钮） -->
             </nav>
@@ -3115,6 +3164,35 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         </div>
 
     </div>
+
+        <div class="module" id="behavior">
+            <div class="card">
+                <div class="card-title">📊 行为清单 · 行为库
+                    <button class="btn btn-success btn-sm" style="float:right;" onclick="openBehaviorModal()">➕ 新增行为</button>
+                </div>
+                <div id="behavior-list" class="behavior-list"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">✅ 每日行为打分</div>
+                <div class="behavior-date-row">
+                    <input type="date" id="behavior-date" />
+                    <span class="behavior-today">今日得分：<b id="behavior-today-score" class="num">0</b> 分</span>
+                </div>
+                <div id="behavior-score-list" class="behavior-score-list"></div>
+                <button class="btn btn-primary" style="margin-top:10px;" onclick="saveBehaviorDay()">💾 保存今日打分</button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📈 行为得分统计</div>
+                <div id="behavior-stats" class="behavior-stats"></div>
+                <h4 style="margin:16px 0 8px;font-size:15px;">各行为平均得分（近30天）</h4>
+                <div id="behavior-avg-list" class="behavior-avg-list"></div>
+                <h4 style="margin:16px 0 8px;font-size:15px;">近30天每日行为得分</h4>
+                <div id="behavior-chart" class="behavior-chart"></div>
+            </div>
+        </div>
+
     <!-- ===== container 结束 ===== -->
 
     <div class="footer-bar">
@@ -3134,7 +3212,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             _ACCOUNT_KEY: 'child_account_current',
             _LIST_KEY: 'child_account_list',
             // 需要按账户隔离的记录类键（daily_* 覆盖每日打卡/临时/签到动态键）
-            _ISOLATED: /^(time_records|todos|timer_state_sm|growth_week_review|growth_month_review|growth_milestone|growth_month_days|growth_diary|growth_homework|daily_)/,
+            _ISOLATED: /^(growth_behavior|time_records|todos|timer_state_sm|growth_week_review|growth_month_review|growth_milestone|growth_month_days|growth_diary|growth_homework|daily_)/,
             cur: function() {
                 try { return localStorage.getItem(Storage._ACCOUNT_KEY) || ''; } catch (e) { return ''; }
             },
@@ -3203,6 +3281,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                         updateSummary(); }
                     if (target === 'diary') renderDiaries();
                     if (target === 'homework') renderHomeworks();
+                    if (target === 'behavior') { renderBehaviorList(); loadBehaviorScores(); renderBehaviorStats(); }
                 });
             });
         });
@@ -3234,6 +3313,8 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             }
             var todoDeadline = document.getElementById('todoDeadline');
             if (todoDeadline) todoDeadline.value = today;
+            var behaviorDate = document.getElementById('behavior-date');
+            if (behaviorDate) { behaviorDate.value = today; behaviorDate.addEventListener('change', function(){ loadBehaviorScores(); renderBehaviorStats(); }); }
         });
 
         // ================================================================
@@ -4086,6 +4167,274 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         function populateIndicatorSelects() { /* 在弹窗中动态填充 */ }
 
         // ================================================================
+
+        // ================================================================
+        //  行为清单模块（增删改 + 每日赋分 + 统计）
+        // ================================================================
+        function getBehaviors() { return Storage.get('growth_behavior') || []; }
+        function setBehaviors(arr) { Storage.set('growth_behavior', arr); }
+        function getBehaviorDayKey(date) { return 'daily_behavior_' + date; }
+        function getBehaviorDay(date) { return Storage.get(getBehaviorDayKey(date)) || {}; }
+        function setBehaviorDay(date, obj) { Storage.set(getBehaviorDayKey(date), obj); }
+
+        function renderBehaviorList() {
+            var container = document.getElementById('behavior-list');
+            if (!container) return;
+            var list = getBehaviors();
+            if (list.length === 0) {
+                container.innerHTML = '<p style="color:var(--gray,#94a3b8);text-align:center;">暂无行为，点击「➕ 新增行为」创建</p>';
+                return;
+            }
+            var html = '';
+            list.forEach(function(b) {
+                html += '<div class="behavior-item" data-id="' + b.id + '">' +
+                    '<div class="info"><strong>' + (b.name || '未命名') + '</strong>' +
+                    '<div class="meta">分值 ' + (b.score || 0) + (b.cat ? '  · ' + b.cat : '') + '</div></div>' +
+                    '<div class="actions">' +
+                    '<button class="btn btn-primary btn-sm" data-edit="' + b.id + '">编辑</button>' +
+                    '<button class="btn btn-danger btn-sm" data-del="' + b.id + '">删除</button>' +
+                    '</div></div>';
+            });
+            container.innerHTML = html;
+            container.querySelectorAll('[data-edit]').forEach(function(btn) {
+                btn.addEventListener('click', function() { openBehaviorModal(btn.getAttribute('data-edit')); });
+            });
+            container.querySelectorAll('[data-del]').forEach(function(btn) {
+                btn.addEventListener('click', function() { deleteBehavior(btn.getAttribute('data-del')); });
+            });
+        }
+
+        window.openBehaviorModal = function(editId) {
+            var modal = document.getElementById('behaviorModal');
+            var title = document.getElementById('behaviorModalTitle');
+            var nameI = document.getElementById('behavior-name');
+            var scoreI = document.getElementById('behavior-score');
+            var catI = document.getElementById('behavior-cat');
+            var editIdI = document.getElementById('behavior-edit-id');
+            var delBtn = document.getElementById('behaviorDeleteBtn');
+            var saveBtn = document.getElementById('behaviorSaveBtn');
+            if (editId) {
+                var b = getBehaviors().find(function(x){ return x.id === editId; });
+                if (!b) { showToast('行为不存在'); return; }
+                title.innerText = '编辑行为';
+                nameI.value = b.name || '';
+                scoreI.value = (b.score != null ? b.score : 5);
+                catI.value = b.cat || '';
+                editIdI.value = editId;
+                delBtn.style.display = 'inline-block';
+                saveBtn.innerText = '更新行为';
+            } else {
+                title.innerText = '新增行为';
+                nameI.value = '';
+                scoreI.value = 5;
+                catI.value = '';
+                editIdI.value = '';
+                delBtn.style.display = 'none';
+                saveBtn.innerText = '保存行为';
+            }
+            modal.classList.add('show');
+        };
+        window.closeBehaviorModal = function() { document.getElementById('behaviorModal').classList.remove('show'); };
+
+        document.getElementById('behaviorSaveBtn').addEventListener('click', function() {
+            var name = document.getElementById('behavior-name').value.trim();
+            var score = parseInt(document.getElementById('behavior-score').value, 10);
+            var cat = document.getElementById('behavior-cat').value.trim();
+            var editId = document.getElementById('behavior-edit-id').value;
+            if (!name) { showToast('⚠️ 请输入行为名称'); return; }
+            if (isNaN(score) || score < 0) score = 0;
+            var list = getBehaviors();
+            if (editId) {
+                var b = list.find(function(x){ return x.id === editId; });
+                if (!b) { showToast('行为不存在'); return; }
+                b.name = name; b.score = score; b.cat = cat;
+                showToast('✅ 行为已更新');
+            } else {
+                list.push({ id: genId(), name: name, score: score, cat: cat });
+                showToast('✅ 行为已添加');
+            }
+            setBehaviors(list);
+            closeBehaviorModal();
+            renderBehaviorList();
+            loadBehaviorScores();
+            renderBehaviorStats();
+        });
+
+        window.deleteBehavior = function(id) {
+            if (!confirm('确定要删除此行为吗？该行为的每日打分记录会保留。')) return;
+            var list = getBehaviors().filter(function(x){ return x.id !== id; });
+            setBehaviors(list);
+            closeBehaviorModal();
+            renderBehaviorList();
+            loadBehaviorScores();
+            renderBehaviorStats();
+            showToast('🗑️ 行为已删除');
+        };
+
+        function loadBehaviorScores() {
+            var dateInput = document.getElementById('behavior-date');
+            var date = dateInput ? dateInput.value : today;
+            if (!date) { date = today; if (dateInput) dateInput.value = today; }
+            var list = getBehaviors();
+            var day = getBehaviorDay(date);
+            var c = document.getElementById('behavior-score-list');
+            if (!c) return;
+            if (list.length === 0) {
+                c.innerHTML = '<p style="color:var(--gray,#94a3b8);font-size:14px;">📭 请先在上方「行为库」添加行为</p>';
+                updateBehaviorTodayScore(date);
+                return;
+            }
+            var html = '';
+            list.forEach(function(b, i) {
+                var val = (b.id in day) ? day[b.id] : 0;
+                html += '<div class="behavior-score-row" data-id="' + b.id + '">' +
+                    '<span class="bs-name">' + (i+1) + '. ' + (b.name || '未命名') + '</span>' +
+                    '<span class="bs-score">/ ' + (b.score || 0) + ' 分</span>' +
+                    '<button class="bs-step" data-id="' + b.id + '" data-d="-1">−</button>' +
+                    '<input type="number" class="bs-input" id="bs_' + b.id + '" value="' + val + '" min="0" max="' + (b.score || 0) + '">' +
+                    '<button class="bs-step" data-id="' + b.id + '" data-d="1">＋</button>' +
+                    '<button class="bs-full" data-id="' + b.id + '">满分</button>' +
+                    '</div>';
+            });
+            c.innerHTML = html;
+            c.querySelectorAll('.bs-step').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    stepBehavior(btn.getAttribute('data-id'), parseInt(btn.getAttribute('data-d'), 10));
+                });
+            });
+            c.querySelectorAll('.bs-full').forEach(function(btn) {
+                btn.addEventListener('click', function() { setBehaviorFull(btn.getAttribute('data-id')); });
+            });
+            c.querySelectorAll('.bs-input').forEach(function(inp) {
+                inp.addEventListener('change', function() { onBehaviorScoreInput(inp.id.replace('bs_', '')); });
+            });
+            updateBehaviorTodayScore(date);
+        }
+
+        window.stepBehavior = function(id, d) {
+            var inp = document.getElementById('bs_' + id);
+            if (!inp) return;
+            var max = parseInt(inp.getAttribute('max') || '0', 10);
+            var v = parseInt(inp.value, 10) || 0;
+            v = Math.max(0, Math.min(max, v + d));
+            inp.value = v;
+            onBehaviorScoreInput(id);
+        };
+        window.setBehaviorFull = function(id) {
+            var inp = document.getElementById('bs_' + id);
+            if (!inp) return;
+            inp.value = inp.getAttribute('max') || 0;
+            onBehaviorScoreInput(id);
+        };
+        window.onBehaviorScoreInput = function(id) {
+            var inp = document.getElementById('bs_' + id);
+            if (!inp) return;
+            var max = parseInt(inp.getAttribute('max') || '0', 10);
+            var v = parseInt(inp.value, 10) || 0;
+            if (v < 0) v = 0; if (v > max) v = max;
+            inp.value = v;
+            var dateInput = document.getElementById('behavior-date');
+            var date = dateInput ? dateInput.value : today;
+            var day = getBehaviorDay(date);
+            if (v > 0) day[id] = v; else delete day[id];
+            setBehaviorDay(date, day);
+            updateBehaviorTodayScore(date);
+        };
+
+        function updateBehaviorTodayScore(date) {
+            var day = getBehaviorDay(date);
+            var total = 0;
+            for (var k in day) { total += (Number(day[k]) || 0); }
+            var el = document.getElementById('behavior-today-score');
+            if (el) el.innerText = total;
+        }
+
+        window.saveBehaviorDay = function() {
+            var dateInput = document.getElementById('behavior-date');
+            var date = dateInput ? dateInput.value : today;
+            var day = getBehaviorDay(date);
+            var total = 0; for (var k in day) total += (Number(day[k]) || 0);
+            renderBehaviorStats();
+            showToast('✅ ' + date + ' 行为得分已保存：' + total + ' 分');
+        };
+
+        function behaviorDateList(n) {
+            var arr = [];
+            var d = new Date();
+            for (var i = n-1; i >= 0; i--) {
+                var t = new Date(d.getFullYear(), d.getMonth(), d.getDate() - i);
+                arr.push(t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0'));
+            }
+            return arr;
+        }
+
+        function renderBehaviorStats() {
+            var list = getBehaviors();
+            var dates = behaviorDateList(30);
+            var day = getBehaviorDay(today);
+            var todayScore = 0;
+            for (var k in day) todayScore += (Number(day[k]) || 0);
+
+            var dailyTotals = {};
+            dates.forEach(function(dt) {
+                var obj = getBehaviorDay(dt); var s = 0;
+                for (var kk in obj) s += (Number(obj[kk]) || 0);
+                dailyTotals[dt] = s;
+            });
+            var sum7 = dates.slice(-7).reduce(function(a, dt){ return a + dailyTotals[dt]; }, 0);
+            var sum30 = dates.reduce(function(a, dt){ return a + dailyTotals[dt]; }, 0);
+            var avg7 = Math.round(sum7 / 7);
+            var avg30 = Math.round(sum30 / 30);
+
+            var statEl = document.getElementById('behavior-stats');
+            if (statEl) statEl.innerHTML =
+                '<div class="stat-card-mini"><span class="num">' + todayScore + '</span><div>今日得分</div></div>' +
+                '<div class="stat-card-mini"><span class="num">' + avg7 + '</span><div>近7天日均</div></div>' +
+                '<div class="stat-card-mini"><span class="num">' + avg30 + '</span><div>近30天日均</div></div>';
+
+            var avgHtml = '';
+            list.forEach(function(b) {
+                var vals = [];
+                dates.forEach(function(dt){ var obj = getBehaviorDay(dt); if (b.id in obj) vals.push(Number(obj[b.id]) || 0); });
+                var avg = vals.length ? (vals.reduce(function(a, c){ return a + c; }, 0) / vals.length) : 0;
+                var rate = (b.score > 0 && vals.length) ? Math.round(avg / b.score * 100) : 0;
+                avgHtml += '<div class="behavior-avg-row"><span class="ba-name">' + (b.name || '未命名') + '</span>' +
+                    '<span class="ba-val">均 ' + avg.toFixed(1) + ' / ' + (b.score || 0) + ' 分</span>' +
+                    '<span class="ba-rate">达标 ' + rate + '%</span></div>';
+            });
+            var avgContainer = document.getElementById('behavior-avg-list');
+            if (avgContainer) avgContainer.innerHTML = avgHtml || '<p style="color:var(--gray,#94a3b8);font-size:13px;">暂无可统计数据</p>';
+
+            renderBehaviorChart(dates, dailyTotals);
+        }
+
+        function renderBehaviorChart(dates, dailyTotals) {
+            var box = document.getElementById('behavior-chart');
+            if (!box) return;
+            var W = 680, H = 180, pad = 24;
+            var maxV = 1;
+            dates.forEach(function(dt){ if (dailyTotals[dt] > maxV) maxV = dailyTotals[dt]; });
+            var n = dates.length;
+            var bw = (W - pad*2) / n;
+            var chartH = H - pad*2;
+            var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="max-width:' + W + 'px;display:block;">';
+            svg += '<line x1="' + pad + '" y1="' + (H-pad) + '" x2="' + (W-pad) + '" y2="' + (H-pad) + '" stroke="#e2e8f0" stroke-width="1"/>';
+            dates.forEach(function(dt, i) {
+                var v = dailyTotals[dt];
+                var h = Math.round(v / maxV * chartH);
+                var x = pad + i*bw + bw*0.15;
+                var w = bw*0.7;
+                var y = H - pad - h;
+                var color = v >= maxV*0.8 ? '#22c55e' : (v >= maxV*0.5 ? '#f59e0b' : '#94a3b8');
+                svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + Math.max(h, 0) + '" rx="2" fill="' + color + '"><title>' + dt + '：' + v + ' 分</title></rect>';
+                if (i % 5 === 0 || i === n-1) {
+                    svg += '<text x="' + (x + w/2).toFixed(1) + '" y="' + (H-pad+14) + '" font-size="9" fill="#94a3b8" text-anchor="middle">' + dt.slice(5) + '</text>';
+                }
+            });
+            svg += '</svg>';
+            box.innerHTML = svg;
+        }
+
         //  每日陪伴（保留原有，修改表格）
         // ================================================================
         var currentView = 'day';
