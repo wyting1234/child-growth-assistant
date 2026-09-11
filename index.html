@@ -2388,7 +2388,23 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         .behavior-avg-row .ba-val{color:var(--gray,#94a3b8);white-space:nowrap}
         .behavior-avg-row .ba-rate{color:#16a34a;font-weight:600;white-space:nowrap}
         .behavior-chart{overflow-x:auto}
-        @media(max-width:768px){.behavior-stats{grid-template-columns:repeat(3,1fr)}.behavior-item .actions{flex-direction:column}}
+        .behavior-total-hint{font-size:12px;color:var(--gray,#94a3b8)}
+        .seg-toggle{display:inline-flex;border:1px solid #e2e8f0;border-radius:9px;overflow:hidden;vertical-align:middle}
+        .seg-toggle button{border:0;background:#fff;padding:5px 10px;font-size:12px;cursor:pointer;color:#64748b;font-weight:600}
+        .seg-toggle button.active{background:#6366f1;color:#fff}
+        .behavior-score-row .bs-check{width:34px;height:34px;min-width:34px;border-radius:50%;border:2px solid #cbd5e1;background:#fff;cursor:pointer;font-size:17px;font-weight:700;color:#cbd5e1;line-height:1;padding:0;display:inline-flex;align-items:center;justify-content:center;transition:.15s}
+        .behavior-score-row .bs-check.on{background:#22c55e;border-color:#22c55e;color:#fff}
+        .behavior-score-row.done{background:#f0fdf4;border:1px solid #bbf7d0}
+        .behavior-score-row .bs-pt{font-size:12px;color:#6366f1;font-weight:700;white-space:nowrap}
+        .behavior-score-row .bs-cat{font-size:11px;color:#64748b;background:#e2e8f0;border-radius:6px;padding:2px 7px;white-space:nowrap}
+        .bi-preview{max-height:230px;overflow:auto;background:#f8fafc;border:1px solid #eef1f6;border-radius:10px;padding:6px 8px;margin-top:10px;display:none}
+        .bi-preview.show{display:block}
+        .bi-preview .bi-row{font-size:13px;padding:5px 4px;border-bottom:1px dashed #e2e8f0;display:flex;gap:8px;line-height:1.5}
+        .bi-preview .bi-row:last-child{border-bottom:0}
+        .bi-preview .bi-no{color:#94a3b8;min-width:22px;text-align:right}
+        .bi-hint{font-size:12px;color:#94a3b8;margin-top:8px}
+        #behavior-import-text{width:100%;box-sizing:border-box;border:1px solid #e2e8f0;border-radius:10px;padding:10px;font-size:14px;line-height:1.6;resize:vertical;font-family:inherit}
+        @media(max-width:768px){.behavior-stats{grid-template-columns:repeat(3,1fr)}.behavior-item .actions{flex-direction:column}.behavior-score-row{flex-wrap:wrap}.behavior-score-row .bs-name{white-space:normal}}
 </style>
 </head>
 <body>
@@ -2706,6 +2722,26 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 <button class="btn-cancel" onclick="closeBehaviorModal()">取消</button>
                 <button class="btn-danger" id="behaviorDeleteBtn" style="display:none" onclick="deleteBehavior(document.getElementById('behavior-edit-id').value)">删除</button>
                 <button class="btn-save" id="behaviorSaveBtn">💾 保存行为</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 行为清单 · 一键粘贴自动拆分 弹窗 -->
+    <div class="modal-mask" id="behaviorImportModal" onclick="if(event.target===this)closeBehaviorImport()">
+        <div class="modal-card">
+            <h3>📋 一键粘贴 · 自动拆分 <button class="close-x" onclick="closeBehaviorImport()">&times;</button></h3>
+            <p style="font-size:13px;color:#64748b;margin:0 0 8px;line-height:1.6;">把整段文本粘进来（支持「一、二、」「1. 2.」「（一）」「①」「• -」等序号，一句一行也可），系统自动拆成单条行为。</p>
+            <textarea id="behavior-import-text" rows="7" placeholder="一、尊敬国旗、国徽，会唱国歌，升国旗、奏国歌时要肃立、脱帽、行注目礼，少先队员行队礼。&#10;二、尊老爱幼，友爱同学，平等待人。主动帮助有困难的人和残疾人。要尊重他人的民族习惯。"></textarea>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;">
+                <label style="font-size:13px;white-space:nowrap;">类别（可选）</label>
+                <input type="text" id="behavior-import-cat" placeholder="如：守则 / 学习 / 礼貌" maxlength="20" style="flex:1;min-width:120px;" />
+                <button class="btn btn-sm" onclick="fillBehaviorSample()">填入示例</button>
+            </div>
+            <div id="behavior-import-preview" class="bi-preview"></div>
+            <div class="bi-hint">上方为自动拆分预览，重复的行为会自动跳过。</div>
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="closeBehaviorImport()">取消</button>
+                <button class="btn-save" id="behaviorImportBtn" onclick="doBehaviorImport()">✅ 导入 <span id="behavior-import-count">0</span> 条</button>
             </div>
         </div>
     </div>
@@ -3169,18 +3205,26 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             <div class="card">
                 <div class="card-title">📊 行为清单 · 行为库
                     <button class="btn btn-success btn-sm" style="float:right;" onclick="openBehaviorModal()">➕ 新增行为</button>
+                    <button class="btn btn-sm" style="float:right;margin-right:6px;" onclick="openBehaviorImport()">📋 一键粘贴拆分</button>
+                    <button class="btn btn-sm" style="float:right;margin-right:6px;" onclick="copyBehaviorList()">📄 复制清单</button>
                 </div>
                 <div id="behavior-list" class="behavior-list"></div>
             </div>
 
             <div class="card">
-                <div class="card-title">✅ 每日行为打分</div>
+                <div class="card-title">✅ 每日行为打分
+                    <span class="seg-toggle" style="float:right;">
+                        <button id="bsModeAvg" onclick="setBehaviorMode('avg')">☑ 勾选制</button>
+                        <button id="bsModeCustom" onclick="setBehaviorMode('custom')">✎ 分值制</button>
+                    </span>
+                </div>
                 <div class="behavior-date-row">
                     <input type="date" id="behavior-date" />
                     <span class="behavior-today">今日得分：<b id="behavior-today-score" class="num">0</b> 分</span>
+                    <span id="behavior-total-hint" class="behavior-total-hint"></span>
                 </div>
                 <div id="behavior-score-list" class="behavior-score-list"></div>
-                <button class="btn btn-primary" style="margin-top:10px;" onclick="saveBehaviorDay()">💾 保存今日打分</button>
+                <button class="btn btn-primary" style="margin-top:10px;" onclick="saveBehaviorDay()">💾 保存今日记录</button>
             </div>
 
             <div class="card">
@@ -3281,7 +3325,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                         updateSummary(); }
                     if (target === 'diary') renderDiaries();
                     if (target === 'homework') renderHomeworks();
-                    if (target === 'behavior') { renderBehaviorList(); loadBehaviorScores(); renderBehaviorStats(); }
+                    if (target === 'behavior') { syncBehaviorModeUI(); renderBehaviorList(); loadBehaviorScores(); renderBehaviorStats(); }
                 });
             });
         });
@@ -3315,6 +3359,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             if (todoDeadline) todoDeadline.value = today;
             var behaviorDate = document.getElementById('behavior-date');
             if (behaviorDate) { behaviorDate.value = today; behaviorDate.addEventListener('change', function(){ loadBehaviorScores(); renderBehaviorStats(); }); }
+            syncBehaviorModeUI();
         });
 
         // ================================================================
@@ -4177,6 +4222,196 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         function getBehaviorDay(date) { return Storage.get(getBehaviorDayKey(date)) || {}; }
         function setBehaviorDay(date, obj) { Storage.set(getBehaviorDayKey(date), obj); }
 
+        // ---- 评分模式：avg = 勾选制（满分 100 按项均分）/ custom = 分值制（各项自定义满分累加）----
+        function getBehaviorCfg() {
+            var c = Storage.get('growth_behavior_cfg');
+            if (!c || typeof c !== 'object') c = {};
+            if (c.mode !== 'custom') c.mode = 'avg';
+            return c;
+        }
+        function setBehaviorCfg(c) { Storage.set('growth_behavior_cfg', c); }
+        function fmtScore(x) {
+            var r = Math.round((Number(x) || 0) * 10) / 10;
+            return (Math.abs(r - Math.round(r)) < 0.05) ? String(Math.round(r)) : r.toFixed(1);
+        }
+        // 单项分值 = 100 / 行为条数
+        function behaviorPoint(list) {
+            list = list || getBehaviors();
+            return list.length ? (100 / list.length) : 0;
+        }
+        // 某天得分：avg = 完成项 / 总项 * 100；custom = 各项分值累加
+        function behaviorDayScore(date) {
+            var list = getBehaviors();
+            var day = getBehaviorDay(date);
+            var cfg = getBehaviorCfg();
+            if (cfg.mode === 'avg') {
+                if (!list.length) return 0;
+                var done = 0;
+                list.forEach(function(b) { if (day[b.id]) done++; });
+                return Math.round(done * 100 / list.length * 10) / 10;
+            }
+            var t = 0;
+            list.forEach(function(b) { var v = Number(day[b.id]); if (!isNaN(v) && v > 0) t += v; });
+            return Math.round(t * 10) / 10;
+        }
+        function behaviorDayDone(date) {
+            var list = getBehaviors();
+            var day = getBehaviorDay(date);
+            var d = 0;
+            list.forEach(function(b) { if (day[b.id]) d++; });
+            return d;
+        }
+        function behaviorDayHasRecord(date) {
+            var obj = getBehaviorDay(date);
+            for (var k in obj) { if (Object.prototype.hasOwnProperty.call(obj, k)) return true; }
+            return false;
+        }
+        window.setBehaviorMode = function(m) {
+            var c = getBehaviorCfg();
+            c.mode = (m === 'custom') ? 'custom' : 'avg';
+            setBehaviorCfg(c);
+            syncBehaviorModeUI();
+            renderBehaviorList();
+            loadBehaviorScores();
+            renderBehaviorStats();
+            showToast(c.mode === 'custom' ? '已切换：分值制（各项自定义满分）' : '已切换：勾选制（满分 100 · 按项均分）');
+        };
+        function syncBehaviorModeUI() {
+            var m = getBehaviorCfg().mode;
+            var a = document.getElementById('bsModeAvg');
+            var b = document.getElementById('bsModeCustom');
+            if (a) a.classList.toggle('active', m === 'avg');
+            if (b) b.classList.toggle('active', m === 'custom');
+        }
+        window.toggleBehaviorCheck = function(id) {
+            var dateInput = document.getElementById('behavior-date');
+            var date = (dateInput && dateInput.value) ? dateInput.value : today;
+            var day = getBehaviorDay(date);
+            if (day[id]) delete day[id]; else day[id] = 1;
+            setBehaviorDay(date, day);
+            loadBehaviorScores();
+            renderBehaviorStats();
+        };
+
+        // ---- 文本自动拆分：支持「一、二、」「1. 2.」「（一）」「①」「• -」等序号 ----
+        var BEHAVIOR_NUM_RE = /(^|[\s\n，。；;：:）)】\]])\s*((?:[一二三四五六七八九十百零〇]{1,3})\s*[、．.)）]|(?:[（(]\s*[一二三四五六七八九十百零〇]{1,3}\s*[）)])|\d{1,3}\s*[、．.)）](?!\d)|[\u2460-\u2473\u24EA]|[•·▪▫◦‣※])/g;
+        var BEHAVIOR_PREFIX_RE = /^(?:[（(]\s*[一二三四五六七八九十百零〇]{1,3}\s*[）)]|(?:[一二三四五六七八九十百零〇]{1,3})\s*[、．.)）]|\d{1,3}\s*[、．.)）]|[\u2460-\u2473\u24EA]|[•·▪▫◦‣※\-\u2013\u2014])\s*/;
+        function splitBehaviorText(text) {
+            var s = String(text == null ? '' : text).replace(/\r\n?/g, '\n').replace(/\u3000/g, ' ');
+            s = s.replace(BEHAVIOR_NUM_RE, function(m, pre, mark) { return String(pre || '').replace(/\s/g, '') + '\n' + mark; });
+            var out = [];
+            s.split('\n').forEach(function(line) {
+                line = line.replace(/\t/g, ' ').trim();
+                if (!line) return;
+                line = line.replace(BEHAVIOR_PREFIX_RE, '');
+                line = line.replace(/^[、，,。.；;：:·]+/, '').trim();
+                if (line) out.push(line);
+            });
+            // 无序号且只有一段 → 按句号/分号再拆
+            if (out.length <= 1 && s.trim()) {
+                var segs = s.trim().split(/[。；;]\s*/).map(function(x) { return x.trim(); }).filter(Boolean);
+                if (segs.length > 1) out = segs;
+            }
+            var seen = {}, uniq = [];
+            out.forEach(function(x) {
+                var key = x.replace(/[\s。.；;，,、]+$/g, '');
+                if (!key || seen[key]) return;
+                seen[key] = 1; uniq.push(x);
+            });
+            return uniq;
+        }
+
+        // ---- 一键复制当前清单（带中文序号）----
+        function copyToClipboard(t) {
+            if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
+            return new Promise(function(res, rej) {
+                try {
+                    var ta = document.createElement('textarea');
+                    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                    document.body.appendChild(ta); ta.focus(); ta.select();
+                    var ok = document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    ok ? res() : rej(new Error('copy failed'));
+                } catch (e) { rej(e); }
+            });
+        }
+        window.copyBehaviorList = function() {
+            var list = getBehaviors();
+            if (!list.length) { showToast('⚠️ 行为库为空'); return; }
+            var CN = '一二三四五六七八九十';
+            var txt = list.map(function(b, i) {
+                var n = i + 1;
+                var lbl = n <= 10 ? CN.charAt(n - 1) : String(n);
+                return lbl + '、' + (b.name || '未命名');
+            }).join('\n');
+            copyToClipboard(txt).then(function() { showToast('📄 已复制 ' + list.length + ' 条行为到剪贴板'); })
+                .catch(function() { showToast('⚠️ 复制失败，请手动选择复制'); });
+        };
+
+        // ---- 一键粘贴 · 自动拆分导入 ----
+        window.openBehaviorImport = function() {
+            var m = document.getElementById('behaviorImportModal');
+            if (!m) return;
+            updateBehaviorImportPreview();
+            m.classList.add('show');
+            var ta = document.getElementById('behavior-import-text');
+            setTimeout(function() { if (ta) ta.focus(); }, 60);
+        };
+        window.closeBehaviorImport = function() {
+            var m = document.getElementById('behaviorImportModal');
+            if (m) m.classList.remove('show');
+        };
+        window.fillBehaviorSample = function() {
+            var ta = document.getElementById('behavior-import-text');
+            if (!ta) return;
+            ta.value = '一、尊敬国旗、国徽，会唱国歌，升国旗、奏国歌时要肃立、脱帽、行注目礼，少先队员行队礼。\n' +
+                '二、尊老爱幼，友爱同学，平等待人。主动帮助有困难的人和残疾人。要尊重他人的民族习惯。\n' +
+                '三、按时上学，不迟到，不早退，不逃学，有病有事要请假。\n' +
+                '四、课前预习，上课专心听讲，积极发言，按时完成作业。\n' +
+                '五、坚持锻炼身体，认真做广播体操和眼保健操，积极参加文体活动。';
+            updateBehaviorImportPreview();
+        };
+        window.updateBehaviorImportPreview = function() {
+            var ta = document.getElementById('behavior-import-text');
+            var box = document.getElementById('behavior-import-preview');
+            var cnt = document.getElementById('behavior-import-count');
+            var btn = document.getElementById('behaviorImportBtn');
+            if (!box) return;
+            var items = splitBehaviorText(ta ? ta.value : '');
+            if (cnt) cnt.textContent = items.length;
+            if (btn) btn.disabled = (items.length === 0);
+            if (!items.length) { box.classList.remove('show'); box.innerHTML = ''; return; }
+            var html = '';
+            items.forEach(function(t, i) { html += '<div class="bi-row"><span class="bi-no">' + (i + 1) + '.</span><span>' + esc(t) + '</span></div>'; });
+            box.innerHTML = html;
+            box.classList.add('show');
+        };
+        window.doBehaviorImport = function() {
+            var ta = document.getElementById('behavior-import-text');
+            var catI = document.getElementById('behavior-import-cat');
+            var items = splitBehaviorText(ta ? ta.value : '');
+            if (!items.length) { showToast('⚠️ 没有识别到可导入的内容'); return; }
+            var cat = catI ? catI.value.trim() : '';
+            var list = getBehaviors();
+            var exist = {};
+            list.forEach(function(b) { exist[(b.name || '').trim()] = 1; });
+            var added = 0, skipped = 0;
+            items.forEach(function(name) {
+                if (exist[name]) { skipped++; return; }
+                list.push({ id: genId(), name: name, score: 5, cat: cat });
+                exist[name] = 1; added++;
+            });
+            setBehaviors(list);
+            closeBehaviorImport();
+            if (ta) ta.value = '';
+            if (catI) catI.value = '';
+            updateBehaviorImportPreview();
+            renderBehaviorList();
+            loadBehaviorScores();
+            renderBehaviorStats();
+            showToast('✅ 导入 ' + added + ' 条' + (skipped ? '，跳过重复 ' + skipped + ' 条' : ''));
+        };
+
         function renderBehaviorList() {
             var container = document.getElementById('behavior-list');
             if (!container) return;
@@ -4186,10 +4421,15 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 return;
             }
             var html = '';
-            list.forEach(function(b) {
+            var cfgL = getBehaviorCfg();
+            var ptL = list.length ? fmtScore(100 / list.length) : '0';
+            list.forEach(function(b, i) {
+                var metaTxt = (cfgL.mode === 'avg')
+                    ? ('等分 ' + ptL + ' 分/项 · 满分 100' + (b.cat ? ' · ' + b.cat : ''))
+                    : ('分值 ' + (b.score || 0) + (b.cat ? '  · ' + b.cat : ''));
                 html += '<div class="behavior-item" data-id="' + b.id + '">' +
-                    '<div class="info"><strong>' + (b.name || '未命名') + '</strong>' +
-                    '<div class="meta">分值 ' + (b.score || 0) + (b.cat ? '  · ' + b.cat : '') + '</div></div>' +
+                    '<div class="info"><strong>' + (i + 1) + '. ' + esc(b.name || '未命名') + '</strong>' +
+                    '<div class="meta">' + metaTxt + '</div></div>' +
                     '<div class="actions">' +
                     '<button class="btn btn-primary btn-sm" data-edit="' + b.id + '">编辑</button>' +
                     '<button class="btn btn-danger btn-sm" data-del="' + b.id + '">删除</button>' +
@@ -4260,6 +4500,11 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             renderBehaviorStats();
         });
 
+        (function () {
+            var impTa = document.getElementById('behavior-import-text');
+            if (impTa) impTa.addEventListener('input', updateBehaviorImportPreview);
+        })();
+
         window.deleteBehavior = function(id) {
             if (!confirm('确定要删除此行为吗？该行为的每日打分记录会保留。')) return;
             var list = getBehaviors().filter(function(x){ return x.id !== id; });
@@ -4284,19 +4529,38 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 updateBehaviorTodayScore(date);
                 return;
             }
+            var cfg = getBehaviorCfg();
+            var pt = fmtScore(100 / list.length);
+            var hint = document.getElementById('behavior-total-hint');
+            if (hint) hint.textContent = (cfg.mode === 'avg')
+                ? ('共 ' + list.length + ' 项 · 每项 ' + pt + ' 分 · 完成打勾即得分')
+                : ('共 ' + list.length + ' 项 · 按各项满分累加');
             var html = '';
             list.forEach(function(b, i) {
-                var val = (b.id in day) ? day[b.id] : 0;
-                html += '<div class="behavior-score-row" data-id="' + b.id + '">' +
-                    '<span class="bs-name">' + (i+1) + '. ' + (b.name || '未命名') + '</span>' +
-                    '<span class="bs-score">/ ' + (b.score || 0) + ' 分</span>' +
-                    '<button class="bs-step" data-id="' + b.id + '" data-d="-1">−</button>' +
-                    '<input type="number" class="bs-input" id="bs_' + b.id + '" value="' + val + '" min="0" max="' + (b.score || 0) + '">' +
-                    '<button class="bs-step" data-id="' + b.id + '" data-d="1">＋</button>' +
-                    '<button class="bs-full" data-id="' + b.id + '">满分</button>' +
-                    '</div>';
+                if (cfg.mode === 'avg') {
+                    var on = !!day[b.id];
+                    html += '<div class="behavior-score-row' + (on ? ' done' : '') + '" data-id="' + b.id + '">' +
+                        '<button class="bs-check' + (on ? ' on' : '') + '" data-check="' + b.id + '" title="点击切换完成状态">✓</button>' +
+                        '<span class="bs-name">' + (i + 1) + '. ' + esc(b.name || '未命名') + '</span>' +
+                        '<span class="bs-pt">' + pt + ' 分</span>' +
+                        (b.cat ? '<span class="bs-cat">' + esc(b.cat) + '</span>' : '') +
+                        '</div>';
+                } else {
+                    var val = (b.id in day) ? day[b.id] : 0;
+                    html += '<div class="behavior-score-row" data-id="' + b.id + '">' +
+                        '<span class="bs-name">' + (i + 1) + '. ' + esc(b.name || '未命名') + '</span>' +
+                        '<span class="bs-score">/ ' + (b.score || 0) + ' 分</span>' +
+                        '<button class="bs-step" data-id="' + b.id + '" data-d="-1">−</button>' +
+                        '<input type="number" class="bs-input" id="bs_' + b.id + '" value="' + val + '" min="0" max="' + (b.score || 0) + '">' +
+                        '<button class="bs-step" data-id="' + b.id + '" data-d="1">＋</button>' +
+                        '<button class="bs-full" data-id="' + b.id + '">满分</button>' +
+                        '</div>';
+                }
             });
             c.innerHTML = html;
+            c.querySelectorAll('[data-check]').forEach(function(btn) {
+                btn.addEventListener('click', function() { toggleBehaviorCheck(btn.getAttribute('data-check')); });
+            });
             c.querySelectorAll('.bs-step').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     stepBehavior(btn.getAttribute('data-id'), parseInt(btn.getAttribute('data-d'), 10));
@@ -4342,20 +4606,20 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         };
 
         function updateBehaviorTodayScore(date) {
-            var day = getBehaviorDay(date);
-            var total = 0;
-            for (var k in day) { total += (Number(day[k]) || 0); }
+            var total = behaviorDayScore(date);
             var el = document.getElementById('behavior-today-score');
-            if (el) el.innerText = total;
+            if (el) el.textContent = fmtScore(total);
         }
 
         window.saveBehaviorDay = function() {
             var dateInput = document.getElementById('behavior-date');
             var date = dateInput ? dateInput.value : today;
-            var day = getBehaviorDay(date);
-            var total = 0; for (var k in day) total += (Number(day[k]) || 0);
+            var list = getBehaviors();
+            var total = behaviorDayScore(date);
+            var done = behaviorDayDone(date);
             renderBehaviorStats();
-            showToast('✅ ' + date + ' 行为得分已保存：' + total + ' 分');
+            showToast('✅ ' + date + ' 已记录：' + fmtScore(total) + ' 分' +
+                (list.length ? '（完成 ' + done + '/' + list.length + '）' : ''));
         };
 
         function behaviorDateList(n) {
@@ -4370,38 +4634,54 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
 
         function renderBehaviorStats() {
             var list = getBehaviors();
+            var cfg = getBehaviorCfg();
             var dates = behaviorDateList(30);
-            var day = getBehaviorDay(today);
-            var todayScore = 0;
-            for (var k in day) todayScore += (Number(day[k]) || 0);
+            var todayScore = behaviorDayScore(today);
 
             var dailyTotals = {};
-            dates.forEach(function(dt) {
-                var obj = getBehaviorDay(dt); var s = 0;
-                for (var kk in obj) s += (Number(obj[kk]) || 0);
-                dailyTotals[dt] = s;
-            });
-            var sum7 = dates.slice(-7).reduce(function(a, dt){ return a + dailyTotals[dt]; }, 0);
-            var sum30 = dates.reduce(function(a, dt){ return a + dailyTotals[dt]; }, 0);
-            var avg7 = Math.round(sum7 / 7);
-            var avg30 = Math.round(sum30 / 30);
+            dates.forEach(function(dt) { dailyTotals[dt] = behaviorDayScore(dt); });
+
+            // 日均只统计「有记录」的日期，避免未打卡日拉低均值
+            function avgOf(arr) {
+                var rec = arr.filter(function(dt) { return behaviorDayHasRecord(dt); });
+                if (!rec.length) return 0;
+                var s = rec.reduce(function(a, dt) { return a + dailyTotals[dt]; }, 0);
+                return Math.round(s / rec.length * 10) / 10;
+            }
+            var avg7 = avgOf(dates.slice(-7));
+            var avg30 = avgOf(dates);
 
             var statEl = document.getElementById('behavior-stats');
             if (statEl) statEl.innerHTML =
-                '<div class="stat-card-mini"><span class="num">' + todayScore + '</span><div>今日得分</div></div>' +
-                '<div class="stat-card-mini"><span class="num">' + avg7 + '</span><div>近7天日均</div></div>' +
-                '<div class="stat-card-mini"><span class="num">' + avg30 + '</span><div>近30天日均</div></div>';
+                '<div class="stat-card-mini"><span class="num">' + fmtScore(todayScore) + '</span><div>今日得分</div></div>' +
+                '<div class="stat-card-mini"><span class="num">' + fmtScore(avg7) + '</span><div>近7天日均</div></div>' +
+                '<div class="stat-card-mini"><span class="num">' + fmtScore(avg30) + '</span><div>近30天日均</div></div>';
 
             var avgHtml = '';
-            list.forEach(function(b) {
-                var vals = [];
-                dates.forEach(function(dt){ var obj = getBehaviorDay(dt); if (b.id in obj) vals.push(Number(obj[b.id]) || 0); });
-                var avg = vals.length ? (vals.reduce(function(a, c){ return a + c; }, 0) / vals.length) : 0;
-                var rate = (b.score > 0 && vals.length) ? Math.round(avg / b.score * 100) : 0;
-                avgHtml += '<div class="behavior-avg-row"><span class="ba-name">' + (b.name || '未命名') + '</span>' +
-                    '<span class="ba-val">均 ' + avg.toFixed(1) + ' / ' + (b.score || 0) + ' 分</span>' +
-                    '<span class="ba-rate">达标 ' + rate + '%</span></div>';
-            });
+            if (cfg.mode === 'avg') {
+                list.forEach(function(b) {
+                    var doneDays = 0, recDays = 0;
+                    dates.forEach(function(dt) {
+                        if (!behaviorDayHasRecord(dt)) return;
+                        recDays++;
+                        if (getBehaviorDay(dt)[b.id]) doneDays++;
+                    });
+                    var rate = recDays ? Math.round(doneDays / recDays * 100) : 0;
+                    avgHtml += '<div class="behavior-avg-row"><span class="ba-name">' + esc(b.name || '未命名') + '</span>' +
+                        '<span class="ba-val">完成 ' + doneDays + ' / ' + recDays + ' 天</span>' +
+                        '<span class="ba-rate">' + rate + '%</span></div>';
+                });
+            } else {
+                list.forEach(function(b) {
+                    var vals = [];
+                    dates.forEach(function(dt) { var obj = getBehaviorDay(dt); var v = Number(obj[b.id]); if (b.id in obj && v > 0) vals.push(v); });
+                    var avg = vals.length ? (vals.reduce(function(a, c) { return a + c; }, 0) / vals.length) : 0;
+                    var rate = (b.score > 0) ? Math.round(avg / b.score * 100) : 0;
+                    avgHtml += '<div class="behavior-avg-row"><span class="ba-name">' + esc(b.name || '未命名') + '</span>' +
+                        '<span class="ba-val">均 ' + avg.toFixed(1) + ' / ' + (b.score || 0) + ' 分</span>' +
+                        '<span class="ba-rate">达标 ' + rate + '%</span></div>';
+                });
+            }
             var avgContainer = document.getElementById('behavior-avg-list');
             if (avgContainer) avgContainer.innerHTML = avgHtml || '<p style="color:var(--gray,#94a3b8);font-size:13px;">暂无可统计数据</p>';
 
@@ -4411,22 +4691,25 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         function renderBehaviorChart(dates, dailyTotals) {
             var box = document.getElementById('behavior-chart');
             if (!box) return;
+            var cfgC = getBehaviorCfg();
             var W = 680, H = 180, pad = 24;
-            var maxV = 1;
-            dates.forEach(function(dt){ if (dailyTotals[dt] > maxV) maxV = dailyTotals[dt]; });
+            var maxV = (cfgC.mode === 'avg') ? 100 : 1;
+            if (cfgC.mode !== 'avg') dates.forEach(function(dt){ if (dailyTotals[dt] > maxV) maxV = dailyTotals[dt]; });
             var n = dates.length;
             var bw = (W - pad*2) / n;
             var chartH = H - pad*2;
             var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="max-width:' + W + 'px;display:block;">';
             svg += '<line x1="' + pad + '" y1="' + (H-pad) + '" x2="' + (W-pad) + '" y2="' + (H-pad) + '" stroke="#e2e8f0" stroke-width="1"/>';
             dates.forEach(function(dt, i) {
-                var v = dailyTotals[dt];
+                var v = dailyTotals[dt] || 0;
                 var h = Math.round(v / maxV * chartH);
                 var x = pad + i*bw + bw*0.15;
                 var w = bw*0.7;
                 var y = H - pad - h;
-                var color = v >= maxV*0.8 ? '#22c55e' : (v >= maxV*0.5 ? '#f59e0b' : '#94a3b8');
-                svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + Math.max(h, 0) + '" rx="2" fill="' + color + '"><title>' + dt + '：' + v + ' 分</title></rect>';
+                var color;
+                if (cfgC.mode === 'avg') color = (v >= 80 ? '#22c55e' : (v >= 50 ? '#f59e0b' : '#94a3b8'));
+                else color = (v >= maxV*0.8 ? '#22c55e' : (v >= maxV*0.5 ? '#f59e0b' : '#94a3b8'));
+                svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + Math.max(h, 0) + '" rx="2" fill="' + color + '"><title>' + dt + '：' + fmtScore(v) + ' 分</title></rect>';
                 if (i % 5 === 0 || i === n-1) {
                     svg += '<text x="' + (x + w/2).toFixed(1) + '" y="' + (H-pad+14) + '" font-size="9" fill="#94a3b8" text-anchor="middle">' + dt.slice(5) + '</text>';
                 }
