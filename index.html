@@ -3095,14 +3095,33 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         <div class="module" id="indicator">
             <div class="card">
                 <div class="card-title">
-                    📋 指标库（打卡任务模板）
-                    <span style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap;">
-                        <button class="btn btn-primary btn-sm" onclick="openCategoryModal()">📂 管理分类</button>
-                        <button class="btn btn-success btn-sm" onclick="openIndicatorModal()">➕ 新增指标</button>
+                    📋 指标库
+                    <span class="seg-toggle" style="margin-left:auto;">
+                        <button id="indTabTpl" onclick="showIndicatorTab('tpl')">📋 打卡指标</button>
+                        <button id="indTabBhv" onclick="showIndicatorTab('bhv')">📊 行为库</button>
                     </span>
                 </div>
-                <p style="color:var(--gray); margin-bottom:12px;">定义可复用的任务模板，方便每日打卡时快速引用。</p>
-                <div id="indicator-list"><p style="color:var(--gray);text-align:center;">暂无指标，点击"新增指标"创建</p></div>
+
+                <!-- 面板一：打卡任务模板 -->
+                <div id="ind-pane-tpl">
+                    <p style="color:var(--gray); margin-bottom:12px;">定义可复用的任务模板，方便每日打卡时快速引用。</p>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+                        <button class="btn btn-primary btn-sm" onclick="openCategoryModal()">📂 管理分类</button>
+                        <button class="btn btn-success btn-sm" onclick="openIndicatorModal()">➕ 新增指标</button>
+                    </div>
+                    <div id="indicator-list"><p style="color:var(--gray);text-align:center;">暂无指标，点击"新增指标"创建</p></div>
+                </div>
+
+                <!-- 面板二：行为库（由原「行为清单」模块迁入） -->
+                <div id="ind-pane-bhv" style="display:none;">
+                    <p style="color:var(--gray); margin-bottom:12px;">行为清单的条目库：可增删改、一键粘贴拆分、复制清单。「📊 行为清单」页的每日打分与统计会自动使用这里的条目。</p>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+                        <button class="btn btn-success btn-sm" onclick="openBehaviorModal()">➕ 新增行为</button>
+                        <button class="btn btn-sm" onclick="openBehaviorImport()">📋 一键粘贴拆分</button>
+                        <button class="btn btn-sm" onclick="copyBehaviorList()">📄 复制清单</button>
+                    </div>
+                    <div id="behavior-list" class="behavior-list"></div>
+                </div>
             </div>
         </div>
 
@@ -3203,19 +3222,13 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
 
         <div class="module" id="behavior">
             <div class="card">
-                <div class="card-title">📊 行为清单 · 行为库
-                    <button class="btn btn-success btn-sm" style="float:right;" onclick="openBehaviorModal()">➕ 新增行为</button>
-                    <button class="btn btn-sm" style="float:right;margin-right:6px;" onclick="openBehaviorImport()">📋 一键粘贴拆分</button>
-                    <button class="btn btn-sm" style="float:right;margin-right:6px;" onclick="copyBehaviorList()">📄 复制清单</button>
-                </div>
-                <div id="behavior-list" class="behavior-list"></div>
-            </div>
-
-            <div class="card">
                 <div class="card-title">✅ 每日行为打分
-                    <span class="seg-toggle" style="float:right;">
-                        <button id="bsModeAvg" onclick="setBehaviorMode('avg')">☑ 勾选制</button>
-                        <button id="bsModeCustom" onclick="setBehaviorMode('custom')">✎ 分值制</button>
+                    <span style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                        <button class="btn btn-sm" onclick="jumpToBehaviorLib()">⚙ 管理行为库</button>
+                        <span class="seg-toggle">
+                            <button id="bsModeAvg" onclick="setBehaviorMode('avg')">☑ 勾选制</button>
+                            <button id="bsModeCustom" onclick="setBehaviorMode('custom')">✎ 分值制</button>
+                        </span>
                     </span>
                 </div>
                 <div class="behavior-date-row">
@@ -3320,12 +3333,12 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                         populateCustomSelectSm();
                         initTimerStateSm();
                     }
-                    if (target === 'indicator') renderIndicatorList();
+                    if (target === 'indicator') { initIndicatorTab(); renderIndicatorList(); }
                     if (target === 'daily') { loadDailyTasks();
                         updateSummary(); }
                     if (target === 'diary') renderDiaries();
                     if (target === 'homework') renderHomeworks();
-                    if (target === 'behavior') { syncBehaviorModeUI(); renderBehaviorList(); loadBehaviorScores(); renderBehaviorStats(); }
+                    if (target === 'behavior') { syncBehaviorModeUI(); loadBehaviorScores(); renderBehaviorStats(); }
                 });
             });
         });
@@ -3392,7 +3405,9 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             renderMileList();
             // 指标库
             initIndicatorData();
+            initIndicatorTab();
             renderIndicatorList();
+            renderBehaviorList();
             // 分类管理 tabs
             var tabs = document.querySelectorAll('.cat-tabs button');
             tabs.forEach(function(btn) {
@@ -4214,6 +4229,48 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         // ================================================================
 
         // ================================================================
+        //  指标库子标签：打卡指标 / 行为库
+        //  （行为库的编辑与添加界面统一收纳在指标库内）
+        // ================================================================
+        function syncIndicatorTabUI(name) {
+            var isBhv = (name === 'bhv');
+            var p1 = document.getElementById('ind-pane-tpl');
+            var p2 = document.getElementById('ind-pane-bhv');
+            var t1 = document.getElementById('indTabTpl');
+            var t2 = document.getElementById('indTabBhv');
+            if (p1) p1.style.display = isBhv ? 'none' : '';
+            if (p2) p2.style.display = isBhv ? '' : 'none';
+            if (t1) t1.classList.toggle('active', !isBhv);
+            if (t2) t2.classList.toggle('active', isBhv);
+        }
+        // 统一切换入口：改状态 → 单向调用各渲染函数
+        window.showIndicatorTab = function(name) {
+            var t = (name === 'bhv') ? 'bhv' : 'tpl';
+            syncIndicatorTabUI(t);
+            Storage.set('growth_indicator_tab', t);
+            renderIndicatorList();
+            renderBehaviorList();
+        };
+        function initIndicatorTab() {
+            var t = 'tpl';
+            try { t = Storage.get('growth_indicator_tab') || 'tpl'; } catch (e) { t = 'tpl'; }
+            if (t !== 'bhv') t = 'tpl';
+            syncIndicatorTabUI(t);
+            if (t === 'bhv') renderBehaviorList();
+        }
+        // 「行为清单」页一键跳到「指标库 · 行为库」
+        window.jumpToBehaviorLib = function() {
+            document.querySelectorAll('.nav-menu a').forEach(function(item) {
+                item.classList.toggle('active', item.getAttribute('data-target') === 'indicator');
+            });
+            document.querySelectorAll('.module').forEach(function(mod) {
+                mod.classList.toggle('active', mod.id === 'indicator');
+            });
+            showIndicatorTab('bhv');
+            try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); }
+        };
+
+        // ================================================================
         //  行为清单模块（增删改 + 每日赋分 + 统计）
         // ================================================================
         function getBehaviors() { return Storage.get('growth_behavior') || []; }
@@ -4525,7 +4582,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             var c = document.getElementById('behavior-score-list');
             if (!c) return;
             if (list.length === 0) {
-                c.innerHTML = '<p style="color:var(--gray,#94a3b8);font-size:14px;">📭 请先在上方「行为库」添加行为</p>';
+                c.innerHTML = '<p style="color:var(--gray,#94a3b8);font-size:14px;">📭 请先在「📋 指标库 → 📊 行为库」中添加行为</p>';
                 updateBehaviorTodayScore(date);
                 return;
             }
