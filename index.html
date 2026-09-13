@@ -2193,7 +2193,7 @@
         }
         .diary-cat.none {
             background: #f1f5f9;
-            color: var(--gray);
+            color: #475569;
             font-weight: 400;
         }
         .diary-cat-wrap {
@@ -2438,6 +2438,17 @@
         html.dark #diaryCatModal .chipmgr-list { background: #0f172a !important; }
         html.dark #diaryCatModal .chipmgr-chip { background: #1e293b !important; color: #e2e8f0 !important; border-color: #475569 !important; }
         html.dark #diaryCatModal .chipmgr-hint { color: #94a3b8 !important; }
+        /* 深色对比度修正：实测这 4 处在深色下低于 WCAG AA 4.5
+           （原值 .diary-stats-hint 3.07 / .diary-stat-num 3.75 / 合计行 2.84 / .diary-cat.none 4.04） */
+        html.dark .diary-stats-hint { color: #94a3b8 !important; }            /* 3.07 -> 6.20 */
+        html.dark .diary-stat-num { color: #cbd5e1 !important; }              /* 3.75 -> 12.02 */
+        html.dark .diary-stat-row.total .diary-stat-num { color: #bfdbfe !important; }  /* 2.84 -> 10.34 */
+        html.dark .diary-cat.none { color: #cbd5e1 !important; }              /* 4.04 -> 6.97 */
+        html.dark #diaryCatModal .chipmgr-title { color: #93c5fd !important; } /* 2.83 -> 8.11 */
+        html.dark .diary-stats-empty { color: #94a3b8 !important; }
+        html.dark .diary-item-meta { color: #94a3b8 !important; }
+        html.dark #diaryCatModal .chipmgr-empty { color: #94a3b8 !important; }
+        html.dark #diaryCatModal .chipmgr-textbtn { color: #94a3b8 !important; }
         .diary-content {
             color: #444;
             font-size: 14px;
