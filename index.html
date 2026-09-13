@@ -2182,6 +2182,262 @@
             padding: 2px 8px;
             border-radius: 12px;
         }
+        /* ----- 成长日记：事情分类 ----- */
+        .diary-cat {
+            background: #ecfdf5;
+            color: #047857;
+            padding: 2px 8px;
+            border-radius: 12px;
+            white-space: nowrap;
+            font-weight: 600;
+        }
+        .diary-cat.none {
+            background: #f1f5f9;
+            color: var(--gray);
+            font-weight: 400;
+        }
+        .diary-cat-wrap {
+            display: flex;
+            gap: 6px;
+            flex: 1;
+            min-width: 144px;
+            align-items: center;
+        }
+        .diary-cat-wrap select {
+            flex: 1;
+            min-width: 0;
+        }
+        .diary-cat-edit {
+            flex: 0 0 auto;
+            padding: 4px 8px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--dark);
+            font-size: 12px;
+            max-width: 140px;
+        }
+        /* ----- 成长日记：筛选统计（列表） ----- */
+        .diary-stats-filter {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .diary-stats-filter select {
+            flex: 1;
+            min-width: 118px;
+            padding: 7px 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--dark);
+            font-size: 13px;
+        }
+        .diary-stats-filter .btn-sm {
+            flex: 0 0 auto;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        .diary-stats-hint {
+            font-size: 12px;
+            color: var(--gray);
+            margin: 0 0 10px;
+            line-height: 1.6;
+        }
+        .diary-stats-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .diary-stat-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: var(--light);
+            border-radius: 9px;
+            font-size: 13px;
+        }
+        .diary-stat-row.total {
+            background: #eff6ff;
+            font-weight: 600;
+        }
+        .diary-stat-name {
+            flex: 0 0 auto;
+            min-width: 76px;
+            max-width: 140px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .diary-stat-bar {
+            flex: 1;
+            min-width: 36px;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+        .diary-stat-bar > i {
+            display: block;
+            height: 100%;
+            background: linear-gradient(90deg, #60a5fa, var(--primary));
+            border-radius: 99px;
+        }
+        .diary-stat-row.total .diary-stat-bar {
+            visibility: hidden;
+        }
+        .diary-stat-num {
+            flex: 0 0 auto;
+            color: var(--gray);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .diary-stat-row.total .diary-stat-num {
+            color: var(--primary);
+        }
+        .diary-stats-empty {
+            color: var(--gray);
+            font-size: 13px;
+            padding: 12px 0;
+        }
+        /* ----- 成长日记：分类管理弹层 ----- */
+        #diaryCatModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,.5);
+            z-index: 99999;
+            align-items: center;
+            justify-content: center;
+        }
+        #diaryCatModal.show { display: flex; }
+        #diaryCatModal .chipmgr-box {
+            background: #fff;
+            border-radius: 16px;
+            padding: 22px;
+            max-width: 460px;
+            width: 92vw;
+            max-height: 84vh;
+            overflow: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,.3);
+        }
+        #diaryCatModal .chipmgr-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        #diaryCatModal .chipmgr-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        #diaryCatModal .chipmgr-close {
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: #94a3b8;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 4px;
+        }
+        #diaryCatModal .chipmgr-close:hover { color: #ef4444; }
+        #diaryCatModal .chipmgr-hint {
+            font-size: 12px;
+            color: var(--gray);
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+        #diaryCatModal .chipmgr-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 14px;
+            min-height: 80px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 10px;
+        }
+        #diaryCatModal .chipmgr-empty {
+            color: #94a3b8;
+            font-size: 13px;
+            text-align: center;
+            padding: 16px 0;
+            width: 100%;
+        }
+        #diaryCatModal .chipmgr-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 16px;
+            font-size: 13px;
+            color: var(--dark);
+        }
+        #diaryCatModal .chipmgr-chip b {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        #diaryCatModal .chipmgr-x {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 14px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+        }
+        #diaryCatModal .chipmgr-x:hover { color: #ef4444; }
+        #diaryCatModal .chipmgr-add {
+            display: flex;
+            gap: 8px;
+        }
+        #diaryCatModal .chipmgr-add input {
+            flex: 1;
+            min-width: 0;
+            padding: 8px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+        #diaryCatModal .chipmgr-addbtn {
+            padding: 8px 16px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        #diaryCatModal .chipmgr-textbtn {
+            margin-top: 12px;
+            background: none;
+            border: none;
+            color: var(--gray);
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+        }
+        /* 深色模式补丁：本模块原先未覆盖，一并补齐 */
+        html.dark .diary-item { background: #1e293b !important; }
+        html.dark .diary-content { color: #cbd5e1 !important; }
+        html.dark .diary-cat { background: rgba(16,185,129,.18) !important; color: #6ee7b7 !important; }
+        html.dark .diary-cat.none { background: #334155 !important; color: #94a3b8 !important; }
+        html.dark .diary-stat-row { background: #0f172a !important; color: #e2e8f0 !important; }
+        html.dark .diary-stat-row.total { background: #172554 !important; }
+        html.dark .diary-stat-bar { background: #334155 !important; }
+        html.dark .diary-cat-edit { background: #0f172a !important; color: #e2e8f0 !important; }
+        html.dark #diaryCatModal .chipmgr-box { background: #1e293b !important; }
+        html.dark #diaryCatModal .chipmgr-list { background: #0f172a !important; }
+        html.dark #diaryCatModal .chipmgr-chip { background: #1e293b !important; color: #e2e8f0 !important; border-color: #475569 !important; }
+        html.dark #diaryCatModal .chipmgr-hint { color: #94a3b8 !important; }
         .diary-content {
             color: #444;
             font-size: 14px;
@@ -3135,6 +3391,10 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                         <input type="text" id="diaryTitle" placeholder="标题，例如：周末公园野餐" />
                     </div>
                     <div class="diary-form-row">
+                        <div class="diary-cat-wrap">
+                            <select id="diaryCategory" title="事情分类"></select>
+                            <button type="button" class="btn btn-sm" id="diaryCatMgrBtn" title="管理事情分类（添加 / 删除）" style="flex:0 0 auto;padding:8px 10px;">⚙</button>
+                        </div>
                         <input type="number" id="diaryMinutes" placeholder="亲子时长（分钟）" min="0" step="5" />
                         <select id="diaryMood">
                             <option value="开心">😊 开心</option>
@@ -3149,6 +3409,25 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 </div>
                 <div id="diaryList">
                     <div class="empty-state">暂无日记，记录第一段亲子时光吧！</div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">📊 分类筛选统计</div>
+                <div class="diary-stats-filter">
+                    <select id="diaryCatFilter" title="按分类筛选">
+                        <option value="">全部分类</option>
+                    </select>
+                    <select id="diaryRangeFilter" title="按时间范围筛选">
+                        <option value="all">全部时间</option>
+                        <option value="7">近 7 天</option>
+                        <option value="30">近 30 天</option>
+                        <option value="month">本月</option>
+                    </select>
+                    <button type="button" class="btn btn-sm" id="diaryFilterResetBtn">重置</button>
+                </div>
+                <p class="diary-stats-hint">筛选同时作用于上方列表与下方统计；统计按条数降序。「未分类」为未设置分类的记录。</p>
+                <div id="diaryStats" class="diary-stats-list">
+                    <div class="diary-stats-empty">暂无统计，先记录几笔吧。</div>
                 </div>
             </div>
         </div>
@@ -3337,7 +3616,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                     if (target === 'indicator') { initIndicatorTab(); renderIndicatorList(); }
                     if (target === 'daily') { loadDailyTasks();
                         updateSummary(); }
-                    if (target === 'diary') renderDiaries();
+                    if (target === 'diary') { renderDiaryCatSelect(); renderDiaryCatFilter(); renderDiaries(); renderDiaryStats(); }
                     if (target === 'homework') renderHomeworks();
                     if (target === 'behavior') { syncBehaviorModeUI(); loadBehaviorScores(); renderBehaviorStats(); }
                 });
@@ -7268,6 +7547,122 @@ var COMPLETION_FILTER_RANGE = 'all';
         function getDiaries() { return Storage.get('growth_diary') || []; }
         function setDiaries(list) { Storage.set('growth_diary', list); }
 
+        /* ============ 成长日记：事情分类 ============
+         * 存储键 growth_diary_cats，按儿童账户隔离（命中 Storage._ISOLATED 的 growth_diary 前缀）。
+         * 首次使用时落盘默认分类；用户可自由添加 / 删除 / 恢复默认。
+         */
+        var DIARY_CAT_KEY = 'growth_diary_cats';
+        var DIARY_CAT_DEFAULTS = ['生活', '课外课', '课内作业', '习惯养成'];
+        var DIARY_CAT_NONE = '未分类';
+        var DIARY_CAT_NEW = '__new__';
+
+        function getDiaryCats() {
+            var raw = null;
+            try { raw = localStorage.getItem(Storage.rk(DIARY_CAT_KEY)); } catch (e) { raw = null; }
+            if (raw === null) {                 // 从未配置过 → 写入默认分类
+                saveDiaryCats(DIARY_CAT_DEFAULTS.slice());
+                return DIARY_CAT_DEFAULTS.slice();
+            }
+            var arr = null;
+            try { arr = JSON.parse(raw); } catch (e) { arr = null; }
+            if (!Array.isArray(arr)) return DIARY_CAT_DEFAULTS.slice();
+            return arr.filter(function(v) { return typeof v === 'string' && v.trim() !== ''; });
+        }
+        function saveDiaryCats(arr) {
+            try { localStorage.setItem(Storage.rk(DIARY_CAT_KEY), JSON.stringify(arr)); } catch (e) {}
+        }
+        // 取某条记录的分类名（空值归一为「未分类」）
+        function diaryCatOf(d) {
+            var c = d && d.category ? String(d.category).trim() : '';
+            return c || DIARY_CAT_NONE;
+        }
+        // 聚合：分类 → {count, minutes}
+        function diaryCatAggregate(list) {
+            var agg = {};
+            (list || []).forEach(function(d) {
+                var c = diaryCatOf(d);
+                if (!agg[c]) agg[c] = { count: 0, minutes: 0 };
+                agg[c].count += 1;
+                agg[c].minutes += parseInt(d.minutes || 0, 10) || 0;
+            });
+            return agg;
+        }
+        // 分类候选全集 = 用户分类 + 数据中实际出现过的分类（含「未分类」与已删除分类的残留引用）
+        function diaryCatNames() {
+            var names = getDiaryCats().slice();
+            var used = diaryCatAggregate(getDiaries());
+            Object.keys(used).forEach(function(n) { if (names.indexOf(n) === -1) names.push(n); });
+            return names;
+        }
+        function renderDiaryCatSelect(preferred) {
+            var sel = document.getElementById('diaryCategory');
+            if (!sel) return;
+            var cats = getDiaryCats();
+            var cur = sel.value;
+            var html = cats.map(function(c) {
+                return '<option value="' + esc(c) + '">' + esc(c) + '</option>';
+            }).join('');
+            html += '<option value="' + DIARY_CAT_NEW + '">＋ 新建分类…</option>';
+            sel.innerHTML = html;
+            if (preferred && cats.indexOf(preferred) !== -1) sel.value = preferred;
+            else if (cur && cur !== DIARY_CAT_NEW && cats.indexOf(cur) !== -1) sel.value = cur;
+            else sel.value = cats.length ? cats[0] : DIARY_CAT_NEW;
+        }
+        function renderDiaryCatFilter() {
+            var sel = document.getElementById('diaryCatFilter');
+            if (!sel) return;
+            var used = diaryCatAggregate(getDiaries());
+            var names = diaryCatNames();
+            var cur = sel.value;
+            sel.innerHTML = '<option value="">全部分类</option>' + names.map(function(c) {
+                return '<option value="' + esc(c) + '">' + esc(c) + (used[c] ? '（' + used[c].count + '）' : '') + '</option>';
+            }).join('');
+            if (cur && names.indexOf(cur) !== -1) sel.value = cur;
+            else sel.value = '';                // 原选中的分类已被删除 → 回到「全部分类」
+        }
+
+        /* ---------- 筛选 ---------- */
+        function diaryFilterActive() {
+            var c = document.getElementById('diaryCatFilter');
+            var r = document.getElementById('diaryRangeFilter');
+            return !!((c && c.value) || (r && r.value && r.value !== 'all'));
+        }
+        function diaryRangeStart(range) {
+            if (!range || range === 'all') return null;
+            var n = new Date();
+            var d = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+            if (range === '7') d.setDate(d.getDate() - 6);
+            else if (range === '30') d.setDate(d.getDate() - 29);
+            else if (range === 'month') d = new Date(n.getFullYear(), n.getMonth(), 1);
+            else return null;
+            return d;
+        }
+        function applyDiaryFilter(list) {
+            var cEl = document.getElementById('diaryCatFilter');
+            var rEl = document.getElementById('diaryRangeFilter');
+            var fCat = cEl ? cEl.value : '';
+            var start = diaryRangeStart(rEl ? rEl.value : 'all');
+            if (!fCat && !start) return list;
+            return list.filter(function(d) {
+                if (fCat && diaryCatOf(d) !== fCat) return false;
+                if (start) {
+                    var t = new Date((d.date || '') + 'T00:00:00');
+                    if (isNaN(t.getTime()) || t < start) return false;
+                }
+                return true;
+            });
+        }
+        function clearDiaryFilter() {
+            var c = document.getElementById('diaryCatFilter');
+            var r = document.getElementById('diaryRangeFilter');
+            if (c) c.value = '';
+            if (r) r.value = 'all';
+            renderDiaries();
+            renderDiaryStats();
+        }
+        window.clearDiaryFilter = clearDiaryFilter;   // 供列表空态内联 onclick 调用
+
+        /* ---------- 渲染 ---------- */
         function renderDiaries() {
             var list = getDiaries();
             var container = document.getElementById('diaryList');
@@ -7276,20 +7671,34 @@ var COMPLETION_FILTER_RANGE = 'all';
                 container.innerHTML = '<div class="empty-state">暂无日记，记录第一段亲子时光吧！</div>';
                 return;
             }
-            var sorted = list.slice().sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+            var catNames = diaryCatNames();
+            var filtered = applyDiaryFilter(list);
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state">当前筛选条件下没有记录。<br>' +
+                    '<button type="button" class="btn btn-sm" onclick="clearDiaryFilter()" style="margin-top:10px;">清除筛选</button></div>';
+                return;
+            }
+            var sorted = filtered.slice().sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
             var html = '';
             sorted.forEach(function(d) {
                 var minText = d.minutes ? '⏱️ ' + d.minutes + ' 分钟' : '';
+                var catLabel = diaryCatOf(d);
+                var hasCat = catLabel !== DIARY_CAT_NONE;
                 html += '<div class="diary-item" data-id="' + d.id + '">';
                 html += '<div class="diary-item-header">';
                 html += '<div class="diary-item-title">' + esc(d.title || '无标题') + '</div>';
                 html += '<div class="diary-item-meta">';
-                html += '<span>📅 ' + (d.date || '-') + '</span>';
+                html += '<span class="diary-cat' + (hasCat ? '' : ' none') + '">🏷️ ' + esc(catLabel) + '</span>';
+                html += '<span>📅 ' + esc(d.date || '-') + '</span>';
                 if (minText) html += '<span>' + minText + '</span>';
                 html += '<span class="diary-mood">' + esc(d.mood || '其他') + '</span>';
                 html += '</div></div>';
                 html += '<div class="diary-content">' + esc(d.content || '').replace(/\n/g, '<br>') + '</div>';
                 html += '<div class="diary-actions">';
+                html += '<select class="diary-cat-edit" title="修改这条记录的分类" onchange="changeDiaryCategory(\'' + d.id + '\', this.value)">' +
+                    catNames.map(function(c) {
+                        return '<option value="' + esc(c) + '"' + (c === catLabel ? ' selected' : '') + '>🏷️ ' + esc(c) + '</option>';
+                    }).join('') + '</select>';
                 html += '<button class="btn btn-primary btn-sm" onclick="openDiaryHomeworkModal(\'' + d.id + '\')">📚 加入作业记录</button>';
                 html += '<button class="btn btn-sm" onclick="deleteDiary(\'' + d.id + '\')">🗑️ 删除</button>';
                 html += '</div></div>';
@@ -7297,20 +7706,197 @@ var COMPLETION_FILTER_RANGE = 'all';
             container.innerHTML = html;
         }
 
+        function changeDiaryCategory(id, name) {
+            var list = getDiaries();
+            var hit = false;
+            list.forEach(function(d) {
+                if (d.id !== id) return;
+                d.category = (name === DIARY_CAT_NONE) ? '' : name;
+                hit = true;
+            });
+            if (!hit) return;
+            setDiaries(list);
+            renderDiaries();
+            renderDiaryCatFilter();
+            renderDiaryStats();
+            showToast('🏷️ 已改为「' + name + '」');
+        }
+        window.changeDiaryCategory = changeDiaryCategory;   // 供列表内联 onchange 调用
+
+        /* ---------- 筛选统计（列表） ---------- */
+        function renderDiaryStats() {
+            var box = document.getElementById('diaryStats');
+            if (!box) return;
+            var all = getDiaries();
+            var list = applyDiaryFilter(all);
+            if (list.length === 0) {
+                box.innerHTML = '<div class="diary-stats-empty">' +
+                    (all.length === 0 ? '暂无统计，先记录几笔吧。' : '当前筛选条件下暂无记录。') + '</div>';
+                return;
+            }
+            var agg = diaryCatAggregate(list);
+            var names = Object.keys(agg).sort(function(a, b) {
+                if (a === DIARY_CAT_NONE) return 1;      // 「未分类」置底
+                if (b === DIARY_CAT_NONE) return -1;
+                if (agg[b].count !== agg[a].count) return agg[b].count - agg[a].count;
+                return agg[b].minutes - agg[a].minutes;
+            });
+            var totalCount = list.length;
+            var totalMin = list.reduce(function(s, d) { return s + (parseInt(d.minutes || 0, 10) || 0); }, 0);
+            var html = '';
+            names.forEach(function(n) {
+                var a = agg[n];
+                var pct = totalCount ? Math.round(a.count / totalCount * 100) : 0;
+                html += '<div class="diary-stat-row">' +
+                    '<span class="diary-stat-name" title="' + esc(n) + '">' + esc(n) + '</span>' +
+                    '<span class="diary-stat-bar"><i style="width:' + pct + '%"></i></span>' +
+                    '<span class="diary-stat-num">' + a.count + ' 条 · ' + a.minutes + ' 分 · ' + pct + '%</span>' +
+                '</div>';
+            });
+            html += '<div class="diary-stat-row total">' +
+                '<span class="diary-stat-name">合计</span>' +
+                '<span class="diary-stat-bar"></span>' +
+                '<span class="diary-stat-num">' + totalCount + ' 条 · ' + totalMin + ' 分' +
+                (diaryFilterActive() ? '（筛选后）' : '') + '</span>' +
+            '</div>';
+            box.innerHTML = html;
+        }
+
+        /* ---------- 分类管理弹层 ---------- */
+        function diaryCatAdminOpen() {
+            ensureDiaryCatModal();
+            renderDiaryCatList();
+            var m = document.getElementById('diaryCatModal');
+            if (m) m.classList.add('show');
+            setTimeout(function() { var i = document.getElementById('diaryCatInput'); if (i) i.focus(); }, 50);
+        }
+        function diaryCatAdminClose() {
+            var m = document.getElementById('diaryCatModal');
+            if (m) m.classList.remove('show');
+        }
+        function renderDiaryCatList() {
+            var wrap = document.getElementById('diaryCatList');
+            if (!wrap) return;
+            var cats = getDiaryCats();
+            if (!cats.length) {
+                wrap.innerHTML = '<div class="chipmgr-empty">— 空，底栏输入添加 —</div>';
+                return;
+            }
+            var used = diaryCatAggregate(getDiaries());
+            wrap.innerHTML = cats.map(function(c) {
+                var n = used[c] ? used[c].count : 0;
+                return '<span class="chipmgr-chip">' +
+                    '<span>' + esc(c) + (n ? ' <b>' + n + '</b>' : '') + '</span>' +
+                    '<button type="button" class="chipmgr-x" data-delcat="' + esc(c) + '" title="删除该分类">×</button>' +
+                '</span>';
+            }).join('');
+            wrap.querySelectorAll('[data-delcat]').forEach(function(b) {
+                b.addEventListener('click', function() {
+                    diaryCatDelete(b.getAttribute('data-delcat'));
+                });
+            });
+        }
+        function diaryCatAdd() {
+            var inp = document.getElementById('diaryCatInput');
+            if (!inp) return;
+            var v = inp.value.trim();
+            if (!v) { showToast('⚠️ 请输入分类名'); return; }
+            if (v === DIARY_CAT_NONE) { showToast('⚠️「' + DIARY_CAT_NONE + '」为保留名'); return; }
+            if (v.length > 20) { showToast('⚠️ 分类名请控制在 20 字以内'); return; }
+            var arr = getDiaryCats();
+            if (arr.indexOf(v) !== -1) { showToast('已存在该分类'); return; }
+            arr.push(v);
+            saveDiaryCats(arr);
+            inp.value = '';
+            renderDiaryCatList();
+            renderDiaryCatSelect(v);
+            renderDiaryCatFilter();
+            renderDiaryStats();
+            showToast('✅ 已添加分类：' + v);
+        }
+        function diaryCatDelete(name) {
+            var used = diaryCatAggregate(getDiaries())[name];
+            if (used && used.count) {
+                if (!confirm('分类「' + name + '」下还有 ' + used.count + ' 条记录。\n' +
+                        '删除分类不会删除这些记录，它们会转为「' + DIARY_CAT_NONE + '」。\n\n确定继续吗？')) return;
+            }
+            var arr = getDiaryCats().filter(function(v) { return v !== name; });
+            saveDiaryCats(arr);
+            var list = getDiaries();
+            var changed = false;
+            list.forEach(function(d) {
+                if (d.category === name) { d.category = ''; changed = true; }
+            });
+            if (changed) setDiaries(list);
+            renderDiaryCatList();
+            renderDiaryCatSelect();
+            renderDiaryCatFilter();
+            renderDiaries();
+            renderDiaryStats();
+            showToast('🗑️ 已删除分类：' + name);
+        }
+        function diaryCatRestore() {
+            var arr = getDiaryCats();
+            var added = [];
+            DIARY_CAT_DEFAULTS.forEach(function(c) {
+                if (arr.indexOf(c) === -1) { arr.push(c); added.push(c); }
+            });
+            saveDiaryCats(arr);
+            renderDiaryCatList();
+            renderDiaryCatSelect();
+            renderDiaryCatFilter();
+            renderDiaryStats();
+            showToast(added.length ? '↩️ 已恢复默认分类：' + added.join('、') : '默认分类已齐全');
+        }
+        function ensureDiaryCatModal() {
+            if (document.getElementById('diaryCatModal')) return;
+            var html =
+                '<div class="modal-mask" id="diaryCatModal" onclick="if(event.target===this)diaryCatAdminClose()">' +
+                    '<div class="chipmgr-box">' +
+                        '<div class="chipmgr-head">' +
+                            '<span class="chipmgr-title">⚙ 事情分类管理</span>' +
+                            '<button class="chipmgr-close" type="button" onclick="diaryCatAdminClose()" aria-label="关闭">×</button>' +
+                        '</div>' +
+                        '<div class="chipmgr-hint">默认分类：生活 / 课外课 / 课内作业 / 习惯养成。底栏输入新分类 → 添加；每个分类旁的 × 删除（该分类下的记录会转为「' +
+                            DIARY_CAT_NONE + '」，记录本身不删除）。</div>' +
+                        '<div class="chipmgr-list" id="diaryCatList"></div>' +
+                        '<div class="chipmgr-add">' +
+                            '<input type="text" id="diaryCatInput" placeholder="输入新分类…" maxlength="20">' +
+                            '<button class="chipmgr-addbtn" type="button" id="diaryCatAddBtn">添加</button>' +
+                        '</div>' +
+                        '<button class="chipmgr-textbtn" type="button" id="diaryCatRestoreBtn">恢复默认分类</button>' +
+                    '</div>' +
+                '</div>';
+            var wrap = document.createElement('div');
+            wrap.innerHTML = html;
+            document.body.appendChild(wrap.firstChild);
+            document.getElementById('diaryCatAddBtn').addEventListener('click', diaryCatAdd);
+            document.getElementById('diaryCatInput').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); diaryCatAdd(); }
+            });
+            document.getElementById('diaryCatRestoreBtn').addEventListener('click', diaryCatRestore);
+            var mgr = document.getElementById('diaryCatMgrBtn');
+            if (mgr) mgr.addEventListener('click', function(e) { e.preventDefault(); diaryCatAdminOpen(); });
+        }
+
         function addDiary() {
             var dateEl = document.getElementById('diaryDate');
             var titleEl = document.getElementById('diaryTitle');
             var minEl = document.getElementById('diaryMinutes');
             var moodEl = document.getElementById('diaryMood');
+            var catEl = document.getElementById('diaryCategory');
             var contentEl = document.getElementById('diaryContent');
             var title = (titleEl ? titleEl.value : '').trim();
             var content = (contentEl ? contentEl.value : '').trim();
             if (!title && !content) { showToast('⚠️ 请填写标题或内容'); return; }
+            var cat = catEl ? catEl.value : '';
+            if (cat === DIARY_CAT_NEW) cat = '';       // 「＋ 新建分类…」不是有效分类
             var list = getDiaries();
             list.push({
                 id: genId(),
                 date: dateEl ? dateEl.value || today : today,
                 title: title,
+                category: cat,
                 minutes: minEl ? parseInt(minEl.value || '0', 10) || 0 : 0,
                 mood: moodEl ? moodEl.value : '其他',
                 content: content,
@@ -7322,15 +7908,21 @@ var COMPLETION_FILTER_RANGE = 'all';
             if (moodEl) moodEl.value = '开心';
             if (contentEl) contentEl.value = '';
             if (dateEl) dateEl.value = today;
+            // 分类保留上次选择，便于连续记录同类别事项
+            renderDiaryCatSelect(cat);
+            renderDiaryCatFilter();
             renderDiaries();
-            showToast('✅ 日记已保存');
+            renderDiaryStats();
+            showToast('✅ 日记已保存' + (cat ? '（' + cat + '）' : ''));
         }
 
         window.deleteDiary = function(id) {
             if (!confirm('确定删除这条成长日记吗？')) return;
             var list = getDiaries().filter(function(d) { return d.id !== id; });
             setDiaries(list);
+            renderDiaryCatFilter();
             renderDiaries();
+            renderDiaryStats();
             showToast('🗑️ 日记已删除');
         };
 
@@ -7931,6 +8523,25 @@ var COMPLETION_FILTER_RANGE = 'all';
             if (dateEl) dateEl.value = today;
             var addBtn = document.getElementById('diaryAddBtn');
             if (addBtn) addBtn.addEventListener('click', addDiary);
+            // 事情分类：填充分类下拉 + 创建管理弹层
+            try {
+                renderDiaryCatSelect();
+                ensureDiaryCatModal();
+                var catSel = document.getElementById('diaryCategory');
+                if (catSel) catSel.addEventListener('change', function() {
+                    if (catSel.value !== DIARY_CAT_NEW) return;
+                    diaryCatAdminOpen();          // 选中「＋ 新建分类…」→ 打开管理弹层
+                    renderDiaryCatSelect();       // 下拉回到当前有效分类
+                });
+            } catch (e) { console.warn(e); }
+            // 筛选统计
+            var catFilter = document.getElementById('diaryCatFilter');
+            if (catFilter) catFilter.addEventListener('change', function() { renderDiaries(); renderDiaryStats(); });
+            var rangeFilter = document.getElementById('diaryRangeFilter');
+            if (rangeFilter) rangeFilter.addEventListener('change', function() { renderDiaries(); renderDiaryStats(); });
+            var resetBtn = document.getElementById('diaryFilterResetBtn');
+            if (resetBtn) resetBtn.addEventListener('click', clearDiaryFilter);
+            try { renderDiaryCatFilter(); renderDiaryStats(); } catch (e) { console.warn(e); }
             var modal = document.getElementById('diaryHomeworkModal');
             if (modal) {
                 modal.addEventListener('click', function(e) {
