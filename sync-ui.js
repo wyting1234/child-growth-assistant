@@ -95,6 +95,8 @@
   /* ============ 数据变更检测 ============ */
   // 双保险：CGA 的绝大多数业务写入走 Storage.set()，但也存在直接
   // localStorage.setItem 的地方，两层都包才能保证「有未同步更改」不误报为干净。
+  // 标志位放闭包（不能挂 localStorage，那会污染出一个新键）。
+  var setItemWrapped = false;
   function wrapStorage() {
     function apply() {
       // ① 包 Storage.set（注意：CGA 顶层 var Storage 已覆盖原生 window.Storage）
@@ -112,14 +114,26 @@
       } catch (e) { console.warn('[SyncUI] 包装 Storage.set 失败', e); }
 
       // ② 包 localStorage.setItem（兜底，覆盖未走 Storage 的直写）
+      // ⚠️ 两个坑（与 backup-hub.js 同源，改一处必须同步改另一处）：
+      //    坑① setItem 在 Storage 原型上，写 localStorage.setItem = fn 只会在实例上
+      //         新增一个名为 "setItem" 的键（会被枚举、会被备份出去），包装却不生效。
+      //    坑② 本页 window.Storage 已被 CGA 的业务对象影子化
+      //         （index.html 顶层 `var Storage = { rk/set/get }`），
+      //         所以 Storage.prototype 是业务对象的原型，挂上去没用。
+      //    正解：从 localStorage 自己反查原型链。
+      //    标志位放闭包，不能挂 localStorage（那会污染出 __hub_setItem_wrapped 键）。
       try {
-        if (!localStorage.__hub_setItem_wrapped) {
-          var origSetItem = localStorage.setItem.bind(localStorage);
-          localStorage.setItem = function (k, v) {
-            origSetItem(k, v);
-            try { if (!suppressDirty && !Core.isExcludedKey(k, null)) markDirty(); } catch (e) {}
-          };
-          localStorage.__hub_setItem_wrapped = true;
+        if (!setItemWrapped) {
+          var _lp = Object.getPrototypeOf(localStorage);
+          if (_lp && typeof _lp.setItem === 'function') {
+            setItemWrapped = true;
+            var origSetItem = _lp.setItem;
+            _lp.setItem = function (k, v) {
+              var r = origSetItem.apply(this, arguments);
+              try { if (!suppressDirty && !Core.isExcludedKey(k, null)) markDirty(); } catch (e) {}
+              return r;
+            };
+          }
         }
       } catch (e) { console.warn('[SyncUI] 包装 localStorage.setItem 失败', e); }
     }

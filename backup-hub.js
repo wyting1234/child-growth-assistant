@@ -104,6 +104,9 @@
         'github_token', 'github_gist_id',
         'gitee_token', 'gitee_owner', 'gitee_repo', 'gitee_branch',
         'sync_last_sync', 'sync_dirty',
+        // sync_backend：同步后端选择是「每台设备各自决定」的（见 sync-core.js 同名注释），
+        // 备份文件带到另一台设备后恢复，会把对方的选择冲掉 —— 与本意直接矛盾，必须排除。
+        'sync_backend',
         'timer_state_sm', 'studyUsers_v21'
     ];
 
@@ -178,6 +181,20 @@
         return false;
     }
 
+    /* 兜底防护：任何「值不是字符串」的键都不是业务数据。
+     *
+     * 为什么需要：localStorage 存的一律是字符串。一旦某个键取出来是函数/对象，
+     * 说明它是被脚本挂上去的实例属性（历史 bug：localStorage.setItem = fn 会在实例上
+     * 造出一个名为 "setItem" 的键），而不是用户数据。这类键一旦被当数据备份出去，
+     * 备份文件里就会出现整段 JS 源码。这里统一拦掉，避免同类问题换名字再犯。
+     * 注意：必须放在 allKeys() 里而不是 isExcludedKey()，因为后者签名只有 key。 */
+    function isNonDataKey(k) {
+        try {
+            var v = localStorage.getItem(k);
+            return v !== null && typeof v !== 'string';
+        } catch (e) { return true; }
+    }
+
     // 一个键是否属于某个模块定义。
     // ⚠️ 必须同时比对「原始键名」与「剥离儿童前缀后的裸键名」：
     //    小明::growth_diary 只有剥成 growth_diary 才能被 diary 模块的 prefixes 命中。
@@ -227,18 +244,56 @@
         }, 2500);
     }
 
+    /* ⚠️ 必须改「Storage 原型」，而且原型要从 localStorage 自己取。
+     *
+     * 两个坑叠加，缺一个都会静默失效：
+     *
+     * 坑① localStorage 是 Storage 接口的实例，setItem 定义在**原型**上。
+     *      向实例赋同名属性不会覆盖原型方法，而是新增一个名为 "setItem" 的
+     *      普通数据属性 —— 它会被 localStorage.key(i) 枚举出来，进了备份文件：
+     *          "unmatched": { "setItem": "function (k, v) { ... }" }
+     *      同时包装完全不生效：业务代码调 localStorage.setItem(...) 走的仍是
+     *      原型方法，写入时间埋点从未刷新，"备份后是否有改动"失去时间戳依据。
+     *
+     * 坑② 本页 window.Storage 被 CGA 的业务对象影子化了（index.html 顶层
+     *      `var Storage = { rk/set/get ... }` 覆盖了原生 Storage 构造器）。
+     *      所以 `Storage.prototype.setItem` 拿到的是业务对象的原型，
+     *      在上面挂 setItem 毫无作用 —— 必须从 localStorage 反查原型链：
+     *          Object.getPrototypeOf(localStorage)
+     *
+     * 包装链：sync-ui.js 也包一层。两边都改同一份原型，后包的会调用前一层
+     * （读取原型当前值作为 orig），链式关系天然保持。
+     * 标志位放闭包 —— 挂 localStorage 上同样会污染出一个新键。
+     */
+    var setItemWrapped = false;
     var _setItem = null;
     try {
-        _setItem = localStorage.setItem;
-        localStorage.setItem = function (k, v) {
-            var r = _setItem.apply(localStorage, arguments);
-            try {
-                if (!isInternalKey(k)) { meta[k] = Date.now(); metaDirty = true; }
-                if (!metaTimer) metaTimer = setTimeout(flushMeta, 2000);
-                scheduleSideRefresh();
-            } catch (e) {}
-            return r;
-        };
+        var _proto = Object.getPrototypeOf(localStorage);
+        if (_proto && typeof _proto.setItem === 'function') {
+            _setItem = _proto.setItem;
+            _proto.setItem = function (k, v) {
+                var r = _setItem.apply(this, arguments);
+                try {
+                    if (!isInternalKey(k)) { meta[k] = Date.now(); metaDirty = true; }
+                    if (!metaTimer) metaTimer = setTimeout(flushMeta, 2000);
+                    scheduleSideRefresh();
+                } catch (e) {}
+                return r;
+            };
+            setItemWrapped = true;
+        }
+    } catch (e) { console.warn('[BackupHub] 包装 setItem 失败', e); }
+
+    /* 清理历史遗留：早期版本向 localStorage 实例赋值，留下的 "setItem" 键
+     * （以及 sync-ui 留下的 __hub_setItem_wrapped 键）会一直躺在用户浏览器里，
+     * 继续被当成数据备份出去。这里主动删一次，让旧用户升级后自动洗净。 */
+    try {
+        if (Object.prototype.hasOwnProperty.call(localStorage, 'setItem')) {
+            localStorage.removeItem('setItem');
+        }
+        if (Object.prototype.hasOwnProperty.call(localStorage, '__hub_setItem_wrapped')) {
+            localStorage.removeItem('__hub_setItem_wrapped');
+        }
     } catch (e) {}
 
     /* ============ 扫描：把 localStorage 按模块归类 ============ */
@@ -247,7 +302,7 @@
         try {
             for (var i = 0; i < localStorage.length; i++) {
                 var k = localStorage.key(i);
-                if (k && !isInternalKey(k) && !isIgnoredKey(k) && !isExcludedKey(k)) out.push(k);
+                if (k && !isInternalKey(k) && !isIgnoredKey(k) && !isExcludedKey(k) && !isNonDataKey(k)) out.push(k);
             }
         } catch (e) {}
         return out;

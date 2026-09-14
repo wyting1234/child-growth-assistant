@@ -61,6 +61,10 @@
       if (key.indexOf(EXCLUDE_PREFIXES[i]) === 0) return true;
     }
     if (value && value.length > BIG_IMAGE_MIN && value.slice(0, 11) === 'data:image/') return true;
+    // 值不是字符串 → 不是用户数据，而是脚本挂在 localStorage 实例上的属性
+    // （历史 bug：localStorage.setItem = fn 会造出一个名为 "setItem" 的键）。
+    // 这类键绝不能进云端分片。
+    if (value !== null && value !== undefined && typeof value !== 'string') return true;
     return false;
   }
 
