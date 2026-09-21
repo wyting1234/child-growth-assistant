@@ -334,7 +334,11 @@
             text-align: center;
             font-size: 11px;
             color: #64748b;
-            margin-top: 2px;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(148,163,184,0.18);
+            line-height: 1.7;
+            letter-spacing: 0.2px;
         }
         /* 侧栏 Hamburger：贴在侧栏左缘垂直居中，一直显示
            - 默认位置：垂直 50% / 水平贴在 sidebar 左缘，半圈 tab 样式
@@ -3095,7 +3099,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                 <button class="sidebar-sync-btn" id="sidebarCloudSyncBtn" title="数据云端同步">☁️ 云端同步</button>
                 <button class="sidebar-user-btn" id="sidebarUserManagerBtn" title="学员管理">👤 学员管理</button>
                 <button class="sidebar-theme-btn" id="sidebarThemeBtn" title="切换页面深色/浅色模式">🌗 页面变色</button>
-                <span class="sidebar-version">v3.1</span>
+                <span class="sidebar-version">导航：V20260921 aa<br>导航中心：V20260921 AA</span>
             </div>
         </div>
     </aside>
@@ -9032,7 +9036,9 @@ var COMPLETION_FILTER_RANGE = 'all';
                 { key: 'study', ico: '📚', name: '儿童学习记录', href: './study-record.html' },
                 { key: 'eq', ico: '💬', name: '情商club', href: './情商club.html' },
                 { key: 'chaomu', ico: '🌅', name: '朝暮计', href: './朝暮计-双端适配版.html' },
-                { key: 'goal', ico: '🎯', name: '学习目标', href: './learning-goal.html' }
+                { key: 'goal', ico: '🎯', name: '学习目标', href: './learning-goal.html' },
+                { key: 'gameedu', ico: '🎮', name: '游戏改变世界', href: './游戏改变世界.html' },
+                { key: 'planet', ico: '🪐', name: '陪伴星球', href: './陪伴星球.html' }
             ];
 
             // 当前所在网页
@@ -9042,6 +9048,8 @@ var COMPLETION_FILTER_RANGE = 'all';
                 if (p === '情商club.html') return 'eq';
                 if (p === '朝暮计-双端适配版.html') return 'chaomu';
                 if (p === 'learning-goal.html') return 'goal';
+                if (p === '游戏改变世界.html') return 'gameedu';
+                if (p === '陪伴星球.html') return 'planet';
                 return 'main';
             }
 
