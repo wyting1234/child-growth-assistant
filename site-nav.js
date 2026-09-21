@@ -25,6 +25,14 @@
 
     var HOME = './index.html';
 
+    /* ---------- 版本号（推送批次）---------------------------------
+     * 导航版本用小写后缀，子工具版本用大写后缀；
+     * 规则：推送日期 + AA/AB/... 递增，导航版本不低于任何子工具版本。
+     * 新增页面时：改 PAGE_VER，并把 NAV_VER 调到 >= PAGE_VER。
+     * ----------------------------------------------------------- */
+    var NAV_VER  = 'V20260921 aa';
+    var PAGE_VER = 'V20260921 AA';
+
     /* 站点清单：只用于识别「当前在哪一页」 */
     var SITES = [
         { file: 'index.html',        ico: '🧭', name: '导航中心' },
@@ -33,7 +41,9 @@
         { file: '情商club.html',      ico: '💬', name: '情商club' },
         { file: '时间统计.html',       ico: '⏱️', name: '时间统计' },
         { file: '朝暮计-双端适配版.html', ico: '🌅', name: '朝暮计' },
-        { file: 'learning-goal.html', ico: '🎯', name: '学习目标' }
+        { file: 'learning-goal.html', ico: '🎯', name: '学习目标' },
+        { file: '游戏改变世界.html',   ico: '🎮', name: '游戏改变世界' },
+        { file: '陪伴星球.html',       ico: '🪐', name: '陪伴星球' }
     ];
 
     var me = document.currentScript || (function () {
@@ -113,7 +123,11 @@
         '.snav-foot button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;border:none;',
         'background:rgba(255,255,255,.06);color:#e2e8f0;font-size:13.5px;cursor:pointer;text-align:left;font-family:inherit;}',
         '.snav-foot button:hover{background:rgba(255,255,255,.14);color:#fff;}',
-        '.snav-ver{text-align:center;font-size:10px;color:#475569;padding-top:4px;}',
+        '.snav-ver{text-align:center;font-size:10px;color:#64748b;padding-top:6px;',
+        '  margin-top:4px;border-top:1px solid rgba(148,163,184,.14);',
+        '  line-height:1.7;display:flex;flex-direction:column;gap:1px;}',
+        '.snav-ver span{display:block;white-space:nowrap;}',
+        '.snav-ver span:first-child{color:#94a3b8;font-weight:600;}',
         '@media (max-width:640px){.snav-btn{width:34px;height:58px;font-size:16px;}.snav-btn:hover{width:38px;}}',
         '@media print{.snav-btn,.snav-mask,.snav-panel{display:none !important;}}'
     ].join('');
@@ -160,7 +174,10 @@
                 '<button id="sidebarCloudSyncBtn" title="数据云端备份/恢复">☁️ 云备份</button>' +
                 '<button id="sidebarUserManagerBtn" title="切换/添加孩子学员">👤 学员管理</button>' +
                 '<button id="sidebarThemeBtn" title="切换页面深色/浅色模式">🌗 页面变色</button>' +
-                '<div class="snav-ver">全站导航 · v1.0</div>' +
+                '<div class="snav-ver">' +
+                    '<span>导航：' + NAV_VER + '</span>' +
+                    '<span>' + meta.name + '：' + PAGE_VER + '</span>' +
+                '</div>' +
             '</div>' +
         '</aside>';
 
