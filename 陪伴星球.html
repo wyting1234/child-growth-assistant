@@ -1,0 +1,2823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>陪伴星球 · 孩子玩乐陪伴系统</title>
+<style>
+:root{
+  --cream:#FFFBF6; --ink:#2E2A26; --muted:#98908A; --line:#F1E9E0;
+  --orange:#FF8A5B; --yellow:#FFC93C; --green:#4FCE9E;
+  --blue:#6BA8F5; --purple:#B09BF8; --pink:#FF93B0;
+  --gold:#FFB347; --bronze:#C68A5B; --silver:#B8C0CC;
+  --shadow:0 4px 24px rgba(180,140,110,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:var(--cream);color:var(--ink);
+  -webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;
+}
+.blob{position:fixed;border-radius:50%;filter:blur(80px);opacity:.5;z-index:0;pointer-events:none;}
+.b1{width:420px;height:420px;background:#FFE0CC;top:-160px;left:-120px;}
+.b2{width:360px;height:360px;background:#D8F3E6;top:120px;right:-140px;}
+.b3{width:300px;height:300px;background:#E8E1FF;bottom:-100px;left:30%;opacity:.35;}
+
+header{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);background:rgba(255,251,246,.85);border-bottom:1px solid rgba(241,233,224,.9);}
+.nav{max-width:1180px;margin:0 auto;padding:14px 32px;display:flex;align-items:center;gap:28px;}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:.5px;flex-shrink:0;}
+.brand .logo{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,#FFC93C,#FF8A5B);display:grid;place-items:center;font-size:18px;box-shadow:0 4px 12px rgba(255,138,91,.35);}
+.nav-links{display:flex;gap:4px;margin-left:auto;}
+.nav-links a{text-decoration:none;color:var(--muted);font-size:14.5px;font-weight:600;padding:9px 14px;border-radius:12px;transition:.22s;cursor:pointer;white-space:nowrap;}
+.nav-links a:hover{background:#FFF2E9;color:var(--orange);}
+.nav-links a.on{background:#FFF0E7;color:var(--orange);}
+.avatar{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#D8F3E6,#B09BF8);display:grid;place-items:center;font-size:19px;border:2px solid #fff;box-shadow:var(--shadow);cursor:pointer;transition:.22s;}
+.avatar:hover{transform:scale(1.08);}
+
+main{max-width:1180px;margin:0 auto;padding:28px 32px 80px;position:relative;z-index:1;}
+.card{background:#fff;border-radius:24px;padding:24px;box-shadow:var(--shadow);border:1px solid rgba(241,233,224,.7);transition:transform .28s cubic-bezier(.2,.8,.3,1),box-shadow .28s;}
+.card:hover{transform:translateY(-3px);box-shadow:0 12px 34px rgba(180,140,110,.13);}
+.page{display:none;}
+.page.active{display:block;animation:pageIn .45s cubic-bezier(.2,.8,.3,1);}
+@keyframes pageIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.page-head{margin-bottom:22px;}
+.page-head h2{font-size:26px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px;}
+.page-head p{color:var(--muted);font-size:14.5px;line-height:1.6;}
+
+.btn{border:none;cursor:pointer;font-family:inherit;font-size:14.5px;font-weight:700;padding:12px 22px;border-radius:14px;transition:.22s;display:inline-flex;align-items:center;gap:8px;}
+.btn-primary{background:linear-gradient(135deg,#FF9A6B,#FF7A47);color:#fff;box-shadow:0 6px 18px rgba(255,122,71,.32);}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(255,122,71,.42);}
+.btn-primary.on{background:linear-gradient(135deg,#4FCE9E,#33B885);box-shadow:0 6px 18px rgba(79,206,158,.35);}
+.btn-ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line);}
+.btn-ghost:hover{border-color:#FFD4BE;color:var(--orange);background:#FFFBF7;}
+.btn-sm{padding:9px 16px;font-size:13px;border-radius:12px;}
+
+.hero{display:flex;align-items:center;gap:32px;background:linear-gradient(120deg,#FFF6EE 0%,#FFFDFB 45%,#F3FBF7 100%);border:1px solid #F7EBE0;padding:30px 34px;margin-bottom:20px;}
+.hero:hover{transform:none;}
+.hero-text{flex:1;min-width:0;}
+.eyebrow{font-size:13px;font-weight:700;color:var(--orange);letter-spacing:1.2px;margin-bottom:10px;display:inline-flex;align-items:center;gap:7px;}
+.eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--orange);}
+.hero h1{font-size:30px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px;}
+.hero .sub{color:var(--muted);font-size:15px;margin-bottom:22px;}
+.quick{display:flex;gap:10px;flex-wrap:wrap;}
+
+/* 计时器 */
+.timer-box{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;}
+.ring-box{position:relative;width:150px;height:150px;}
+.ring-box svg{width:100%;height:100%;transform:rotate(-90deg);}
+#ring{transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1);}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;}
+.ring-center .num{font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1;}
+.ring-center .unit{font-size:11px;color:var(--muted);font-weight:600;}
+.target-edit{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#B08A6E;background:#FFF6EE;padding:5px 11px;border-radius:9px;cursor:pointer;transition:.2s;}
+.target-edit:hover{background:#FFE9DE;color:var(--orange);}
+
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;}
+.span-3{grid-column:span 3;}
+.span-4{grid-column:span 4;}
+.span-5{grid-column:span 5;}
+.span-6{grid-column:span 6;}
+.span-7{grid-column:span 7;}
+.span-8{grid-column:span 8;}
+.span-12{grid-column:span 12;}
+
+.card-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap;}
+.card-title h3{font-size:16.5px;font-weight:800;display:flex;align-items:center;gap:8px;}
+.card-title .more{font-size:13px;color:var(--muted);font-weight:600;cursor:pointer;transition:.2s;}
+.card-title .more:hover{color:var(--orange);}
+
+/* 段位卡（王者荣耀风格） */
+.rank-card{
+  background:linear-gradient(135deg,#2A2540 0%,#3D3358 50%,#4A3E68 100%);
+  color:#fff;border-radius:24px;padding:24px;position:relative;overflow:hidden;
+  box-shadow:0 14px 36px rgba(60,45,100,.28);
+}
+.rank-card::before{
+  content:"";position:absolute;top:-50%;right:-20%;width:280px;height:280px;
+  background:radial-gradient(circle,rgba(255,200,100,.28),transparent 70%);border-radius:50%;
+}
+.rank-card::after{
+  content:"";position:absolute;bottom:-40%;left:-10%;width:220px;height:220px;
+  background:radial-gradient(circle,rgba(180,150,255,.22),transparent 70%);border-radius:50%;
+}
+.rank-head{display:flex;align-items:center;gap:16px;position:relative;z-index:1;margin-bottom:18px;}
+.rank-emblem{
+  width:76px;height:76px;border-radius:22px;flex-shrink:0;
+  display:grid;place-items:center;font-size:38px;
+  background:linear-gradient(135deg,rgba(255,200,100,.28),rgba(180,150,255,.22));
+  border:2px solid rgba(255,200,100,.4);
+  box-shadow:0 8px 24px rgba(255,200,100,.22);
+}
+.rank-info{flex:1;min-width:0;}
+.rank-tier{
+  font-size:11px;font-weight:800;letter-spacing:2px;color:#FFD98E;
+  text-transform:uppercase;margin-bottom:5px;
+}
+.rank-name{font-size:24px;font-weight:900;letter-spacing:1px;margin-bottom:6px;
+  background:linear-gradient(90deg,#FFE9A8,#FFB347);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.rank-stars-count{font-size:12.5px;font-weight:700;color:rgba(255,255,255,.72);}
+.rank-stars-count b{color:#FFD98E;font-size:15px;}
+
+.rank-progress-box{position:relative;z-index:1;}
+.rank-progress-text{display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;color:rgba(255,255,255,.72);margin-bottom:8px;}
+.rank-progress{height:12px;border-radius:7px;background:rgba(0,0,0,.28);overflow:hidden;position:relative;}
+.rank-progress i{
+  display:block;height:100%;border-radius:7px;
+  background:linear-gradient(90deg,#FFC93C,#FF8A5B);
+  transition:width 1s cubic-bezier(.3,1.2,.5,1);
+  box-shadow:0 0 14px rgba(255,180,80,.55);
+}
+.rank-ladder{
+  display:flex;justify-content:space-between;margin-top:16px;position:relative;z-index:1;
+  padding-top:14px;border-top:1px solid rgba(255,255,255,.12);
+}
+.rank-step{text-align:center;flex:1;opacity:.32;transition:.3s;}
+.rank-step.on{opacity:1;}
+.rank-step .rs-emoji{font-size:22px;display:block;margin-bottom:4px;}
+.rank-step .rs-name{font-size:9.5px;font-weight:800;letter-spacing:.5px;color:rgba(255,255,255,.8);}
+.rank-step.on .rs-name{color:#FFD98E;}
+
+/* 成就墙（奖励） */
+.achv-list{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.achv{
+  aspect-ratio:1;border-radius:18px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;
+  background:linear-gradient(150deg,#FFF6EE,#FFEFE0);
+  border:1.5px solid #FBE7D6;cursor:pointer;transition:.26s;
+  text-align:center;padding:6px;position:relative;
+}
+.achv span:first-child{font-size:24px;}
+.achv span:last-child{font-size:10px;font-weight:800;color:#B08A6E;line-height:1.25;}
+.achv .achv-req{font-size:9px;font-weight:700;color:#C9B7A8;margin-top:2px;}
+.achv:hover{transform:translateY(-4px) rotate(-3deg);box-shadow:0 10px 20px rgba(255,160,110,.2);}
+.achv.lock{background:#F8F5F2;border-color:#F0EAE3;filter:grayscale(1);opacity:.55;}
+.achv.lock:hover{transform:translateY(-2px) rotate(0);}
+.achv.unlocked{background:linear-gradient(150deg,#FFF6DE,#FFEEC0);border-color:#FFD98E;}
+
+/* 星星来源 */
+.star-sources{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.star-src{
+  display:flex;align-items:center;gap:10px;padding:11px 13px;
+  border-radius:15px;background:#FFFCF9;border:1px solid var(--line);
+}
+.star-src .si{font-size:22px;flex-shrink:0;}
+.star-src .st{flex:1;min-width:0;}
+.star-src h5{font-size:12.5px;font-weight:800;margin-bottom:2px;}
+.star-src p{font-size:10.5px;color:var(--muted);font-weight:600;}
+.star-src b{font-size:14px;font-weight:900;color:var(--orange);white-space:nowrap;}
+
+/* 故事库 */
+.story-hero{
+  background:linear-gradient(135deg,#FFF6EE 0%,#FFEEF5 50%,#F3EEFF 100%);
+  border-radius:24px;padding:28px 32px;margin-bottom:22px;
+  display:flex;align-items:center;gap:24px;position:relative;overflow:hidden;
+  border:1px solid #F7EBE0;
+}
+.story-hero::before{
+  content:"";position:absolute;top:-40%;right:-10%;width:260px;height:260px;
+  background:radial-gradient(circle,rgba(255,150,180,.28),transparent 70%);border-radius:50%;
+}
+.story-hero-emoji{font-size:72px;flex-shrink:0;position:relative;z-index:1;filter:drop-shadow(0 8px 16px rgba(255,150,180,.3));}
+.story-hero-text{flex:1;min-width:0;position:relative;z-index:1;}
+.story-hero-text .badge-daily{
+  display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;
+  padding:5px 12px;border-radius:9px;background:linear-gradient(135deg,#FFD98E,#FFB347);
+  color:#8A5A10;margin-bottom:10px;letter-spacing:.5px;
+}
+.story-hero-text h2{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px;}
+.story-hero-text p{font-size:14px;color:var(--muted);font-weight:600;line-height:1.65;margin-bottom:14px;}
+.story-hero-acts{display:flex;gap:10px;flex-wrap:wrap;}
+
+.story-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+.story-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;}
+.story-card{
+  background:#fff;border-radius:22px;padding:18px;
+  box-shadow:var(--shadow);border:1px solid rgba(241,233,224,.7);
+  display:flex;flex-direction:column;gap:10px;transition:.28s;position:relative;cursor:pointer;
+}
+.story-card:hover{transform:translateY(-4px);box-shadow:0 14px 32px rgba(180,140,110,.16);}
+.story-cover{
+  height:100px;border-radius:16px;display:grid;place-items:center;
+  font-size:48px;background:var(--bg,#FFEDE4);
+}
+.story-card h4{font-size:15px;font-weight:800;letter-spacing:-.2px;line-height:1.35;}
+.story-card .story-author{font-size:11.5px;color:var(--muted);font-weight:700;}
+.story-card .story-desc{font-size:12.5px;color:#5C534D;line-height:1.6;font-weight:600;flex:1;}
+.story-meta{display:flex;gap:6px;flex-wrap:wrap;}
+.story-meta span{font-size:10.5px;font-weight:700;color:#8A7F76;background:#F8F4F0;padding:3px 9px;border-radius:7px;}
+.story-daily-tag{
+  position:absolute;top:12px;left:12px;font-size:10px;font-weight:800;
+  padding:4px 10px;border-radius:8px;background:linear-gradient(135deg,#FFD98E,#FFB347);
+  color:#8A5A10;letter-spacing:.5px;
+}
+
+/* 故事阅读 */
+.story-reader{line-height:2;font-size:15px;color:#3A342F;font-weight:600;}
+.story-reader p{margin-bottom:16px;text-indent:2em;}
+.story-reader p:first-child::first-letter{
+  font-size:38px;font-weight:900;color:var(--orange);float:left;
+  line-height:1;margin-right:8px;margin-top:4px;
+}
+.story-tips{
+  background:#FFF9F2;border:1.5px dashed #FFD9C4;border-radius:16px;
+  padding:16px 18px;margin-top:18px;
+}
+.story-tips h4{font-size:13.5px;font-weight:800;color:#B07A2E;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.story-tips li{font-size:12.8px;color:#7A6E64;font-weight:600;line-height:1.85;margin-left:18px;margin-bottom:4px;}
+
+/* 通用活动行 */
+.activity{display:flex;align-items:center;gap:14px;padding:13px;border-radius:18px;border:1.5px solid transparent;cursor:pointer;transition:.24s;}
+.activity:hover{background:#FFFCF9;border-color:#FDEADC;transform:translateX(3px);}
+.act-icon{width:52px;height:52px;border-radius:16px;flex-shrink:0;display:grid;place-items:center;font-size:25px;background:var(--c,#FFEDE4);}
+.act-info{flex:1;min-width:0;}
+.act-info h4{font-size:14.5px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.act-info p{font-size:12.5px;color:var(--muted);margin-bottom:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.act-meta{display:flex;gap:8px;flex-wrap:wrap;}
+.act-meta span{font-size:11.5px;font-weight:600;color:#8A7F76;background:#F8F4F0;padding:3px 9px;border-radius:8px;}
+.act-go{width:34px;height:34px;border-radius:50%;border:none;flex-shrink:0;background:#FFF2E9;color:var(--orange);font-size:16px;font-weight:700;cursor:pointer;transition:.24s;display:grid;place-items:center;}
+.activity:hover .act-go{background:var(--orange);color:#fff;transform:rotate(-45deg);}
+.daily-fixed{
+  background:linear-gradient(120deg,#FFF6EE,#FFEEF5);
+  border:1.5px solid #FFD9C4;border-radius:18px;
+}
+.daily-fixed-tag{
+  font-size:10px;font-weight:800;padding:3px 9px;border-radius:7px;
+  background:linear-gradient(135deg,#FFD98E,#FFB347);color:#8A5A10;
+}
+
+/* 宝贝档案 */
+.companion-tip{font-size:12px;font-weight:700;color:#B08A6E;background:#FFF6EE;padding:8px 12px;border-radius:11px;margin-bottom:13px;line-height:1.5;}
+.child-list{display:flex;flex-direction:column;gap:10px;}
+.child-card{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:17px;border:2px solid var(--line);background:#fff;cursor:pointer;transition:.24s;position:relative;}
+.child-card:hover{border-color:#FFD4BE;transform:translateX(3px);}
+.child-card.sel{border-color:var(--orange);background:linear-gradient(120deg,#FFF7F1,#FFF1F6);box-shadow:0 6px 18px rgba(255,138,91,.16);}
+.child-avatar{width:48px;height:48px;border-radius:16px;flex-shrink:0;display:grid;place-items:center;font-size:24px;background:linear-gradient(135deg,#FFE7D6,#FFD1E0);}
+.child-card:nth-child(2) .child-avatar{background:linear-gradient(135deg,#D8E9FF,#CFE0FF);}
+.child-info{flex:1;min-width:0;}
+.child-info h4{font-size:14.5px;font-weight:800;margin-bottom:3px;display:flex;align-items:center;gap:7px;}
+.child-age{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:7px;background:#F1F9F5;color:#2FA87A;}
+.child-info p{font-size:11.8px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.child-check{width:24px;height:24px;border-radius:50%;flex-shrink:0;border:2px solid #E6DDD5;display:grid;place-items:center;font-size:13px;font-weight:900;color:#fff;transition:.24s;}
+.child-card.sel .child-check{background:var(--orange);border-color:var(--orange);}
+
+.mood-label{font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:10px;}
+.moods{display:flex;gap:9px;flex-wrap:wrap;}
+.mood{width:46px;height:46px;border-radius:15px;border:1.5px solid var(--line);background:#fff;font-size:22px;cursor:pointer;transition:.22s;display:grid;place-items:center;}
+.mood:hover{transform:translateY(-4px) scale(1.06);border-color:#FFD4BE;}
+.mood.sel{background:linear-gradient(135deg,#FFF3E9,#FFE8F0);border-color:var(--orange);transform:translateY(-4px) scale(1.06);box-shadow:0 8px 18px rgba(255,138,91,.24);}
+.mood-tip{font-size:12.5px;color:var(--orange);font-weight:700;margin-top:12px;min-height:16px;line-height:1.5;}
+
+.badges{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.badge{aspect-ratio:1;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:linear-gradient(150deg,#FFF6EE,#FFEFE0);border:1.5px solid #FBE7D6;cursor:pointer;transition:.26s;}
+.badge span:first-child{font-size:24px;}
+.badge span:last-child{font-size:10.5px;font-weight:700;color:#B08A6E;text-align:center;padding:0 4px;}
+.badge:hover{transform:translateY(-4px) rotate(-3deg);box-shadow:0 10px 20px rgba(255,160,110,.2);}
+.badge.lock{background:#F8F5F2;border-color:#F0EAE3;filter:grayscale(1);opacity:.5;}
+
+.tl{position:relative;padding-left:26px;}
+.tl::before{content:"";position:absolute;left:6px;top:8px;bottom:14px;width:2px;background:linear-gradient(#FFD9C4,#E8F5EE,#EDE7FF);border-radius:2px;}
+.tl-item{position:relative;padding-bottom:20px;}
+.tl-item:last-child{padding-bottom:0;}
+.tl-dot{position:absolute;left:-26px;top:4px;width:14px;height:14px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px var(--line);}
+.tl-time{font-size:11.5px;font-weight:700;color:var(--muted);margin-bottom:4px;letter-spacing:.3px;}
+.tl-text{font-size:14px;font-weight:600;line-height:1.5;padding-right:8px;}
+.tl-text .dur{font-size:11.5px;font-weight:700;color:#2FA87A;background:#F1F9F5;padding:2px 8px;border-radius:7px;margin-left:6px;}
+.tl-item .tl-edit{position:absolute;right:0;top:2px;opacity:0;transition:.2s;display:flex;gap:4px;}
+.tl-item:hover .tl-edit{opacity:1;}
+
+.bars{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;height:110px;margin-bottom:16px;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end;}
+.bar{width:100%;max-width:26px;border-radius:9px;background:linear-gradient(180deg,#FFCDA8,#FFA173);transition:height .8s cubic-bezier(.3,1.2,.5,1);}
+.bar-col.today .bar{background:linear-gradient(180deg,#7EE0B8,#3FC192);box-shadow:0 4px 14px rgba(63,193,146,.3);}
+.bar-col span{font-size:11.5px;font-weight:700;color:var(--muted);}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding-top:16px;border-top:1px dashed var(--line);}
+.stat{text-align:center;}
+.stat b{display:block;font-size:19px;font-weight:800;letter-spacing:-.5px;}
+.stat small{font-size:11.5px;color:var(--muted);font-weight:600;}
+
+.filter-bar{display:flex;flex-direction:column;gap:12px;margin-bottom:22px;background:#fff;border-radius:20px;padding:18px 20px;box-shadow:var(--shadow);border:1px solid rgba(241,233,224,.7);}
+.filter-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.filter-label{font-size:12.5px;font-weight:800;color:var(--muted);min-width:44px;}
+.chip{padding:8px 15px;border-radius:11px;border:1.5px solid var(--line);background:#fff;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit;transition:.2s;}
+.chip:hover{border-color:#FFD4BE;color:var(--orange);}
+.chip.on{background:#FFF0E7;border-color:#FFCDB3;color:var(--orange);}
+.chip.mini{padding:6px 12px;font-size:12px;border-radius:9px;}
+
+.lib-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.lib-toolbar .info{font-size:13px;font-weight:700;color:var(--muted);}
+.lib-toolbar .info b{color:var(--orange);font-size:15px;}
+.lib-toolbar .acts{display:flex;gap:8px;flex-wrap:wrap;}
+
+.act-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px;}
+.lib-card{background:#fff;border-radius:22px;padding:20px;box-shadow:var(--shadow);border:1px solid rgba(241,233,224,.7);display:flex;flex-direction:column;gap:11px;transition:transform .28s cubic-bezier(.2,.8,.3,1),box-shadow .28s;position:relative;}
+.lib-card:hover{transform:translateY(-4px);box-shadow:0 14px 32px rgba(180,140,110,.16);}
+.lib-card.custom{border-color:#E5D8FF;background:linear-gradient(150deg,#FDFBFF,#F8F4FF);}
+.lib-icon{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;font-size:27px;background:var(--c,#FFEDE4);}
+.lib-card h4{font-size:15.5px;font-weight:800;letter-spacing:-.2px;padding-right:52px;}
+.lib-card p{font-size:12.8px;color:var(--muted);line-height:1.6;flex:1;}
+.lib-meta{display:flex;gap:7px;flex-wrap:wrap;}
+.lib-meta span{font-size:11.5px;font-weight:700;color:#8A7F76;background:#F8F4F0;padding:4px 10px;border-radius:8px;}
+.lib-award{font-size:11.5px;font-weight:800;color:#B07A2E;background:linear-gradient(120deg,#FFF6DE,#FFEFD0);padding:7px 11px;border-radius:10px;display:flex;align-items:center;gap:6px;}
+.lib-actions{display:flex;gap:8px;}
+.lib-btn{flex:1;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;padding:10px;border-radius:12px;background:#FFF4EC;color:#E4813F;transition:.22s;}
+.lib-btn:hover{background:linear-gradient(135deg,#FF9A6B,#FF7A47);color:#fff;}
+.lib-btn.added{background:#EDF9F3;color:#2FA87A;}
+.lib-btn.rec{background:#EEF4FF;color:#4A82D6;flex:0 0 auto;padding:10px 14px;}
+.lib-card .lib-edit{position:absolute;top:14px;right:14px;display:flex;gap:4px;}
+.icon-btn{width:30px;height:30px;border-radius:9px;border:none;cursor:pointer;font-size:13px;display:grid;place-items:center;transition:.2s;font-family:inherit;background:#F8F4F0;color:#8A7F76;flex-shrink:0;}
+.icon-btn:hover{background:#FFE9DE;color:var(--orange);}
+.icon-btn.del:hover{background:#FFE4E4;color:#E45B5B;}
+.empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;font-weight:600;}
+
+.growth-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
+.g-stat{background:#fff;border-radius:20px;padding:18px 20px;box-shadow:var(--shadow);border:1px solid rgba(241,233,224,.7);transition:.26s;position:relative;cursor:pointer;}
+.g-stat:hover{transform:translateY(-3px);border-color:#FFD4BE;}
+.g-stat small{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:8px;}
+.g-stat b{font-size:24px;font-weight:800;letter-spacing:-1px;}
+.g-stat b i{font-size:12px;font-weight:700;font-style:normal;color:var(--muted);margin-left:3px;}
+.g-stat .delta{font-size:11.5px;font-weight:700;color:#2FA87A;margin-left:8px;}
+.g-stat .edit-hint{position:absolute;top:12px;right:14px;font-size:11px;color:#D8CFC7;font-weight:700;opacity:0;transition:.2s;}
+.g-stat:hover .edit-hint{opacity:1;}
+
+.ability{margin-bottom:16px;}
+.ability:last-child{margin-bottom:0;}
+.ab-head{display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:8px;}
+.ab-head b{color:var(--orange);}
+.track{height:9px;border-radius:6px;background:#F5EFE9;overflow:hidden;}
+.track i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#FFCDA8,#FF8A5B);transition:width .9s cubic-bezier(.3,1.2,.5,1);}
+
+.memory-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.memory{border-radius:20px;padding:18px;aspect-ratio:1.25;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;transition:.28s;border:1px solid rgba(255,255,255,.6);position:relative;}
+.memory:hover{transform:translateY(-5px) scale(1.02);box-shadow:0 14px 30px rgba(180,140,110,.18);}
+.memory .emo{font-size:30px;}
+.memory .mtxt{font-size:13px;font-weight:700;line-height:1.45;}
+.memory .mdate{font-size:11px;font-weight:700;opacity:.62;}
+.memory .mem-edit{position:absolute;top:10px;right:10px;display:flex;gap:4px;opacity:0;transition:.2s;}
+.memory:hover .mem-edit{opacity:1;}
+.memory-add{border:2px dashed var(--line);background:#FFFCF9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:13px;font-weight:700;aspect-ratio:1.25;border-radius:20px;cursor:pointer;transition:.24s;}
+.memory-add:hover{border-color:#FFCDB3;color:var(--orange);background:#FFF6EE;}
+.memory-add span:first-child{font-size:28px;}
+
+.record-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+.record-item{background:#fff;border-radius:20px;padding:18px;box-shadow:var(--shadow);border:1px solid rgba(241,233,224,.7);display:flex;flex-direction:column;gap:10px;transition:.26s;}
+.record-item:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(180,140,110,.14);}
+.rec-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.rec-head h4{font-size:14.5px;font-weight:800;line-height:1.4;}
+.rec-date{font-size:11.5px;font-weight:700;color:var(--muted);white-space:nowrap;}
+.rec-kids{font-size:12px;font-weight:700;color:#B08A6E;background:#FFF6EE;padding:5px 11px;border-radius:9px;display:inline-block;}
+.rec-states{display:flex;gap:6px;flex-wrap:wrap;}
+.rec-states span{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:8px;background:#F8F4F0;color:#8A7F76;}
+.rec-text{font-size:12.8px;color:#5C534D;line-height:1.65;font-weight:600;}
+.rec-text b{color:#E4813F;font-weight:800;}
+.rec-text.improve b{color:#4A82D6;}
+.rec-awards{display:flex;gap:6px;flex-wrap:wrap;padding-top:10px;border-top:1px dashed var(--line);}
+.rec-awards span{font-size:11.5px;font-weight:800;padding:5px 11px;border-radius:9px;background:linear-gradient(120deg,#FFF6DE,#FFEFD0);color:#B07A2E;}
+.rec-stars{
+  display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;
+  color:#FFB347;background:#FFF9E8;padding:6px 12px;border-radius:9px;align-self:flex-start;
+}
+.rec-empty{grid-column:1/-1;text-align:center;padding:46px 20px;color:var(--muted);font-size:13.5px;font-weight:600;line-height:1.7;background:#FFFCF9;border-radius:20px;border:1.5px dashed var(--line);}
+
+.parent-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+.parent-item{background:linear-gradient(150deg,#FDFBFF,#F7F4FF);border-radius:20px;padding:18px;box-shadow:var(--shadow);border:1px solid #ECE5FA;display:flex;flex-direction:column;gap:10px;transition:.26s;}
+.parent-item:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(150,130,200,.16);}
+.p-head{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.p-parent{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:800;color:#7A5FBF;background:#F1EBFF;padding:5px 12px;border-radius:10px;}
+.p-date{font-size:11.5px;font-weight:700;color:var(--muted);}
+.p-scene{font-size:12.5px;font-weight:700;color:#8A7F76;background:#fff;padding:5px 11px;border-radius:9px;display:inline-block;border:1px solid #F1E9E0;}
+.p-block{font-size:12.8px;color:#5C534D;line-height:1.65;font-weight:600;}
+.p-block b{font-weight:800;display:block;margin-bottom:2px;}
+.p-block.words b{color:#4A82D6;}
+.p-block.act b{color:#2FA87A;}
+.p-block.imp b{color:#E4813F;}
+.p-tags{display:flex;gap:6px;flex-wrap:wrap;padding-top:8px;border-top:1px dashed #E5DEF7;}
+.p-tags span{font-size:11px;font-weight:800;padding:4px 10px;border-radius:8px;background:#F1EBFF;color:#7A5FBF;}
+
+.advice-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.advice-card{background:#fff;border-radius:18px;padding:16px;box-shadow:var(--shadow);border:1px solid rgba(241,233,224,.7);display:flex;flex-direction:column;gap:9px;transition:.26s;}
+.advice-card:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(180,140,110,.14);}
+.advice-top{display:flex;align-items:center;gap:9px;}
+.advice-top .ai{font-size:22px;}
+.advice-top h4{font-size:14.5px;font-weight:800;flex:1;}
+.advice-tag{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:7px;background:#FFF6DE;color:#B07A2E;}
+.advice-card p{font-size:12.6px;color:#5C534D;line-height:1.65;font-weight:600;}
+
+.me-card{display:flex;align-items:center;gap:18px;background:linear-gradient(120deg,#FFF6EE,#FFFDFB 55%,#F3FBF7);border:1px solid #F7EBE0;}
+.me-card:hover{transform:none;}
+.me-avatar{width:74px;height:74px;border-radius:26px;flex-shrink:0;background:linear-gradient(135deg,#FFE7D6,#FFD1E0);display:grid;place-items:center;font-size:36px;box-shadow:0 8px 20px rgba(255,150,120,.2);}
+.me-info h3{font-size:20px;font-weight:800;margin-bottom:5px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+.vip{font-size:11px;font-weight:800;padding:4px 10px;border-radius:9px;background:linear-gradient(135deg,#FFD98E,#FFB347);color:#8A5A10;}
+.me-info p{font-size:13px;color:var(--muted);font-weight:600;}
+.lock-note{font-size:11px;color:#B0A8A0;font-weight:700;background:#F8F4F0;padding:5px 11px;border-radius:9px;display:inline-flex;align-items:center;gap:5px;margin-left:auto;}
+
+.list{display:flex;flex-direction:column;}
+.list-row{display:flex;align-items:center;gap:14px;padding:15px 4px;border-bottom:1px solid var(--line);cursor:pointer;transition:.2s;}
+.list-row:last-child{border-bottom:none;}
+.list-row:hover{padding-left:10px;}
+.list-ico{width:40px;height:40px;border-radius:13px;flex-shrink:0;display:grid;place-items:center;font-size:19px;background:#FFF4EC;}
+.list-row .lt{flex:1;min-width:0;}
+.list-row .lt h4{font-size:14.5px;font-weight:700;margin-bottom:3px;}
+.list-row .lt p{font-size:12.2px;color:var(--muted);font-weight:500;}
+.list-row .arrow{color:#D8CFC7;font-size:16px;font-weight:700;}
+.list-row .row-acts{display:flex;gap:4px;opacity:0;transition:.2s;}
+.list-row:hover .row-acts{opacity:1;}
+.switch{width:46px;height:26px;border-radius:13px;background:#EDE6DF;position:relative;cursor:pointer;transition:.24s;flex-shrink:0;}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.12);transition:.24s;}
+.switch.on{background:linear-gradient(135deg,#7EE0B8,#3FC192);}
+.switch.on::after{left:23px;}
+
+.modal-overlay{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(46,42,38,.42);backdrop-filter:blur(6px);}
+.modal-overlay.show{display:flex;animation:ovIn .26s ease;}
+@keyframes ovIn{from{opacity:0;}to{opacity:1;}}
+.modal{background:#fff;border-radius:26px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.22);animation:mdIn .34s cubic-bezier(.2,.9,.3,1.1);}
+.modal.wide{max-width:720px;}
+@keyframes mdIn{from{opacity:0;transform:translateY(24px) scale(.97);}to{opacity:1;transform:none;}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:22px 24px 14px;position:sticky;top:0;background:#fff;z-index:2;border-bottom:1px solid var(--line);}
+.modal-head h3{font-size:17.5px;font-weight:800;}
+.modal-close{width:34px;height:34px;border-radius:11px;border:none;cursor:pointer;background:#F8F4F0;color:var(--muted);font-size:19px;font-weight:700;transition:.2s;display:grid;place-items:center;font-family:inherit;}
+.modal-close:hover{background:#FFE9DE;color:var(--orange);}
+.modal-body{padding:20px 24px 26px;}
+.form-label{font-size:13px;font-weight:800;color:#7A7069;margin:18px 0 9px;}
+.form-label:first-child{margin-top:0;}
+.form-sub{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:7px;}
+.chips-row{display:flex;gap:8px;flex-wrap:wrap;}
+.form-grid{display:grid;grid-template-columns:70px 1fr 80px 82px;gap:9px;}
+.form-grid.wide{grid-template-columns:80px 1fr;}
+.form-grid input,.form-grid select,.modal-body textarea,.modal-body input.f-in,.modal-body select.f-in{
+  font-family:inherit;font-size:13.5px;font-weight:600;color:var(--ink);
+  border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;
+  background:#FFFDFB;transition:.2s;width:100%;
+}
+.form-grid input:focus,.form-grid select:focus,.modal-body textarea:focus,.modal-body input.f-in:focus,.modal-body select.f-in:focus{
+  outline:none;border-color:#FFB98F;background:#fff;box-shadow:0 0 0 3px rgba(255,138,91,.12);
+}
+.modal-body textarea{resize:vertical;min-height:62px;line-height:1.6;margin-top:2px;}
+.md-textarea{font-family:"SFMono-Regular",Consolas,monospace !important;font-size:12.5px !important;line-height:1.7 !important;min-height:280px !important;background:#FCFAF7 !important;color:#3A342F !important;}
+.manage-row{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:16px;border:1.5px solid var(--line);background:#FFFDFB;}
+.manage-row .child-avatar{width:42px;height:42px;font-size:21px;border-radius:14px;}
+.manage-row .mi{flex:1;min-width:0;}
+.manage-row .mi h4{font-size:13.8px;font-weight:800;margin-bottom:2px;}
+.manage-row .mi p{font-size:11.5px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.child-manage-list{display:flex;flex-direction:column;gap:10px;margin-bottom:6px;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;flex-wrap:wrap;}
+.divider{height:1px;background:var(--line);margin:20px 0 4px;}
+.md-help{background:#FFF9F2;border:1.5px dashed #FFD9C4;border-radius:14px;padding:14px 16px;font-size:12.5px;color:#8A7F76;line-height:1.75;font-weight:600;margin-bottom:14px;}
+.md-help code{background:#fff;border:1px solid #F1E9E0;padding:1px 7px;border-radius:6px;font-size:12px;color:#E4813F;font-family:Consolas,monospace;}
+
+.toast{position:fixed;left:50%;bottom:40px;transform:translate(-50%,20px);background:#2E2A26;color:#fff;padding:12px 24px;border-radius:14px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.32s;z-index:999;box-shadow:0 10px 30px rgba(0,0,0,.2);max-width:88vw;text-align:center;line-height:1.5;}
+.toast.show{opacity:1;transform:translate(-50%,0);}
+
+/* 升级特效 */
+.levelup-flash{
+  position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;
+  background:radial-gradient(circle,rgba(60,45,100,.85),rgba(20,15,40,.92));
+  backdrop-filter:blur(8px);
+}
+.levelup-flash.show{display:flex;animation:ovIn .3s ease;}
+.levelup-inner{text-align:center;color:#fff;animation:lvlPop .8s cubic-bezier(.2,1.2,.4,1);}
+@keyframes lvlPop{0%{transform:scale(.5);opacity:0;}60%{transform:scale(1.1);}100%{transform:scale(1);opacity:1;}}
+.levelup-inner .lv-emoji{font-size:90px;display:block;margin-bottom:14px;filter:drop-shadow(0 0 30px rgba(255,220,120,.7));}
+.levelup-inner .lv-title{font-size:15px;font-weight:800;letter-spacing:3px;color:#FFD98E;margin-bottom:10px;}
+.levelup-inner .lv-rank{font-size:34px;font-weight:900;background:linear-gradient(90deg,#FFE9A8,#FFB347);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:12px;}
+.levelup-inner .lv-sub{font-size:14px;color:rgba(255,255,255,.75);font-weight:600;}
+
+.fade{opacity:0;transform:translateY(16px);animation:up .6s cubic-bezier(.2,.8,.3,1) forwards;}
+@keyframes up{to{opacity:1;transform:translateY(0);}}
+
+@media(max-width:1024px){
+  .span-5,.span-7,.span-6,.span-8{grid-column:span 12;}
+  .span-4{grid-column:span 7;}
+  .span-3{grid-column:span 5;}
+  .growth-stats{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:720px){
+  .nav{padding:10px 12px;gap:8px;}
+  .nav-links{gap:1px;}
+  .nav-links a{padding:7px 8px;font-size:12px;border-radius:9px;}
+  main{padding:20px 14px 60px;}
+  .span-3,.span-4,.span-5,.span-6,.span-7,.span-8{grid-column:span 12;}
+  .hero{flex-direction:column;align-items:flex-start;padding:24px 20px;gap:20px;}
+  .hero h1{font-size:22px;}
+  .timer-box{align-self:center;}
+  .ring-box{width:120px;height:120px;}
+  .card{padding:18px;border-radius:20px;}
+  .growth-stats{grid-template-columns:1fr 1fr;gap:10px;}
+  .memory-grid{grid-template-columns:1fr 1fr;}
+  .brand span{display:none;}
+  .story-hero{flex-direction:column;align-items:flex-start;padding:22px;gap:16px;}
+  .story-hero-emoji{font-size:56px;}
+  .achv-list{grid-template-columns:repeat(3,1fr);}
+  .star-sources{grid-template-columns:1fr;}
+  .rank-head{gap:12px;}
+  .rank-emblem{width:62px;height:62px;font-size:30px;}
+  .rank-name{font-size:20px;}
+  .rank-step .rs-name{font-size:8px;}
+  .rank-step .rs-emoji{font-size:18px;}
+}
+</style>
+</head>
+<body>
+
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+
+<header>
+  <div class="nav">
+    <div class="brand"><div class="logo">🌱</div><span>陪伴星球</span></div>
+    <nav class="nav-links">
+      <a data-page="home" class="on">首页</a>
+      <a data-page="library">活动库</a>
+      <a data-page="story">故事库</a>
+      <a data-page="growth">成长记录</a>
+      <a data-page="reward">奖励</a>
+      <a data-page="mine">我的</a>
+    </nav>
+    <div class="avatar">🐻</div>
+  </div>
+</header>
+
+<main>
+
+<!-- ==================== 首页 ==================== -->
+<section class="page active" id="page-home">
+  <!-- 段位卡（王者风格） -->
+  <div class="rank-card fade" id="homeRankCard" style="margin-bottom:20px;"></div>
+
+  <div class="hero card fade" style="animation-delay:.05s">
+    <div class="hero-text">
+      <p class="eyebrow" id="today">今天</p>
+      <h1>早上好，小星妈妈 👋</h1>
+      <p class="sub" id="heroSub">今天想和小星一起玩点什么？我们已经为你准备好了。</p>
+      <div class="quick">
+        <button class="btn btn-primary" id="startBtn">▶ 开始陪伴计时</button>
+        <button class="btn btn-ghost" id="resetTimerBtn">↺ 重置</button>
+        <button class="btn btn-ghost" id="shuffleBtn">🎲 换一批灵感</button>
+      </div>
+    </div>
+    <div class="timer-box">
+      <div class="ring-box">
+        <svg viewBox="0 0 120 120">
+          <defs><linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFC93C"/><stop offset="100%" stop-color="#FF8A5B"/></linearGradient></defs>
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#F5EDE5" stroke-width="11"/>
+          <circle id="ring" cx="60" cy="60" r="52" fill="none" stroke="url(#ringGrad)" stroke-width="11" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+        </svg>
+        <div class="ring-center"><div class="num" id="ringNum">0</div><div class="unit" id="ringUnit">分钟 / 目标 60</div></div>
+      </div>
+      <div class="target-edit" id="editTargetBtn">🎯 修改目标时间</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="card span-5 fade" style="animation-delay:.1s">
+      <div class="card-title"><h3>✨ 今日推荐</h3><span class="more" id="shuffleBtn2">换一批</span></div>
+      <div id="activityList"></div>
+    </section>
+
+    <section class="card span-4 fade" style="animation-delay:.15s">
+      <div class="card-title"><h3>🧒 宝贝档案</h3><span class="more" id="manageChildBtn">管理 →</span></div>
+      <div class="companion-tip">👇 点击选择陪伴对象，可多选 → 同时陪伴两个孩子</div>
+      <div class="child-list" id="childList"></div>
+      <div class="mood-label" style="margin-top:18px">今天心情怎么样？</div>
+      <div class="moods" id="moods">
+        <button class="mood" data-m="超级开心">😄</button>
+        <button class="mood" data-m="还不错">🙂</button>
+        <button class="mood" data-m="有点困">😴</button>
+        <button class="mood" data-m="有点小情绪">😕</button>
+      </div>
+      <div class="mood-tip" id="moodTip"></div>
+    </section>
+
+    <section class="card span-3 fade" style="animation-delay:.2s">
+      <div class="card-title"><h3>🏅 成就墙</h3></div>
+      <div class="achv-list" id="badgeWall"></div>
+    </section>
+
+    <section class="card span-7 fade" style="animation-delay:.25s">
+      <div class="card-title"><h3>🕰 陪伴时光机</h3><span class="more" data-goto="growth">全部记录 →</span></div>
+      <div class="tl" id="homeTimeline"></div>
+    </section>
+
+    <section class="card span-5 fade" style="animation-delay:.3s">
+      <div class="card-title"><h3>📊 本周陪伴数据</h3><span class="more" data-goto="growth">周报 →</span></div>
+      <div class="bars">
+        <div class="bar-col"><div class="bar" style="height:45%"></div><span>一</span></div>
+        <div class="bar-col"><div class="bar" style="height:68%"></div><span>二</span></div>
+        <div class="bar-col"><div class="bar" style="height:38%"></div><span>三</span></div>
+        <div class="bar-col"><div class="bar" style="height:82%"></div><span>四</span></div>
+        <div class="bar-col"><div class="bar" style="height:56%"></div><span>五</span></div>
+        <div class="bar-col"><div class="bar" style="height:92%"></div><span>六</span></div>
+        <div class="bar-col today"><div class="bar" style="height:58%"></div><span>今</span></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><b style="color:#FF8A5B">5.8<span style="font-size:12px">h</span></b><small>本周总时长</small></div>
+        <div class="stat"><b style="color:#4FCE9E">50<span style="font-size:12px">min</span></b><small>日均陪伴</small></div>
+        <div class="stat"><b style="color:#B09BF8">14<span style="font-size:12px">次</span></b><small>活动次数</small></div>
+      </div>
+    </section>
+  </div>
+</section>
+
+<!-- ==================== 活动库 ==================== -->
+<section class="page" id="page-library">
+  <div class="page-head">
+    <h2>活动库</h2>
+    <p>50+ 个精选活动 + 你自定义的活动。支持 md 模板批量导入，越用越丰富。</p>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-row">
+      <span class="filter-label">年龄</span>
+      <button class="chip on" data-filter="age" data-value="all">全部</button>
+      <button class="chip" data-filter="age" data-value="low">2-4 岁</button>
+      <button class="chip" data-filter="age" data-value="mid">4-6 岁</button>
+      <button class="chip" data-filter="age" data-value="high">6-10 岁</button>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">时长</span>
+      <button class="chip on" data-filter="dur" data-value="all">全部</button>
+      <button class="chip" data-filter="dur" data-value="short">≤ 15 分钟</button>
+      <button class="chip" data-filter="dur" data-value="mid">15-25 分钟</button>
+      <button class="chip" data-filter="dur" data-value="long">25 分钟以上</button>
+    </div>
+    <div class="filter-row" id="typeRow">
+      <span class="filter-label">类型</span>
+      <button class="chip on" data-filter="type" data-value="all">全部</button>
+    </div>
+  </div>
+
+  <div class="lib-toolbar">
+    <div class="info">共 <b id="libCount">0</b> 个活动（含 <b id="customCount">0</b> 个自定义）</div>
+    <div class="acts">
+      <button class="btn btn-ghost btn-sm" id="openTemplateBtn">📄 md 模板导入</button>
+      <button class="btn btn-primary btn-sm" id="addCustomActivityBtn">＋ 添加自定义活动</button>
+    </div>
+  </div>
+
+  <div class="act-grid" id="libGrid"></div>
+</section>
+
+<!-- ==================== 故事库 ==================== -->
+<section class="page" id="page-story">
+  <div class="page-head">
+    <h2>故事库</h2>
+    <p>每天一个故事，是陪伴里最温柔的固定节目。记录一次，赚星星，升段位。</p>
+  </div>
+
+  <!-- 每日固定：讲故事 -->
+  <div class="story-hero fade">
+    <div class="story-hero-emoji">📖</div>
+    <div class="story-hero-text">
+      <span class="badge-daily">⭐ 每日固定推荐 · 讲故事</span>
+      <h2 id="dailyStoryTitle">《猜猜我有多爱你》</h2>
+      <p id="dailyStoryDesc">今天的故事时光，从这本开始吧。读完记得点击「记录」，帮孩子颁发一枚习惯奖，也为自己赚一颗星星。</p>
+      <div class="story-hero-acts">
+        <button class="btn btn-primary" id="dailyStoryStartBtn">📝 记录今天讲故事</button>
+        <button class="btn btn-ghost" id="dailyStoryReadBtn">📚 立即阅读</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 故事筛选 -->
+  <div class="filter-bar">
+    <div class="filter-row">
+      <span class="filter-label">主题</span>
+      <button class="chip on" data-sfilter="theme" data-value="all">全部</button>
+      <button class="chip" data-sfilter="theme" data-value="爱与陪伴">爱与陪伴</button>
+      <button class="chip" data-sfilter="theme" data-value="勇气成长">勇气成长</button>
+      <button class="chip" data-sfilter="theme" data-value="自然探索">自然探索</button>
+      <button class="chip" data-sfilter="theme" data-value="情绪认知">情绪认知</button>
+      <button class="chip" data-sfilter="theme" data-value="趣味想象">趣味想象</button>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">年龄</span>
+      <button class="chip on" data-sfilter="age" data-value="all">全部</button>
+      <button class="chip" data-sfilter="age" data-value="低幼">2-4 岁</button>
+      <button class="chip" data-sfilter="age" data-value="中童">4-6 岁</button>
+      <button class="chip" data-sfilter="age" data-value="大童">6-10 岁</button>
+    </div>
+  </div>
+
+  <div class="story-grid" id="storyGrid"></div>
+</section>
+
+<!-- ==================== 成长记录 ==================== -->
+<section class="page" id="page-growth">
+  <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+    <div>
+      <h2>成长记录</h2>
+      <p>🦊 小星 4 岁 · 🐯 小宇 9 岁 · 点击任意卡片即可编辑</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-ghost btn-sm" id="addParentRecordBtn">👩 记录家长成长</button>
+      <button class="btn btn-primary btn-sm" id="addRecordBtn">＋ 添加活动记录</button>
+    </div>
+  </div>
+
+  <div class="growth-stats" id="growthStats"></div>
+
+  <div class="grid">
+    <section class="card span-12">
+      <div class="card-title"><h3>📝 活动记录 · 状态与改进</h3><span class="more" id="addRecordBtn2">＋ 记录一次陪伴 →</span></div>
+      <div class="record-list" id="recordList"></div>
+    </section>
+
+    <section class="card span-12">
+      <div class="card-title"><h3>👩 家长成长记录 · 语言与行为</h3><span class="more" id="addParentRecordBtn2">＋ 记录一次 →</span></div>
+      <div style="font-size:12.5px;color:var(--muted);font-weight:600;line-height:1.7;margin-bottom:16px;">
+        记录下陪伴时自己说了什么、做了什么，以及下次可以怎么调整。父母的觉察，是给孩子最好的礼物 🌿
+      </div>
+      <div class="parent-list" id="parentList"></div>
+    </section>
+
+    <section class="card span-7">
+      <div class="card-title"><h3>🌱 成长里程碑</h3><span class="more" id="addMilestoneBtn">＋ 添加 →</span></div>
+      <div class="tl" id="milestoneList"></div>
+    </section>
+
+    <section class="card span-5">
+      <div class="card-title"><h3>📈 能力发展</h3>
+        <div class="chips-row" id="abilitySwitch" style="flex:0 0 auto;">
+          <button class="chip mini on" data-cid="c1">🦊 小星</button>
+          <button class="chip mini" data-cid="c2">🐯 小宇</button>
+        </div>
+      </div>
+      <div id="abilityBox"></div>
+    </section>
+
+    <section class="card span-12">
+      <div class="card-title"><h3>📷 回忆相册</h3><span class="more" id="addMemoryBtn">＋ 添加回忆 →</span></div>
+      <div class="memory-grid" id="memoryGrid"></div>
+    </section>
+  </div>
+</section>
+
+<!-- ==================== 奖励（王者荣耀风格） ==================== -->
+<section class="page" id="page-reward">
+  <div class="page-head">
+    <h2>奖励中心</h2>
+    <p>每一次陪伴、每一枚习惯奖、每一段故事，都在为你的段位积攒星星。</p>
+  </div>
+
+  <!-- 段位卡 -->
+  <div class="rank-card fade" id="rewardRankCard" style="margin-bottom:20px;"></div>
+
+  <div class="grid">
+    <!-- 星星来源 -->
+    <section class="card span-5">
+      <div class="card-title"><h3>⭐ 星星来源</h3><span class="more" id="starHistoryBtn">明细 →</span></div>
+      <div class="star-sources" id="starSources"></div>
+    </section>
+
+    <!-- 成就墙 -->
+    <section class="card span-7">
+      <div class="card-title"><h3>🏆 成就墙 · 段位奖励</h3><span class="more">共 <b id="achvCount">0</b> / <b id="achvTotal">0</b> 已解锁</span></div>
+      <div class="achv-list" id="rewardBadgeWall"></div>
+    </section>
+
+    <!-- 段位阶梯 -->
+    <section class="card span-12">
+      <div class="card-title"><h3>🪜 段位阶梯</h3></div>
+      <div id="rankLadderDetail"></div>
+    </section>
+
+    <!-- 星星流水 -->
+    <section class="card span-12">
+      <div class="card-title"><h3>📜 星星流水</h3></div>
+      <div id="starLogList"></div>
+    </section>
+  </div>
+</section>
+
+<!-- ==================== 我的 ==================== -->
+<section class="page" id="page-mine">
+  <div class="page-head">
+    <h2>我的</h2>
+    <p>管理孩子档案、家庭成员、家长陪伴建议与提醒偏好。</p>
+  </div>
+
+  <div class="grid">
+    <section class="card me-card span-12">
+      <div class="me-avatar">🐻</div>
+      <div class="me-info">
+        <h3>小星妈妈 <span class="vip" id="mineRankTag">秩序白银</span></h3>
+        <p id="mineStatsLine">138****6688 · 已陪伴 128 天 · 累计 96 小时</p>
+      </div>
+      <div class="lock-note">🔒 家长资料不可编辑</div>
+    </section>
+
+    <section class="card span-6">
+      <div class="card-title"><h3>🧒 孩子档案</h3><span class="more" id="manageChildBtn2">管理 →</span></div>
+      <div class="list" id="mineChildList"></div>
+    </section>
+
+    <section class="card span-6">
+      <div class="card-title"><h3>👨‍👩‍👧‍👦 家庭成员</h3><span class="more" id="addFamilyBtn">＋ 添加成员 →</span></div>
+      <div class="list" id="familyList"></div>
+    </section>
+
+    <section class="card span-12">
+      <div class="card-title"><h3>💡 家长陪伴建议</h3><span class="more" id="manageAdviceBtn">管理 / 添加 →</span></div>
+      <div class="advice-list" id="advicePreview"></div>
+    </section>
+
+    <section class="card span-6">
+      <div class="card-title"><h3>🔔 提醒与通知</h3></div>
+      <div class="list">
+        <div class="list-row" data-switch><div class="list-ico" style="background:#FFF0E7">⏰</div><div class="lt"><h4>每日陪伴提醒</h4><p>每天 19:00 提醒你留出陪伴时间</p></div><div class="switch on"></div></div>
+        <div class="list-row" data-switch><div class="list-ico" style="background:#EEF4FF">📖</div><div class="lt"><h4>每日故事推送</h4><p>每天 20:00 推送一个睡前故事</p></div><div class="switch on"></div></div>
+        <div class="list-row" data-switch><div class="list-ico" style="background:#F1F9F5">📊</div><div class="lt"><h4>每周成长周报</h4><p>每周日晚发送本周陪伴、活动与段位总结</p></div><div class="switch on"></div></div>
+        <div class="list-row" data-switch><div class="list-ico" style="background:#F3EEFF">🌙</div><div class="lt"><h4>夜间免打扰</h4><p>22:00 - 07:00 不接收任何通知</p></div><div class="switch"></div></div>
+      </div>
+    </section>
+
+    <section class="card span-6">
+      <div class="card-title"><h3>📦 我的数据</h3></div>
+      <div class="list">
+        <div class="list-row"><div class="list-ico" style="background:#FFF0E7">🕰</div><div class="lt"><h4>陪伴记录</h4><p>共 128 次 · 累计 96 小时</p></div><span class="arrow">›</span></div>
+        <div class="list-row"><div class="list-ico" style="background:#FFF6DE">🏅</div><div class="lt"><h4>习惯奖记录</h4><p id="mineAwardText">已颁发 0 枚</p></div><span class="arrow">›</span></div>
+        <div class="list-row"><div class="list-ico" style="background:#F1EBFF">👩</div><div class="lt"><h4>家长成长记录</h4><p id="mineParentText">已记录 0 条</p></div><span class="arrow">›</span></div>
+        <div class="list-row"><div class="list-ico" style="background:#FFE9B8">⭐</div><div class="lt"><h4>星星总数</h4><p id="mineStarText">0 颗</p></div><span class="arrow">›</span></div>
+        <div class="list-row"><div class="list-ico" style="background:#EEF4FF">📚</div><div class="lt"><h4>自定义活动</h4><p id="mineCustomText">已添加 0 个</p></div><span class="arrow">›</span></div>
+      </div>
+    </section>
+
+    <section class="card span-12">
+      <div class="list">
+        <div class="list-row"><div class="list-ico" style="background:#FFF0E7">💬</div><div class="lt"><h4>帮助与反馈</h4><p>遇到问题？告诉我们，会尽快回复</p></div><span class="arrow">›</span></div>
+        <div class="list-row"><div class="list-ico" style="background:#EEF4FF">📄</div><div class="lt"><h4>用户协议与隐私政策</h4><p>我们只把数据用于帮助你陪伴孩子</p></div><span class="arrow">›</span></div>
+        <div class="list-row"><div class="list-ico" style="background:#F1F9F5">🌱</div><div class="lt"><h4>关于陪伴星球</h4><p>版本 1.4.0 · 用陪伴记录成长</p></div><span class="arrow">›</span></div>
+      </div>
+    </section>
+  </div>
+</section>
+
+</main>
+
+<!-- ==================== 孩子管理 ==================== -->
+<div class="modal-overlay" id="childModal">
+  <div class="modal">
+    <div class="modal-head"><h3>🧒 管理宝贝档案</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="form-label">我的孩子们（点击可设为当前陪伴对象）</div>
+      <div class="child-manage-list" id="manageChildList"></div>
+      <div class="divider"></div>
+      <div class="form-label" id="formTitle">➕ 添加一个新宝贝</div>
+      <div class="form-grid">
+        <input id="fAvatar" placeholder="🦊" maxlength="2" value="🐣">
+        <input id="fName" placeholder="名字" maxlength="10">
+        <input id="fAge" type="number" placeholder="年龄" min="1" max="14">
+        <select id="fGender"><option value="女">女</option><option value="男">男</option></select>
+      </div>
+      <input class="f-in" id="fTags" placeholder="兴趣标签，如：恐龙 涂鸦 挖沙子" style="margin-top:9px">
+      <input type="hidden" id="fEditId">
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" id="resetFormBtn">清空表单</button>
+        <button class="btn btn-primary btn-sm" id="saveChildBtn">保存宝贝</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 活动记录 ==================== -->
+<div class="modal-overlay" id="recordModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="recTitle">📝 记录陪伴过程</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="form-label">参与的孩子（可多选）</div>
+      <div class="chips-row" id="recKids"></div>
+      <div class="form-label">游戏中的状态</div>
+      <div class="form-sub">情绪表现</div><div class="chips-row" id="recEmotion"></div>
+      <div class="form-sub" style="margin-top:12px">专注程度</div><div class="chips-row" id="recFocus"></div>
+      <div class="form-sub" style="margin-top:12px">完成情况</div><div class="chips-row" id="recFinish"></div>
+      <div class="form-label">✨ 做得好的地方 / 精彩瞬间</div>
+      <textarea id="recHighlight" placeholder="例如：哥哥主动把大块的积木让给妹妹…"></textarea>
+      <div class="form-label">🔧 后续改进与完善方向</div>
+      <textarea id="recImprove" placeholder="例如：下次可以加一个计时挑战…"></textarea>
+      <div class="form-label">🏅 颁发习惯奖（可多选）</div>
+      <div class="chips-row" id="recAwards"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" data-close>取消</button>
+        <button class="btn btn-primary btn-sm" id="saveRecordBtn">保存记录</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 家长成长记录 ==================== -->
+<div class="modal-overlay" id="parentModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="pTitle">👩 记录家长成长</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="form-grid wide">
+        <select id="pParent"><option value="妈妈">妈妈</option><option value="爸爸">爸爸</option><option value="奶奶">奶奶</option><option value="外婆">外婆</option><option value="其他家人">其他家人</option></select>
+        <input id="pScene" placeholder="这次陪孩子玩的场景">
+      </div>
+      <div class="form-label">💬 我说了什么</div>
+      <textarea id="pWords"></textarea>
+      <div class="form-label">👐 我做了什么</div>
+      <textarea id="pBehavior"></textarea>
+      <div class="form-label">🔧 下次可以改进的方向</div>
+      <textarea id="pImprove"></textarea>
+      <div class="form-label">🏷 这次用到的陪伴方式（可多选）</div>
+      <div class="chips-row" id="pTags"></div>
+      <input type="hidden" id="pEditId">
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" id="resetParentBtn">清空表单</button>
+        <button class="btn btn-primary btn-sm" id="saveParentBtn">保存记录</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 陪伴建议管理 ==================== -->
+<div class="modal-overlay" id="adviceModal">
+  <div class="modal wide">
+    <div class="modal-head"><h3>💡 管理家长陪伴建议</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="form-label">我收藏的建议（点击可编辑，🗑 可删除）</div>
+      <div class="child-manage-list" id="adviceManageList"></div>
+      <div class="divider"></div>
+      <div class="form-label" id="adviceFormTitle">➕ 添加一条新建议</div>
+      <div class="form-grid">
+        <input id="aIcon" placeholder="💬" maxlength="2" value="💡">
+        <input id="aTitle" placeholder="建议标题" maxlength="20">
+        <input id="aTag" placeholder="分类" maxlength="6" style="grid-column:span 2;">
+      </div>
+      <textarea id="aContent" placeholder="建议内容…" style="margin-top:9px"></textarea>
+      <input type="hidden" id="aEditId">
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" id="resetAdviceBtn">清空表单</button>
+        <button class="btn btn-primary btn-sm" id="saveAdviceBtn">保存建议</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== md 模板导入 ==================== -->
+<div class="modal-overlay" id="templateModal">
+  <div class="modal wide">
+    <div class="modal-head"><h3>📄 md 模板 · 批量导入活动</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="md-help">
+        <b>📌 格式说明：</b>每个活动以 <code>## 活动名称</code> 开头，下面用 <code>- 键: 值</code> 描述。
+        支持的字段：<code>图标</code>、<code>年龄</code>、<code>时长</code>、<code>类型</code>、<code>习惯奖</code>、<code>描述</code>、<code>目标</code>。
+        多个活动之间空一行即可。点击下方「一键填入示例」可以看例子。
+      </div>
+      <div class="chips-row" style="margin-bottom:12px;">
+        <button class="chip mini" id="fillExampleBtn">✨ 一键填入示例</button>
+        <button class="chip mini" id="clearMdBtn">🧹 清空</button>
+      </div>
+      <textarea class="md-textarea" id="mdInput"></textarea>
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" data-close>取消</button>
+        <button class="btn btn-primary btn-sm" id="importMdBtn">📥 批量导入</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 自定义活动编辑 ==================== -->
+<div class="modal-overlay" id="customActModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="customActTitle">✏️ 自定义活动</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <input id="caIcon" placeholder="🎪" maxlength="2" value="🎪">
+        <input id="caTitle" placeholder="活动名称" maxlength="20">
+        <input id="caAge" placeholder="4-6岁" maxlength="10">
+        <select id="caType">
+          <option>艺术创作</option><option>运动游戏</option><option>科学探索</option>
+          <option>语言阅读</option><option>角色扮演</option><option>生活实践</option>
+          <option>音乐律动</option><option>数学思维</option>
+        </select>
+      </div>
+      <div class="form-grid" style="margin-top:9px;">
+        <input id="caDur" placeholder="20分钟" maxlength="10">
+        <select id="caAward">
+          <option value="creative">💡 创意星</option><option value="focus">🎯 专注星</option>
+          <option value="brave">🦁 勇敢星</option><option value="patient">⏳ 耐心星</option>
+          <option value="share">🤝 分享星</option><option value="polite">🌸 礼貌星</option>
+          <option value="tidy">🧹 收纳星</option>
+        </select>
+        <input id="caGoal" placeholder="目标" maxlength="12">
+      </div>
+      <div class="form-label">活动描述</div>
+      <textarea id="caDesc"></textarea>
+      <input type="hidden" id="caEditId">
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" id="resetCustomActBtn">清空表单</button>
+        <button class="btn btn-primary btn-sm" id="saveCustomActBtn">保存活动</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 通用小编辑弹窗 ==================== -->
+<div class="modal-overlay" id="simpleEditModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-head"><h3 id="seTitle">编辑</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body" id="seBody"></div>
+  </div>
+</div>
+
+<!-- ==================== 故事阅读 ==================== -->
+<div class="modal-overlay" id="storyReadModal">
+  <div class="modal wide">
+    <div class="modal-head"><h3 id="srTitle">📖 故事</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body" id="srBody"></div>
+  </div>
+</div>
+
+<!-- 升级特效 -->
+<div class="levelup-flash" id="levelupFlash">
+  <div class="levelup-inner">
+    <span class="lv-emoji" id="lvEmoji">👑</span>
+    <div class="lv-title">段 位 提 升</div>
+    <div class="lv-rank" id="lvRankName">荣耀黄金</div>
+    <div class="lv-sub" id="lvSub">累计 200 颗星星 · 继续保持！</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==================== 通用 ==================== */
+const toastEl = document.getElementById('toast');
+let toastTimer = null;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+}
+(function(){
+  const d = new Date();
+  const w = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][d.getDay()];
+  document.getElementById('today').textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 · ${w}`;
+})();
+function openModal(el){ el.classList.add('show'); document.body.style.overflow = 'hidden'; }
+function closeModal(el){ el.classList.remove('show'); document.body.style.overflow = ''; }
+document.querySelectorAll('.modal-overlay').forEach(ov => {
+  ov.addEventListener('click', e => { if (e.target === ov) closeModal(ov); });
+  ov.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => closeModal(ov)));
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.show').forEach(closeModal);
+});
+
+/* 通用小编辑弹窗 */
+const simpleEditModal = document.getElementById('simpleEditModal');
+const seTitle = document.getElementById('seTitle');
+const seBody = document.getElementById('seBody');
+function openSimpleEdit(title, fields, onSave){
+  seTitle.textContent = title;
+  seBody.innerHTML = fields.map(f => `
+    <div class="form-label" style="margin-top:${f.first ? 0 : 14}px;">${f.label}</div>
+    ${f.type === 'textarea'
+      ? `<textarea id="se_${f.key}" placeholder="${f.placeholder||''}">${f.value||''}</textarea>`
+      : `<input class="f-in" id="se_${f.key}" type="${f.type||'text'}" value="${f.value||''}" placeholder="${f.placeholder||''}">`
+    }
+  `).join('') + `
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" data-close>取消</button>
+      <button class="btn btn-primary btn-sm" id="seSaveBtn">保存</button>
+    </div>`;
+  seBody.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => closeModal(simpleEditModal)));
+  document.getElementById('seSaveBtn').addEventListener('click', () => {
+    const vals = {};
+    fields.forEach(f => { vals[f.key] = document.getElementById('se_' + f.key).value.trim(); });
+    onSave(vals);
+  });
+  openModal(simpleEditModal);
+}
+
+/* ==================== 数据 ==================== */
+let children = [
+  {id:'c1', name:'小星', age:4, gender:'女', avatar:'🦊', tags:['恐龙','涂鸦','挖沙子'], mood:''},
+  {id:'c2', name:'小宇', age:9, gender:'男', avatar:'🐯', tags:['乐高','足球','编程'], mood:''}
+];
+let companions = ['c1'];
+
+const abilities = {
+  c1: [{name:'语言表达',score:78},{name:'大运动',score:72},{name:'精细动作',score:65},{name:'社交情感',score:70},{name:'认知探索',score:82},{name:'艺术创造',score:68}],
+  c2: [{name:'逻辑思维',score:85},{name:'专注力',score:76},{name:'语言表达',score:80},{name:'大运动',score:88},{name:'精细动作',score:74},{name:'社交情感',score:69}]
+};
+
+let growthStats = [
+  {id:'g1', childId:'c1', label:'🦊 小星 · 身高', value:105, unit:'cm', delta:'+2.1'},
+  {id:'g2', childId:'c1', label:'🦊 小星 · 体重', value:17.5, unit:'kg', delta:'+0.4'},
+  {id:'g3', childId:'c2', label:'🐯 小宇 · 身高', value:136, unit:'cm', delta:'+1.4'},
+  {id:'g4', childId:'c2', label:'🐯 小宇 · 体重', value:30.5, unit:'kg', delta:'+0.8'}
+];
+
+let milestones = [
+  {id:'m1', date:'今天 · 08:10', color:'#4FCE9E', text:'🦊 小星第一次自己穿好了鞋子，虽然左右穿反了 👟'},
+  {id:'m2', date:'9月15日', color:'#FF8A5B', text:'🐯 小宇独立完成乐高机械臂，还自己画了结构图'},
+  {id:'m3', date:'9月10日', color:'#B09BF8', text:'🦊 小星画出了第一个有身体、有头发的小人 🎨'},
+  {id:'m4', date:'9月3日', color:'#FFC93C', text:'兄妹俩主动把玩具分给小朋友，妈妈偷偷拍了下来'},
+  {id:'m5', date:'8月28日', color:'#6BA8F5', text:'🐯 小宇学会骑两轮自行车啦 🚲'}
+];
+
+let memories = [
+  {id:'me1', emoji:'🦕', title:'小星的积木恐龙城堡落成啦', date:'9月21日 · 和妈妈', bg:'linear-gradient(150deg,#FFE7D6,#FFD1E0)'},
+  {id:'me2', emoji:'🤖', title:'小宇的乐高机械臂第一次转动', date:'9月20日 · 和爸爸', bg:'linear-gradient(150deg,#DFF6EC,#CDEEDF)'},
+  {id:'me3', emoji:'📖', title:'兄妹俩一起听完睡前故事', date:'9月19日 · 和妈妈', bg:'linear-gradient(150deg,#E4EEFF,#D5E4FF)'},
+  {id:'me4', emoji:'🥟', title:'小星第一次包出完整的饺子', date:'9月18日 · 厨房', bg:'linear-gradient(150deg,#FFF4D9,#FFE8B8)'},
+  {id:'me5', emoji:'🚲', title:'小宇学会骑两轮自行车', date:'8月28日 · 小区', bg:'linear-gradient(150deg,#F1EBFF,#E3D8FF)'},
+  {id:'me6', emoji:'🎭', title:'兄妹自编自演的恐龙小剧场', date:'8月22日 · 客厅', bg:'linear-gradient(150deg,#FFE9F0,#FFD6E4)'}
+];
+
+let familyMembers = [
+  {id:'f1', avatar:'👩', bg:'#FFF0E7', role:'妈妈', name:'李女士', phone:'138****6688', isAdmin:true, hours:5.8, records:12},
+  {id:'f2', avatar:'👨', bg:'#EEF4FF', role:'爸爸', name:'王先生', phone:'139****3366', isAdmin:false, hours:3.2, records:7},
+  {id:'f3', avatar:'👵', bg:'#F1F9F5', role:'奶奶', name:'张奶奶', phone:'137****8899', isAdmin:false, hours:2.5, records:4},
+  {id:'f4', avatar:'👵', bg:'#F3EEFF', role:'外婆', name:'刘外婆', phone:'136****5522', isAdmin:false, hours:1.8, records:3}
+];
+
+let records = [
+  {id:'r1', title:'纸箱城堡搭建', kids:['c2'], date:'9月20日', emotion:'投入', focus:'非常专注', finish:'独立完成',
+   highlight:'小宇自己设计了城堡的吊桥结构，还用吸管做了可活动的机关，全程不需要帮忙。',
+   improve:'下次可以邀请妹妹一起装饰外墙，让哥哥练习讲解自己的设计思路。', awards:['focus','creative']},
+  {id:'r2', title:'厨房里的彩虹画', kids:['c1','c2'], date:'9月18日', emotion:'兴奋', focus:'较专注', finish:'需要协助',
+   highlight:'妹妹第一次用藕片印出了完整的圆形，哥哥在旁边帮她数“1、2、3”，兄妹配合得很好。',
+   improve:'妹妹握印章的力度还不够，下次可以换成更大手柄的工具；哥哥可以负责调色，增加参与感。', awards:['share','patient']},
+  {id:'r3', title:'阳台小花园观察', kids:['c1'], date:'9月16日', emotion:'平静', focus:'专注', finish:'少量协助',
+   highlight:'小星给每片叶子都起了名字，“大耳朵”“小圆点”，还主动给它们喷水。',
+   improve:'她问“为什么有的叶子是黄的”时，我只说“因为老了”，下次可以一起查绘本找答案。', awards:['patient']},
+  {id:'r4', title:'讲故事《猜猜我有多爱你》', kids:['c1','c2'], date:'9月15日', emotion:'平静', focus:'非常专注', finish:'独立完成',
+   highlight:'哥哥给妹妹读了一遍，妹妹学着书里的动作张开手臂说“我爱你有这么多”。',
+   improve:'下次可以让哥哥提问“小兔子为什么这样做”，引导妹妹回答，锻炼表达。', awards:['polite','patient'], isStory:true}
+];
+
+let parentRecords = [
+  {id:'p1', parent:'妈妈', date:'9月21日', scene:'搭积木城堡',
+   words:'我试着说：“你搭的城堡好高呀，你是怎么想到在门口放两只恐龙的？”',
+   behavior:'全程坐在旁边，忍住没动手。只在她说“妈妈帮我”时，给了提示“试试把大块的放下面”。',
+   improve:'中间有两次忍不住想帮她摆正积木，下次可以把手放在腿上，用嘴不用手。', tags:['耐心等待','开放式提问']},
+  {id:'p2', parent:'爸爸', date:'9月20日', scene:'乐高机械臂',
+   words:'我说：“这个齿轮卡住了，你觉得是哪里出了问题？”',
+   behavior:'陪小宇一起查图纸，让他自己动手拆装，我在旁边递工具。',
+   improve:'小宇失败两次后有点急躁，我说“别急”其实没用，下次可以先共情“有点烦对吧”，再一起想办法。', tags:['启发式提问','允许试错']},
+  {id:'p3', parent:'妈妈', date:'9月18日', scene:'厨房揉面团',
+   words:'妹妹把面粉撒了一地，我说：“哇，下雪啦！我们怎么把雪扫干净呢？”',
+   behavior:'没有责备，先接住她的兴奋，再一起拿抹布收拾。',
+   improve:'面团比例是我调好的，下次可以让两个孩子自己量面粉，体验“多少”的概念。', tags:['先共情','一起收尾']}
+];
+
+let adviceList = [
+  {id:'a1', icon:'💬', tag:'沟通', title:'描述式鼓励', content:'把“你真棒”换成“我看到你把红色积木放在最上面，很稳”。描述具体行为，孩子才知道自己哪里做得好。'},
+  {id:'a2', icon:'❓', tag:'沟通', title:'开放式提问', content:'少问“是不是”“对不对”，多问“你觉得呢”“你是怎么想到的”。让孩子有空间表达自己的想法。'},
+  {id:'a3', icon:'⏳', tag:'耐心', title:'等待 5 秒', content:'孩子回答前，先默数 5 秒再补充或提示。给孩子组织语言和思考的时间，往往会有惊喜。'},
+  {id:'a4', icon:'🙌', tag:'情绪', title:'先共情再解决', content:'孩子着急、失败、发脾气时，先说“你现在有点着急/难过对吗”，情绪被看见后再一起想办法。'},
+  {id:'a5', icon:'👀', tag:'专注', title:'不打断专注', content:'孩子沉浸在自己的游戏里时，不要频繁问“渴不渴”“这样不对”。安静在旁边，需要时再回应。'},
+  {id:'a6', icon:'👫', tag:'手足', title:'公平参与，各有角色', content:'同时陪两个孩子时，给哥哥分配“讲解员/设计师”角色，给妹妹分配“选颜色/贴贴纸”角色，各得其所。'},
+  {id:'a7', icon:'🎯', tag:'引导', title:'当小老师', content:'让大孩子把今天玩的东西教给弟弟妹妹或家长，讲解一遍比玩十遍记得更牢。'},
+  {id:'a8', icon:'📖', tag:'故事', title:'讲故事时多互动', content:'读到关键处停一下，问“你猜接下来会怎样”；读完后聊聊“你最喜欢哪一页”，让故事变成对话。'},
+  {id:'a9', icon:'🧹', tag:'收尾', title:'一起收玩具', content:'结束前 5 分钟预告：“再玩 5 分钟我们就一起收”，把收拾变成游戏的一部分，而不是命令。'}
+];
+
+const PARENT_TAGS = ['耐心等待','开放式提问','描述式鼓励','启发式提问','允许试错','先共情','不打断','一起收尾','公平参与','当小老师'];
+
+/* ==================== 故事库数据 ==================== */
+let stories = [
+  {id:'s1', emoji:'🐰', bg:'linear-gradient(150deg,#FFE7D6,#FFD1E0)', theme:'爱与陪伴', age:'低幼',
+   title:'猜猜我有多爱你', author:'山姆·麦克布雷尼',
+   desc:'小栗色兔子想告诉大栗色兔子他有多爱她，于是他们比赛谁的爱更多一些。',
+   duration:'10 分钟', tips:['读到“我爱你有这么多”时，和孩子一起张开手臂比一比','可以问孩子“你最爱谁？有多爱？”'],
+   content:['小栗色兔子该上床睡觉了，可是他紧紧抓住大栗色兔子的长耳朵不放。','他要大栗色兔子好好听他说。“猜猜我有多爱你。”他说。','大栗色兔子说：“哦，我大概猜不出来。”','小栗色兔子说：“我爱你有这么多。”他把手臂张开，开得不能再开。','大栗色兔子说：“我爱你有这么多。”她的手臂要长得多。','小栗色兔子想：嗯，这真的很多。','他又说：“我的手举得有多高，我就有多爱你。”','大栗色兔子说：“我的手举得有多高，我就有多爱你。”','小栗色兔子想：嗯，这真的很高。','小栗色兔子又想：要是我能像大栗色兔子跳得那么高就好了。','于是他笑着说：“我跳得有多高，就有多爱你！”','他跳得那么高，耳朵都碰到树枝了。','大栗色兔子也跳了起来，她跳得更高更高。','小栗色兔子想：那真的很高很高。','小栗色兔子喊：“我爱你一直到月亮那里！”','大栗色兔子说：“哦，那真的很远很远。”','小栗色兔子闭上眼睛，睡着了。','大栗色兔子轻轻地说：“我爱你一直到月亮那里，再从月亮上回到这里来。”']},
+  {id:'s2', emoji:'🐛', bg:'linear-gradient(150deg,#EAF7EE,#CDEEDF)', theme:'自然探索', age:'低幼',
+   title:'好饿的毛毛虫', author:'艾瑞·卡尔',
+   desc:'一条小毛毛虫从蛋里钻出来，一路吃啊吃，最后变成了一只美丽的蝴蝶。',
+   duration:'8 分钟', tips:['可以准备一些水果道具，边读边“吃”','和孩子一起数一数毛毛虫吃了几个东西'],
+   content:['月光下，一颗小小的蛋躺在叶子上。','星期天早上，暖和的太阳升起来了。“啵”一声，一条又小又饿的毛毛虫，从蛋里爬了出来。','他好饿好饿，要去找一些东西来吃。','星期一，他吃穿了一个苹果。可是他还是好饿。','星期二，他吃穿了两个梨子。可是他还是好饿。','星期三，他吃穿了三个李子。可是他还是好饿。','星期四，他吃穿了四个草莓。可是他还是好饿。','星期五，他吃穿了五个橘子。可是他还是好饿。','星期六，他吃了一块巧克力蛋糕、一个冰淇淋甜筒、一条腌黄瓜、一块奶酪、一截火腿、一根棒棒糖、一块樱桃派、一条香肠、一个纸杯蛋糕和一片西瓜。','那天晚上，他肚子痛了起来。','第二天，又是星期天了。毛毛虫吃了一片又绿又嫩的叶子，觉得舒服多了。','现在他不再觉得饿了。他不再是一条小毛毛虫了，他是一条又肥又大的毛毛虫。','他造了一间小房子，叫做“茧”，把自己包在里头。','他在里头住了两个多星期，然后，咬了一个洞，钻了出来……','他变成了一只漂亮的蝴蝶！']},
+  {id:'s3', emoji:'🦖', bg:'linear-gradient(150deg,#FFF4D9,#FFE8B8)', theme:'爱与陪伴', age:'中童',
+   title:'你看起来好像很好吃', author:'宫西达也',
+   desc:'一只霸王龙遇见了刚出生的小甲龙，小甲龙叫他“爸爸”，一段温暖的故事开始了。',
+   duration:'12 分钟', tips:['可以和孩子讨论“霸王龙为什么没有吃掉小甲龙”','读完聊聊“什么样的人像爸爸”'],
+   content:['以前，以前，很久以前，在一个晴朗的日子里，山嘭嘭嘭地喷火，地咚咚咚地摇晃。','就在这个时候，甲龙宝宝出生了。','“你看起来好像很好吃。”霸王龙说。','“爸爸！”甲龙宝宝一把抱住霸王龙的腿。','霸王龙吓了一跳：“啊？我，我不是你爸爸！”','“没关系，爸爸，我要长得像爸爸一样。”甲龙宝宝说。','于是，霸王龙开始教甲龙宝宝各种本领。','他教他撞击、甩尾巴、大声吼叫。','有一天，霸王龙对甲龙宝宝说：“我要去找好吃的了。”','甲龙宝宝说：“爸爸，我跟你一起去。”','霸王龙说：“不行，你在这里等我。”','甲龙宝宝一直等啊等，可是霸王龙再也没有回来。','原来，霸王龙把好吃的东西都留给了甲龙宝宝，自己走远了。','他知道，甲龙宝宝总有一天会找到自己的同类。']},
+  {id:'s4', emoji:'🌙', bg:'linear-gradient(150deg,#EEF4FF,#D5E4FF)', theme:'趣味想象', age:'低幼',
+   title:'月亮的味道', author:'麦克·格雷涅茨',
+   desc:'小动物们想尝一尝月亮的味道，他们一个踩着一个的背，努力向上够。',
+   duration:'10 分钟', tips:['读的时候可以用手比划“叠高高”','问孩子“月亮到底是什么味道的呀”'],
+   content:['月亮，是什么味道呢？是甜的，还是咸的呢？真想尝一小口啊！','夜里，动物们望着月亮，总是这么想。','有一天，一只小海龟下定了决心，要一步一步爬到最高的山上，去摸一摸月亮。','爬到山顶，月亮近多了。可是，小海龟还是够不着。','海龟叫来了大象。“大象，你跳到我的背上，说不定我们够得到呢！”','月亮想：“这是在和我玩游戏吧！”月亮轻轻地往上一跳。','大象还是够不着。他叫来了长颈鹿。','长颈鹿叫来了斑马，斑马叫来了狮子，狮子叫来了狐狸，狐狸叫来了猴子。','猴子叫来了老鼠。','“老鼠，快爬到我的背上，我们就能够着月亮啦！”','月亮看着老鼠，心想：“这么个小不点儿，肯定捉不到我的。”月亮已经玩累了，这回它没有动。','“咔嚓！”老鼠咬下了一片月亮。','月亮的味道，和他们想的一样，是他们吃过的最好吃的东西。','这天夜里，大家挤在一起睡着了。']},
+  {id:'s5', emoji:'🌈', bg:'linear-gradient(150deg,#FFEDF3,#FFD6E4)', theme:'情绪认知', age:'中童',
+   title:'彩虹色的花', author:'麦克·格雷涅茨',
+   desc:'一朵彩虹色的花，把花瓣一片片送给需要帮助的小动物。',
+   duration:'12 分钟', tips:['每送出一片花瓣，可以问孩子“如果是你，你会送吗”','聊一聊“帮助别人是什么感觉”'],
+   content:['“好，今天我一定要把积雪全都融化掉。”太阳升起来，把原野照得亮亮的。','他吃了一惊：昨天还是一片积雪的原野上，竟然开着一朵花！','“早安，你是谁？”太阳问。','“早安，我是彩虹色的花。冬天的时候，我一直待在泥土里，可现在我终于见到你了。”','过了几天，好像有谁从花儿的身边走过。','“早安，我是蚂蚁。我要去奶奶家，可是前面有一个大水洼，我怎么过去呢？”','“你爬上来，摘一片花瓣，说不定能用得上呢。”','又过了几天，一个很舒服的晴天，好像又有谁走过。','“你好，我是蜥蜴。我要去参加宴会，可是没有合适的衣服，怎么办呢？”','“哦，那也许我的哪一片花瓣能与你的绿色相配。”','这些日子，每天的阳光都很强烈。好像有谁从花儿的身边走过。','“你好，我是老鼠。天气又闷又热，弄得我晕乎乎的，要是有把扇子就好了。”','“哦，那用我的花瓣不正好吗？”','白天越来越短了。好像有谁从天空飞过。','“你好，我是小鸟。我要给女儿找一个生日礼物，可是飞来飞去，什么也没找到。”','“那你看看我这儿有没有她喜欢的彩色花瓣呢？”','天空越来越暗，传来阵阵雷声。大风把最后一片花瓣也刮走了。','太阳隐去了自己的光芒。雪花仿佛要拥抱彩虹色的花，轻轻地、轻轻地飘落下来……','很快，大雪覆盖了所有的东西，一片白茫茫的。','漫长的冬天终于过去了，春天又来了。','一天早晨，太阳探出头来，他吃了一惊，很高兴地说：“早安，彩虹色的花。又见到你了！”']},
+  {id:'s6', emoji:'🐇', bg:'linear-gradient(150deg,#F3EEFF,#E3D8FF)', theme:'爱与陪伴', age:'低幼',
+   title:'逃家小兔', author:'玛格丽特·怀兹·布朗',
+   desc:'小兔子说他要逃走，妈妈说不管他逃到哪里，她都会找到他。',
+   duration:'8 分钟', tips:['可以玩“如果你变成……我就变成……”的接龙游戏','读完给孩子一个拥抱'],
+   content:['从前有一只小兔子，他很想要离家出走。','有一天，他对妈妈说：“我要逃走啦！”','“如果你逃走了，”妈妈说，“我就去追你，因为你是我的小宝贝呀！”','“如果你来追我，”小兔子说，“我就变成溪里的小鳟鱼，游得远远的。”','“如果你变成溪里的小鳟鱼，”妈妈说，“我就变成捕鱼的人去抓你。”','“如果你变成捕鱼的人，”小兔子说，“我就变成高山上的大石头，让你抓不到我。”','“如果你变成高山上的大石头，”妈妈说，“我就变成爬山的人，爬到高山上去找你。”','“如果你变成爬山的人，”小兔子说，“我就变成小花，躲在花园里。”','“如果你变成小花，”妈妈说，“我就变成园丁，我还是会找到你。”','“如果你变成园丁，找到我了，”小兔子说，“我就变成小鸟，飞得远远的。”','“如果你变成小鸟，飞得远远的，”妈妈说，“我就变成树，好让你飞回家。”','“如果你变成树，”小兔子说，“我就变成小帆船，飘得远远的。”','“如果你变成小帆船，”妈妈说，“我就变成风，把你吹到我要你去的地方。”','“如果你变成风，把我吹走，”小兔子说，“我就变成马戏团里的空中飞人，飞得高高的。”','“如果你变成空中飞人，”妈妈说，“我就变成走钢索的人，走到半空中好遇到你。”','“天哪！”小兔子说，“我不如就待在这里，当你的小宝贝吧。”','“来根红萝卜吧！”妈妈说。']},
+  {id:'s7', emoji:'👧', bg:'linear-gradient(150deg,#FFF6DE,#FFE8B8)', theme:'情绪认知', age:'低幼',
+   title:'大卫，不可以', author:'大卫·香农',
+   desc:'大卫总是做一些不可以做的事，但最后妈妈还是说“我爱你”。',
+   duration:'6 分钟', tips:['读的时候语气可以夸张一点，孩子会更投入','读完抱抱孩子，告诉他“不管怎样，妈妈都爱你”'],
+   content:['大卫的妈妈总是说：“大卫，不可以！”','大卫，不可以爬到椅子上拿饼干！','大卫，不可以把自己弄得那么脏！','大卫，不可以洗澡的时候玩水！','大卫，不可以光着屁股跑出去！','大卫，不可以玩食物！','大卫，不可以吃太多！','大卫，不可以挖鼻孔！','大卫，不可以把玩具弄得乱七八糟！','大卫，不可以在屋子里打棒球！','大卫，我说过，不可以！','大卫，快回来！','大卫，不可以看电视那么久！','大卫，上床睡觉！','大卫，安静一点！','大卫，不可以！','大卫，来这里。','大卫，我爱你！']},
+  {id:'s8', emoji:'🐟', bg:'linear-gradient(150deg,#E6F7FA,#CDEFF5)', theme:'趣味想象', age:'中童',
+   title:'小蓝和小黄', author:'李欧·李奥尼',
+   desc:'小蓝和小黄是最好的朋友，有一天他们抱在一起，变成了绿色。',
+   duration:'8 分钟', tips:['可以用蓝黄两色颜料和孩子一起做混色实验','读完问“你和谁是好朋友？”'],
+   content:['这是小蓝。','小蓝的家里，还有蓝爸爸和蓝妈妈。小蓝有好多朋友，可是他最好的朋友是小黄。','小黄就住在街对面。他们最喜欢玩藏猫猫，和转啊转圈圈。','在学校里，他们整整齐齐地排排坐。放了学，他们就又跑又跳。','一天，妈妈要去买东西，她对小蓝说：“你待在家里别出去。”','可是小蓝还是跑出去找小黄了。','找到了小黄！他们开心地抱在了一起。','抱啊抱啊，结果他们变绿了。','然后，他们去公园玩。他们穿过一条隧道。他们追着小橙玩。','他们又爬上一座大山。啊，好累，他们回家去了。','可是，蓝爸爸和蓝妈妈说：“你不是我们的小蓝，你是绿的。”','黄爸爸和黄妈妈也说：“你不是我们的小黄，你是绿的。”','小蓝和小黄好伤心。他们哭了，流出了大滴的蓝眼泪和黄眼泪。','他们哭啊哭啊，直到全都变成了眼泪。','最后，他们把自己收拢到了一起，他们说：“现在，爸爸和妈妈能认出我们了吧？”','蓝妈妈和蓝爸爸见到他们的小蓝，开心极了。','又是抱又是亲。他们也抱了小黄……但是，快看……他们变绿了！','现在，他们知道是怎么回事了。','于是，他们走到街对面去报告这个好消息。','大家高兴地互相拥抱。孩子们一直玩到吃晚饭的时间。']},
+  {id:'s9', emoji:'👵', bg:'linear-gradient(150deg,#FFF4D9,#FFE8B8)', theme:'勇气成长', age:'大童',
+   title:'花婆婆', author:'芭芭拉·库尼',
+   desc:'花婆婆答应爷爷，要做一件让世界变得更美丽的事。',
+   duration:'15 分钟', tips:['读完可以和孩子一起种一盆花','聊聊“我们能做什么让世界更美”'],
+   content:['花婆婆住在海边的一幢小房子里。房子的四周，开满了蓝色、紫色和粉红色的花儿。','花婆婆是我的姨婆，她的年纪很大，个子小小的，我知道她本来不是这样的。','她告诉我一些过去的事情：花婆婆的名字叫艾莉丝，很久以前，当她还是一个小女孩的时候，她住在海边的城市。','从她家门口的石阶上，可以看到码头和来来往往的大船。','艾莉丝的爷爷在房子的一楼开了一家店，专门雕刻船头的人像。','晚上，艾莉丝常常坐在爷爷的大腿上，听他说一些很远的地方所发生的事情。','每次爷爷说完了故事，艾莉丝就接着说：“爷爷，我长大以后，要像你一样去很远的地方旅行。当我老了，也要像你一样住在海边。”','“很好，”爷爷笑着说，“但是，你一定要记得做第三件事。”','“什么事？”艾莉丝问。','“做一件让世界变得更美丽的事。”','“好哇！”艾莉丝答应得又快又大声。','但是，她还不知道将来会做什么样的事。','她渐渐长大了，开始工作，到过很多地方旅行。','后来，她在海边买了一幢小房子，住了下来。','她常常望着大海，想着爷爷说的第三件事。','她终于想到了一个好点子！','她在口袋里装满了花种子，一面散步，一面撒种子。','她把种子撒在公路和乡间的小路边，撒在学校附近、教堂后面……','第二年春天，那些种子几乎同时开花了！','原野上、山坡上开满了蓝色的、紫色的和粉红色的花朵，它们沿着公路和乡间小路，一直延伸到海边。','我常常听别人说：“你真是一个了不起的花婆婆！”','花婆婆常说：“做一件让世界变得更美丽的事，永远都不会太晚。”']},
+  {id:'s10', emoji:'🐭', bg:'linear-gradient(150deg,#FFE7D6,#FFD1E0)', theme:'勇气成长', age:'中童',
+   title:'要是你给老鼠吃饼干', author:'劳拉·努梅罗夫',
+   desc:'要是你给老鼠吃饼干，他会要一杯牛奶……然后事情就停不下来了。',
+   duration:'10 分钟', tips:['读的时候可以问“接下来他会要什么”','读完和孩子一起回想整个故事链'],
+   content:['要是你给老鼠吃饼干，他会要一杯牛奶。','等你给了他牛奶，他可能会要一根吸管。','等他喝完牛奶，他会要一张纸巾擦擦嘴。','然后他会照照镜子，看看有没有牛奶胡子。','他会发现自己的头发有点乱，于是跟你要一把小剪刀。','等他剪完头发，他会要一把扫帚把碎头发扫干净。','等他扫完地，他会想要睡个午觉。','你会把他放到一个小盒子里，铺上枕头和毯子。','他会请你给他讲个故事。','你会给他讲故事，他会很喜欢，还会要你给他看图画。','看到图画，他会想要自己画一张。','他会跟你要纸和蜡笔。','画完画，他会想把它贴在冰箱上。','贴好之后，他会退后几步看看，觉得有点歪。','他会想要重新贴一下。','贴好之后，他有点渴了，于是又会跟你要一杯牛奶。','于是……一切又从头开始了！']},
+  {id:'s11', emoji:'🐸', bg:'linear-gradient(150deg,#EAF7EE,#CDEEDF)', theme:'趣味想象', age:'大童',
+   title:'青蛙和蟾蜍是好朋友', author:'艾诺·洛贝尔',
+   desc:'青蛙和蟾蜍是最好的朋友，他们一起经历了四季的小故事。',
+   duration:'15 分钟', tips:['可以分角色读，一人读青蛙一人读蟾蜍','读完后聊聊“好朋友会为对方做什么”'],
+   content:['青蛙和蟾蜍是最好的朋友。','春天到了，青蛙来找蟾蜍。“蟾蜍，蟾蜍，春天来了！”','可是蟾蜍还在冬眠，他说：“我还没睡够呢。”','青蛙把蟾蜍的床推到了门外，阳光照在蟾蜍身上。','蟾蜍终于醒了，他说：“青蛙，谢谢你叫醒我。”','夏天到了，蟾蜍给青蛙做了一个冰淇淋。','可是冰淇淋在太阳底下化掉了，蟾蜍很伤心。','青蛙笑着说：“没关系，我们一起吃新的吧。”','秋天到了，他们一起去扫落叶。','风把叶子吹得到处都是，他们扫了一遍又一遍。','最后他们说：“明天再扫吧，今天先休息。”','冬天到了，蟾蜍给青蛙织了一件毛衣。','可是毛衣织得太大了，青蛙穿上去像个大口袋。','青蛙说：“谢谢你，蟾蜍。这是我见过最温暖的毛衣。”','青蛙和蟾蜍是最好的朋友，一起度过了春夏秋冬。']},
+  {id:'s12', emoji:'🚂', bg:'linear-gradient(150deg,#EEF4FF,#D5E4FF)', theme:'趣味想象', age:'中童',
+   title:'小火车头做到了', author:'华提·派尔普',
+   desc:'一列小火车满载玩具和食物要翻过大山，可火车头坏了，谁能帮忙？',
+   duration:'12 分钟', tips:['读的时候可以模仿火车“咔嚓咔嚓”的声音','聊一聊“遇到困难可以怎么办”'],
+   content:['一列小火车满载着给孩子们的玩具和食物，要翻过一座大山。','突然，火车头坏了，停了下来。','“怎么办？怎么办？”玩具们着急地说，“孩子们还在等着我们呢！”','这时，一列闪亮的客运列车开了过来。','“你能帮帮我们吗？”玩具们问。','“我是客运列车，要送重要的人去远方。”说完，他开走了。','接着，一列巨大的货运列车开了过来。','“你能帮帮我们吗？”玩具们问。','“我是货运列车，要拉很重的货物。”说完，他也开走了。','玩具们很失望，这时，一列又旧又小的蓝色火车头开了过来。','“你能帮帮我们吗？”玩具们问。','“我……我很小，也旧了。”蓝色小火车头说，“但是我可以试试。”','“我能行！我能行！我能行！”小火车头一边给自己打气，一边拉起了整列火车。','他慢慢地、慢慢地爬上了山坡，翻过了大山。','当他终于到达山那边的村庄时，孩子们都跑出来迎接。','“谢谢你，蓝色小火车头！”孩子们欢呼着。','小火车头笑着说：“我就知道我能行。”']}
+];
+
+/* ==================== 段位 & 星星系统 ==================== */
+const RANKS = [
+  {id:'bronze3', name:'倔强青铜 III', tier:'青铜', emoji:'🥉', min:0, color:'#C68A5B'},
+  {id:'bronze2', name:'倔强青铜 II',  tier:'青铜', emoji:'🥉', min:27, color:'#C68A5B'},
+  {id:'bronze1', name:'倔强青铜 I',   tier:'青铜', emoji:'🥉', min:54, color:'#C68A5B'},
+  {id:'silver3', name:'秩序白银 III', tier:'白银', emoji:'🥈', min:80, color:'#B8C0CC'},
+  {id:'silver2', name:'秩序白银 II',  tier:'白银', emoji:'🥈', min:120, color:'#B8C0CC'},
+  {id:'silver1', name:'秩序白银 I',   tier:'白银', emoji:'🥈', min:160, color:'#B8C0CC'},
+  {id:'gold3',   name:'荣耀黄金 III', tier:'黄金', emoji:'🥇', min:200, color:'#FFB347'},
+  {id:'gold2',   name:'荣耀黄金 II',  tier:'黄金', emoji:'🥇', min:253, color:'#FFB347'},
+  {id:'gold1',   name:'荣耀黄金 I',   tier:'黄金', emoji:'🥇', min:306, color:'#FFB347'},
+  {id:'plat3',   name:'尊贵铂金 III', tier:'铂金', emoji:'💎', min:360, color:'#7EE0B8'},
+  {id:'plat2',   name:'尊贵铂金 II',  tier:'铂金', emoji:'💎', min:426, color:'#7EE0B8'},
+  {id:'plat1',   name:'尊贵铂金 I',   tier:'铂金', emoji:'💎', min:492, color:'#7EE0B8'},
+  {id:'diamond3',name:'永恒钻石 III', tier:'钻石', emoji:'💎', min:560, color:'#6BA8F5'},
+  {id:'diamond2',name:'永恒钻石 II',  tier:'钻石', emoji:'💎', min:640, color:'#6BA8F5'},
+  {id:'diamond1',name:'永恒钻石 I',   tier:'钻石', emoji:'💎', min:720, color:'#6BA8F5'},
+  {id:'star3',   name:'至尊星耀 III', tier:'星耀', emoji:'⭐', min:800, color:'#B09BF8'},
+  {id:'star2',   name:'至尊星耀 II',  tier:'星耀', emoji:'⭐', min:900, color:'#B09BF8'},
+  {id:'star1',   name:'至尊星耀 I',   tier:'星耀', emoji:'⭐', min:1000, color:'#B09BF8'},
+  {id:'king',    name:'最强王者',     tier:'王者', emoji:'👑', min:1100, color:'#FFD98E'}
+];
+
+/* 成就定义（按星星数解锁） */
+const ACHIEVEMENTS = [
+  {id:'ach1', emoji:'🌱', name:'陪伴新星', req:5,    desc:'累计获得 5 颗星星'},
+  {id:'ach2', emoji:'💛', name:'贴心爸妈', req:30,   desc:'累计获得 30 颗星星'},
+  {id:'ach3', emoji:'📖', name:'故事达人', req:60,   desc:'累计获得 60 颗星星'},
+  {id:'ach4', emoji:'🎯', name:'专注引导', req:100,  desc:'累计获得 100 颗星星'},
+  {id:'ach5', emoji:'🏅', name:'陪伴能手', req:180,  desc:'累计获得 180 颗星星'},
+  {id:'ach6', emoji:'💎', name:'习惯大师', req:300,  desc:'累计获得 300 颗星星'},
+  {id:'ach7', emoji:'👑', name:'亲子王者', req:500,  desc:'累计获得 500 颗星星'},
+  {id:'ach8', emoji:'🌟', name:'陪伴传奇', req:800,  desc:'累计获得 800 颗星星'},
+  {id:'ach9', emoji:'🏆', name:'最强家长', req:1200, desc:'累计获得 1200 颗星星'}
+];
+
+/* 星星计算 */
+function computeStars(){
+  let s = 0;
+  const log = [];
+  records.forEach(r => {
+    const base = 5;
+    const bonus = r.awards.length * 3;
+    s += base + bonus;
+    log.push({
+      id:'sl_' + r.id,
+      icon: r.isStory ? '📖' : '📝',
+      reason: `完成活动「${r.title}」`,
+      stars: base + bonus,
+      date: r.date
+    });
+  });
+  parentRecords.forEach(p => {
+    s += 2;
+    log.push({
+      id:'sl_' + p.id,
+      icon:'👩',
+      reason:`记录家长成长 · ${p.parent}`,
+      stars:2,
+      date:p.date
+    });
+  });
+  milestones.forEach(m => {
+    s += 10;
+    log.push({
+      id:'sl_' + m.id,
+      icon:'🌱',
+      reason:`成长里程碑 · ${m.text.slice(0, 12)}…`,
+      stars:10,
+      date:m.date
+    });
+  });
+  memories.forEach(m => {
+    s += 5;
+    log.push({
+      id:'sl_' + m.id,
+      icon:'📷',
+      reason:`回忆相册 · ${m.title.slice(0, 12)}`,
+      stars:5,
+      date:m.date
+    });
+  });
+  return { total: s, log };
+}
+
+let lastRankId = null;
+let starCache = { total:0, log:[] };
+
+function getRank(total){
+  let cur = RANKS[0];
+  for (const r of RANKS){ if (total >= r.min) cur = r; else break; }
+  const idx = RANKS.indexOf(cur);
+  const next = RANKS[idx + 1] || null;
+  const curMin = cur.min;
+  const nextMin = next ? next.min : cur.min + 1;
+  const progress = next ? Math.min(100, ((total - curMin) / (nextMin - curMin)) * 100) : 100;
+  return { cur, next, progress, idx };
+}
+
+function renderRankCard(containerId){
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const total = starCache.total;
+  const { cur, next, progress, idx } = getRank(total);
+
+  const ladder = RANKS.filter((r, i) => i % 3 === 0 || i === RANKS.length - 1);
+  const ladderHTML = ladder.map(r => {
+    const on = total >= r.min;
+    return `<div class="rank-step ${on ? 'on' : ''}">
+      <span class="rs-emoji">${r.emoji}</span>
+      <span class="rs-name">${r.tier}</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="rank-head">
+      <div class="rank-emblem">${cur.emoji}</div>
+      <div class="rank-info">
+        <div class="rank-tier">${cur.tier} · 当前段位</div>
+        <div class="rank-name">${cur.name}</div>
+        <div class="rank-stars-count">⭐ 累计 <b>${total}</b> 颗星星${next ? ` · 距下一段位还差 <b>${Math.max(0, next.min - total)}</b> 颗` : ' · 已达最高段位'}</div>
+      </div>
+    </div>
+    <div class="rank-progress-box">
+      <div class="rank-progress-text">
+        <span>${cur.name}</span>
+        <span>${next ? next.name : 'MAX'}</span>
+      </div>
+      <div class="rank-progress"><i style="width:${progress}%"></i></div>
+      <div class="rank-ladder">${ladderHTML}</div>
+    </div>`;
+}
+
+function renderStarSources(){
+  const el = document.getElementById('starSources');
+  if (!el) return;
+  const items = [
+    {icon:'📝', name:'完成一次活动记录', desc:'每次 +5 星', stars: records.length * 5},
+    {icon:'🏅', name:'获得一枚习惯奖', desc:'每枚 +3 星', stars: records.reduce((s, r) => s + r.awards.length * 3, 0)},
+    {icon:'📖', name:'讲故事（每日固定）', desc:'含在活动记录里', stars: records.filter(r => r.isStory).length * 5},
+    {icon:'👩', name:'记录家长成长', desc:'每次 +2 星', stars: parentRecords.length * 2},
+    {icon:'🌱', name:'添加成长里程碑', desc:'每条 +10 星', stars: milestones.length * 10},
+    {icon:'📷', name:'添加回忆相册', desc:'每条 +5 星', stars: memories.length * 5}
+  ];
+  el.innerHTML = items.map(i => `
+    <div class="star-src">
+      <span class="si">${i.icon}</span>
+      <div class="st"><h5>${i.name}</h5><p>${i.desc}</p></div>
+      <b>${i.stars}⭐</b>
+    </div>`).join('');
+}
+
+function renderAchievements(containerId){
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const total = starCache.total;
+  el.innerHTML = ACHIEVEMENTS.map(a => {
+    const unlocked = total >= a.req;
+    return `<div class="achv ${unlocked ? 'unlocked' : 'lock'}" title="${a.desc}">
+      <span>${a.emoji}</span>
+      <span>${a.name}</span>
+      <span class="achv-req">${unlocked ? '✓ 已解锁' : a.req + '⭐'}</span>
+    </div>`;
+  }).join('');
+  const cnt = ACHIEVEMENTS.filter(a => total >= a.req).length;
+  const cEl = document.getElementById('achvCount');
+  const tEl = document.getElementById('achvTotal');
+  if (cEl) cEl.textContent = cnt;
+  if (tEl) tEl.textContent = ACHIEVEMENTS.length;
+}
+
+function renderRankLadderDetail(){
+  const el = document.getElementById('rankLadderDetail');
+  if (!el) return;
+  const total = starCache.total;
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">` +
+    RANKS.map(r => {
+      const on = total >= r.min;
+      return `<div style="padding:14px;border-radius:16px;text-align:center;
+        background:${on ? 'linear-gradient(150deg,#FFF6DE,#FFEEC0)' : '#F8F5F2'};
+        border:1.5px solid ${on ? '#FFD98E' : '#F0EAE3'};
+        opacity:${on ? 1 : .55};">
+        <div style="font-size:26px;margin-bottom:5px;">${r.emoji}</div>
+        <div style="font-size:12.5px;font-weight:800;color:${on ? '#8A5A10' : '#98908A'};margin-bottom:3px;">${r.name}</div>
+        <div style="font-size:11px;font-weight:700;color:#B0A8A0;">${r.min}⭐ 起</div>
+      </div>`;
+    }).join('') + `</div>`;
+}
+
+function renderStarLog(){
+  const el = document.getElementById('starLogList');
+  if (!el) return;
+  if (!starCache.log.length){
+    el.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:14px 0;text-align:center;">还没有星星记录，快去记录一次陪伴吧 ⭐</div>`;
+    return;
+  }
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;">` +
+    starCache.log.slice(0, 20).map(l => `
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:14px;background:#FFFCF9;border:1px solid var(--line);">
+        <span style="font-size:20px;">${l.icon}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12.5px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.reason}</div>
+          <div style="font-size:11px;color:var(--muted);font-weight:600;">${l.date}</div>
+        </div>
+        <b style="font-size:14px;font-weight:900;color:#FFB347;white-space:nowrap;">+${l.stars}⭐</b>
+      </div>`).join('') + `</div>`;
+}
+
+function showLevelUp(newRank){
+  const flash = document.getElementById('levelupFlash');
+  document.getElementById('lvEmoji').textContent = newRank.emoji;
+  document.getElementById('lvRankName').textContent = newRank.name;
+  document.getElementById('lvSub').textContent = `累计 ${starCache.total} 颗星星 · 继续保持！`;
+  flash.classList.add('show');
+  setTimeout(() => flash.classList.remove('show'), 2600);
+}
+
+function refreshRewardSystem(showUpgrade = true){
+  const prevRank = lastRankId ? RANKS.find(r => r.id === lastRankId) : null;
+  starCache = computeStars();
+  const { cur } = getRank(starCache.total);
+
+  // 渲染所有奖励相关
+  renderRankCard('homeRankCard');
+  renderRankCard('rewardRankCard');
+  renderStarSources();
+  renderAchievements('badgeWall');
+  renderAchievements('rewardBadgeWall');
+  renderRankLadderDetail();
+  renderStarLog();
+
+  // 我的页段位标签
+  const mineTag = document.getElementById('mineRankTag');
+  if (mineTag) mineTag.textContent = cur.name;
+  const mineStatsLine = document.getElementById('mineStatsLine');
+  if (mineStatsLine) mineStatsLine.textContent = `138****6688 · 已陪伴 128 天 · 累计 ${starCache.total} 颗星星`;
+  const mineStarText = document.getElementById('mineStarText');
+  if (mineStarText) mineStarText.textContent = `${starCache.total} 颗 · ${cur.name}`;
+
+  // 升级特效
+  if (showUpgrade && prevRank && cur.id !== prevRank.id && starCache.total >= cur.min){
+    if (RANKS.indexOf(cur) > RANKS.indexOf(prevRank)){
+      setTimeout(() => showLevelUp(cur), 300);
+    }
+  }
+  lastRankId = cur.id;
+}
+
+/* ==================== 页面切换 ==================== */
+const navLinks = document.querySelectorAll('.nav-links a');
+function goPage(name){
+  navLinks.forEach(a => a.classList.toggle('on', a.dataset.page === name));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const t = document.getElementById('page-' + name);
+  if (t) t.classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+navLinks.forEach(a => a.addEventListener('click', () => goPage(a.dataset.page)));
+document.querySelectorAll('[data-goto]').forEach(el => {
+  el.addEventListener('click', () => goPage(el.dataset.goto));
+});
+
+/* ==================== 计时器（修复 + 目标可改） ==================== */
+const R = 52, C = 2 * Math.PI * R;
+const ring = document.getElementById('ring');
+const ringNum = document.getElementById('ringNum');
+const ringUnit = document.getElementById('ringUnit');
+const startBtn = document.getElementById('startBtn');
+const resetTimerBtn = document.getElementById('resetTimerBtn');
+const editTargetBtn = document.getElementById('editTargetBtn');
+
+let targetMinutes = 60;
+let seconds = 0;
+let running = false, timer = null;
+
+function renderTimer(){
+  const TARGET = targetMinutes * 60;
+  const p = TARGET > 0 ? Math.min(seconds / TARGET, 1) : 0;
+  ring.style.strokeDashoffset = C * (1 - p);
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  ringNum.textContent = m;
+  ringUnit.textContent = `${s.toString().padStart(2,'0')} 秒 / 目标 ${targetMinutes}`;
+  if (p >= 1) ringNum.style.color = '#4FCE9E';
+  else ringNum.style.color = '';
+}
+function stopTimer(){
+  if (timer){ clearInterval(timer); timer = null; }
+  running = false;
+  startBtn.textContent = '▶ 开始陪伴计时';
+  startBtn.classList.remove('on');
+}
+startBtn.addEventListener('click', () => {
+  if (running){ stopTimer(); toast('已暂停，随时可以继续 ⏸'); return; }
+  running = true;
+  startBtn.textContent = '⏸ 陪伴中 · 点击暂停';
+  startBtn.classList.add('on');
+  timer = setInterval(() => {
+    seconds++;
+    renderTimer();
+    if (seconds === targetMinutes * 60){
+      stopTimer();
+      toast(`🎉 达成 ${targetMinutes} 分钟陪伴目标！记得记录一下哦`);
+    }
+  }, 1000);
+  toast('陪伴计时开始，享受这段时光吧 ✨');
+});
+resetTimerBtn.addEventListener('click', () => {
+  stopTimer();
+  seconds = 0;
+  renderTimer();
+  toast('计时已重置');
+});
+editTargetBtn.addEventListener('click', () => {
+  openSimpleEdit('修改每日陪伴目标', [
+    {key:'min', label:'目标时长（分钟）', type:'number', value: targetMinutes, placeholder:'如 60', first:true}
+  ], vals => {
+    const n = parseInt(vals.min, 10);
+    if (!n || n < 1 || n > 600){ toast('请输入 1-600 之间的分钟数'); return; }
+    targetMinutes = n;
+    if (seconds > targetMinutes * 60) seconds = targetMinutes * 60;
+    renderTimer();
+    closeModal(simpleEditModal);
+    toast(`目标已改为 ${targetMinutes} 分钟`);
+  });
+});
+renderTimer();
+
+/* ==================== 孩子档案 ==================== */
+const childList = document.getElementById('childList');
+const heroSub = document.getElementById('heroSub');
+function compNames(){ return children.filter(c => companions.includes(c.id)).map(c => c.name); }
+function refreshHero(){
+  const names = compNames();
+  if (!names.length) heroSub.textContent = '还没有选择陪伴对象，点下方档案选一个吧 👇';
+  else if (names.length === 1) heroSub.textContent = `今天想和${names[0]}一起玩点什么？我们已经为你准备好了。`;
+  else heroSub.textContent = `今天想和${names.join('、')}一起玩点什么？双倍快乐已就位。`;
+}
+function renderChildren(){
+  childList.innerHTML = children.map(c => {
+    const sel = companions.includes(c.id);
+    return `<div class="child-card ${sel ? 'sel' : ''}" data-id="${c.id}">
+      <div class="child-avatar">${c.avatar}</div>
+      <div class="child-info"><h4>${c.name}<span class="child-age">${c.age} 岁</span></h4>
+      <p>${c.gender} · ${c.tags.join(' · ') || '暂无标签'}</p></div>
+      <div class="child-check">✓</div></div>`;
+  }).join('');
+  refreshHero();
+}
+childList.addEventListener('click', e => {
+  const card = e.target.closest('.child-card');
+  if (!card) return;
+  const id = card.dataset.id;
+  const idx = companions.indexOf(id);
+  if (idx > -1){
+    if (companions.length === 1){ toast('至少保留一个陪伴对象哦'); return; }
+    companions.splice(idx, 1);
+  } else companions.push(id);
+  renderChildren(); renderRecordKids();
+  const names = compNames();
+  toast(names.length > 1 ? `已切换为同时陪伴：${names.join(' + ')}` : `当前陪伴对象：${names[0]}`);
+});
+
+const moods = document.querySelectorAll('#moods .mood');
+const moodTip = document.getElementById('moodTip');
+moods.forEach(m => {
+  m.addEventListener('click', () => {
+    moods.forEach(x => x.classList.remove('sel'));
+    m.classList.add('sel');
+    const names = compNames();
+    if (!names.length){ moodTip.textContent = '请先选择陪伴对象'; return; }
+    children.forEach(c => { if (companions.includes(c.id)) c.mood = m.dataset.m; });
+    moodTip.textContent = `已记录：${names.join('、')} 今天「${m.dataset.m}」`;
+  });
+});
+
+/* ==================== 孩子管理 ==================== */
+const childModal = document.getElementById('childModal');
+const manageChildList = document.getElementById('manageChildList');
+const fAvatar = document.getElementById('fAvatar');
+const fName = document.getElementById('fName');
+const fAge = document.getElementById('fAge');
+const fGender = document.getElementById('fGender');
+const fTags = document.getElementById('fTags');
+const fEditId = document.getElementById('fEditId');
+const formTitle = document.getElementById('formTitle');
+function renderManageList(){
+  manageChildList.innerHTML = children.map(c => `
+    <div class="manage-row">
+      <div class="child-avatar">${c.avatar}</div>
+      <div class="mi"><h4>${c.name} · ${c.age} 岁 · ${c.gender}</h4>
+      <p>${c.tags.join(' · ') || '暂无兴趣标签'}</p></div>
+      <button class="icon-btn" data-edit="${c.id}">✏️</button>
+      <button class="icon-btn del" data-del="${c.id}">🗑</button>
+    </div>`).join('');
+}
+function openChildManager(){ renderManageList(); resetForm(); openModal(childModal); }
+function resetForm(){
+  fAvatar.value = '🐣'; fName.value = ''; fAge.value = '';
+  fGender.value = '女'; fTags.value = ''; fEditId.value = '';
+  formTitle.textContent = '➕ 添加一个新宝贝';
+}
+document.getElementById('manageChildBtn').addEventListener('click', openChildManager);
+document.getElementById('manageChildBtn2').addEventListener('click', openChildManager);
+document.getElementById('resetFormBtn').addEventListener('click', resetForm);
+manageChildList.addEventListener('click', e => {
+  const editBtn = e.target.closest('[data-edit]');
+  const delBtn = e.target.closest('[data-del]');
+  if (editBtn){
+    const c = children.find(x => x.id === editBtn.dataset.edit);
+    if (!c) return;
+    fAvatar.value = c.avatar; fName.value = c.name; fAge.value = c.age;
+    fGender.value = c.gender; fTags.value = c.tags.join(' ');
+    fEditId.value = c.id;
+    formTitle.textContent = `✏️ 正在编辑：${c.name}`;
+    childModal.querySelector('.modal').scrollTop = 320;
+    fName.focus();
+  }
+  if (delBtn){
+    const id = delBtn.dataset.del;
+    const c = children.find(x => x.id === id);
+    if (!c) return;
+    if (children.length <= 1){ toast('至少需要保留一个宝贝档案'); return; }
+    if (!confirm(`确定删除「${c.name}」的档案吗？`)) return;
+    children = children.filter(x => x.id !== id);
+    companions = companions.filter(x => x !== id);
+    if (!companions.length) companions = [children[0].id];
+    renderManageList(); renderChildren(); renderMineChildren();
+    toast(`已删除「${c.name}」的档案`);
+  }
+});
+document.getElementById('saveChildBtn').addEventListener('click', () => {
+  const name = fName.value.trim();
+  const age = parseInt(fAge.value, 10);
+  if (!name){ toast('请填写宝贝的名字'); fName.focus(); return; }
+  if (!age || age < 1 || age > 14){ toast('请填写 1-14 之间的年龄'); fAge.focus(); return; }
+  const tags = fTags.value.split(/[\s,，、]+/).filter(Boolean).slice(0, 5);
+  const avatar = (fAvatar.value || '🐣').trim().slice(0, 2) || '🐣';
+  const editId = fEditId.value;
+  if (editId){
+    const c = children.find(x => x.id === editId);
+    Object.assign(c, {name, age, gender:fGender.value, avatar, tags});
+    toast(`已更新「${name}」的档案`);
+  } else {
+    children.push({id:'c' + Date.now(), name, age, gender:fGender.value, avatar, tags, mood:''});
+    toast(`已添加宝贝「${name}」`);
+  }
+  renderManageList(); renderChildren(); renderMineChildren(); resetForm();
+});
+function renderMineChildren(){
+  const box = document.getElementById('mineChildList');
+  box.innerHTML = children.map(c => `
+    <div class="list-row" data-mine-child="${c.id}">
+      <div class="list-ico" style="background:#FFF6EE">${c.avatar}</div>
+      <div class="lt"><h4>${c.name}</h4>
+      <p>${c.age} 岁 · ${c.gender} · ${c.tags.join(' · ') || '暂无兴趣标签'}</p></div>
+      <span class="arrow">›</span>
+    </div>`).join('') + `
+    <div class="list-row" id="mineAddChild">
+      <div class="list-ico" style="background:#F3EEFF">➕</div>
+      <div class="lt"><h4>添加宝贝档案</h4><p>支持为多个孩子分别记录成长</p></div>
+      <span class="arrow">›</span>
+    </div>`;
+}
+document.getElementById('mineChildList').addEventListener('click', e => {
+  if (e.target.closest('#mineAddChild')){ openChildManager(); return; }
+  const row = e.target.closest('[data-mine-child]');
+  if (row){
+    const id = row.dataset.mineChild;
+    const c = children.find(x => x.id === id);
+    fAvatar.value = c.avatar; fName.value = c.name; fAge.value = c.age;
+    fGender.value = c.gender; fTags.value = c.tags.join(' ');
+    fEditId.value = c.id;
+    formTitle.textContent = `✏️ 正在编辑：${c.name}`;
+    renderManageList();
+    openModal(childModal);
+  }
+});
+
+/* ==================== 家庭成员 ==================== */
+const familyList = document.getElementById('familyList');
+function renderFamily(){
+  familyList.innerHTML = familyMembers.map(f => `
+    <div class="list-row" data-family="${f.id}">
+      <div class="list-ico" style="background:${f.bg}">${f.avatar}</div>
+      <div class="lt">
+        <h4>${f.role}（${f.name}）${f.isAdmin ? ' · 管理员' : ''}</h4>
+        <p>${f.phone} · 本周陪伴 ${f.hours} 小时 · 记录 ${f.records} 次</p>
+      </div>
+      <div class="row-acts">
+        <button class="icon-btn" data-family-edit="${f.id}">✏️</button>
+        ${f.isAdmin ? '' : `<button class="icon-btn del" data-family-del="${f.id}">🗑</button>`}
+      </div>
+      <span class="arrow">›</span>
+    </div>`).join('');
+}
+familyList.addEventListener('click', e => {
+  const editBtn = e.target.closest('[data-family-edit]');
+  const delBtn = e.target.closest('[data-family-del]');
+  if (editBtn){
+    e.stopPropagation();
+    const f = familyMembers.find(x => x.id === editBtn.dataset.familyEdit);
+    if (!f) return;
+    openSimpleEdit(`编辑家庭成员 · ${f.role}`, [
+      {key:'name', label:'姓名', value:f.name, first:true},
+      {key:'phone', label:'联系方式', value:f.phone},
+      {key:'hours', label:'本周陪伴时长（小时）', type:'number', value:f.hours},
+      {key:'records', label:'本周记录次数', type:'number', value:f.records}
+    ], vals => {
+      f.name = vals.name || f.name;
+      f.phone = vals.phone || f.phone;
+      f.hours = parseFloat(vals.hours) || 0;
+      f.records = parseInt(vals.records, 10) || 0;
+      renderFamily();
+      closeModal(simpleEditModal);
+      toast(`已更新「${f.role}」的信息`);
+    });
+    return;
+  }
+  if (delBtn){
+    e.stopPropagation();
+    const id = delBtn.dataset.familyDel;
+    const f = familyMembers.find(x => x.id === id);
+    if (!f) return;
+    if (!confirm(`确定删除成员「${f.role}（${f.name}）」吗？`)) return;
+    familyMembers = familyMembers.filter(x => x.id !== id);
+    renderFamily();
+    toast(`已删除「${f.role}」`);
+  }
+});
+document.getElementById('addFamilyBtn').addEventListener('click', () => {
+  openSimpleEdit('添加家庭成员', [
+    {key:'role', label:'称呼', value:'爷爷', placeholder:'如：爷爷/姑姑/叔叔', first:true},
+    {key:'name', label:'姓名', value:'', placeholder:'如：王老先生'},
+    {key:'phone', label:'联系方式', value:'', placeholder:'如：138****0000'},
+    {key:'avatar', label:'头像 emoji', value:'👴'},
+    {key:'hours', label:'本周陪伴时长（小时）', type:'number', value:0},
+    {key:'records', label:'本周记录次数', type:'number', value:0}
+  ], vals => {
+    if (!vals.role){ toast('请填写称呼'); return; }
+    familyMembers.push({
+      id:'f' + Date.now(),
+      avatar: (vals.avatar || '👤').slice(0, 2),
+      bg:'#FFF0E7',
+      role: vals.role,
+      name: vals.name || '未填写',
+      phone: vals.phone || '未填写',
+      isAdmin:false,
+      hours: parseFloat(vals.hours) || 0,
+      records: parseInt(vals.records, 10) || 0
+    });
+    renderFamily();
+    closeModal(simpleEditModal);
+    toast(`已添加成员「${vals.role}」`);
+  });
+});
+
+/* ==================== 成长数据 ==================== */
+const growthStatsBox = document.getElementById('growthStats');
+function renderGrowthStats(){
+  growthStatsBox.innerHTML = growthStats.map(g => `
+    <div class="g-stat" data-growth="${g.id}">
+      <small>${g.label}</small>
+      <b>${g.value}<i>${g.unit}</i><span class="delta">${g.delta}</span></b>
+      <span class="edit-hint">✏️ 点击编辑</span>
+    </div>`).join('');
+}
+growthStatsBox.addEventListener('click', e => {
+  const card = e.target.closest('[data-growth]');
+  if (!card) return;
+  const g = growthStats.find(x => x.id === card.dataset.growth);
+  if (!g) return;
+  openSimpleEdit(`编辑 · ${g.label}`, [
+    {key:'label', label:'标签', value:g.label, first:true},
+    {key:'value', label:'数值', type:'number', value:g.value},
+    {key:'unit', label:'单位', value:g.unit},
+    {key:'delta', label:'增长量（带+号）', value:g.delta}
+  ], vals => {
+    g.label = vals.label || g.label;
+    g.value = parseFloat(vals.value) || 0;
+    g.unit = vals.unit || g.unit;
+    g.delta = vals.delta || '';
+    renderGrowthStats();
+    closeModal(simpleEditModal);
+    toast('已更新成长数据');
+  });
+});
+
+/* ==================== 里程碑 ==================== */
+const milestoneList = document.getElementById('milestoneList');
+const MS_COLORS = ['#4FCE9E','#FF8A5B','#B09BF8','#FFC93C','#6BA8F5','#FF93B0'];
+function renderMilestones(){
+  milestoneList.innerHTML = milestones.map(m => `
+    <div class="tl-item">
+      <div class="tl-dot" style="background:${m.color}"></div>
+      <div class="tl-time">${m.date}</div>
+      <div class="tl-text">${m.text}</div>
+      <div class="tl-edit">
+        <button class="icon-btn" data-ms-edit="${m.id}">✏️</button>
+        <button class="icon-btn del" data-ms-del="${m.id}">🗑</button>
+      </div>
+    </div>`).join('');
+}
+milestoneList.addEventListener('click', e => {
+  const editBtn = e.target.closest('[data-ms-edit]');
+  const delBtn = e.target.closest('[data-ms-del]');
+  if (editBtn){
+    const m = milestones.find(x => x.id === editBtn.dataset.msEdit);
+    if (!m) return;
+    openSimpleEdit('编辑里程碑', [
+      {key:'date', label:'时间', value:m.date, first:true},
+      {key:'text', label:'内容', type:'textarea', value:m.text}
+    ], vals => {
+      m.date = vals.date || m.date;
+      m.text = vals.text || m.text;
+      renderMilestones();
+      refreshRewardSystem(false);
+      closeModal(simpleEditModal);
+      toast('已更新里程碑');
+    });
+  }
+  if (delBtn){
+    const id = delBtn.dataset.msDel;
+    if (!confirm('确定删除这条里程碑吗？')) return;
+    milestones = milestones.filter(x => x.id !== id);
+    renderMilestones();
+    refreshRewardSystem(false);
+    toast('已删除里程碑');
+  }
+});
+document.getElementById('addMilestoneBtn').addEventListener('click', () => {
+  openSimpleEdit('添加里程碑', [
+    {key:'date', label:'时间', value:'今天', first:true},
+    {key:'text', label:'内容', type:'textarea', value:'', placeholder:'例如：小星第一次自己穿好了鞋子'}
+  ], vals => {
+    if (!vals.text){ toast('请填写内容'); return; }
+    milestones.unshift({
+      id:'m' + Date.now(),
+      date: vals.date || '今天',
+      color: MS_COLORS[Math.floor(Math.random() * MS_COLORS.length)],
+      text: vals.text
+    });
+    renderMilestones();
+    renderHomeTimeline();
+    refreshRewardSystem();
+    closeModal(simpleEditModal);
+    toast('已添加里程碑 +10⭐');
+  });
+});
+
+/* ==================== 回忆相册 ==================== */
+const memoryGrid = document.getElementById('memoryGrid');
+const MEM_BGS = [
+  'linear-gradient(150deg,#FFE7D6,#FFD1E0)','linear-gradient(150deg,#DFF6EC,#CDEEDF)',
+  'linear-gradient(150deg,#E4EEFF,#D5E4FF)','linear-gradient(150deg,#FFF4D9,#FFE8B8)',
+  'linear-gradient(150deg,#F1EBFF,#E3D8FF)','linear-gradient(150deg,#FFE9F0,#FFD6E4)'
+];
+function renderMemories(){
+  memoryGrid.innerHTML = memories.map(m => `
+    <div class="memory" style="background:${m.bg}" data-mem="${m.id}">
+      <div class="mem-edit">
+        <button class="icon-btn" data-mem-edit="${m.id}">✏️</button>
+        <button class="icon-btn del" data-mem-del="${m.id}">🗑</button>
+      </div>
+      <div class="emo">${m.emoji}</div>
+      <div class="mtxt">${m.title}</div>
+      <div class="mdate">${m.date}</div>
+    </div>`).join('') + `
+    <div class="memory-add" id="addMemoryInline">
+      <span>＋</span><span>添加一段回忆</span>
+    </div>`;
+}
+memoryGrid.addEventListener('click', e => {
+  const editBtn = e.target.closest('[data-mem-edit]');
+  const delBtn = e.target.closest('[data-mem-del]');
+  const addBtn = e.target.closest('#addMemoryInline');
+  if (addBtn){ openMemoryEditor(''); return; }
+  if (editBtn){ openMemoryEditor(editBtn.dataset.memEdit); return; }
+  if (delBtn){
+    const id = delBtn.dataset.memDel;
+    if (!confirm('确定删除这段回忆吗？')) return;
+    memories = memories.filter(x => x.id !== id);
+    renderMemories();
+    refreshRewardSystem(false);
+    toast('已删除回忆');
+  }
+});
+function openMemoryEditor(id){
+  const m = id ? memories.find(x => x.id === id) : null;
+  openSimpleEdit(m ? '编辑回忆' : '添加回忆', [
+    {key:'emoji', label:'图标 emoji', value:m ? m.emoji : '✨', first:true},
+    {key:'title', label:'回忆描述', value:m ? m.title : ''},
+    {key:'date', label:'日期和陪伴者', value:m ? m.date : '今天 · 和妈妈'}
+  ], vals => {
+    if (!vals.title){ toast('请填写回忆描述'); return; }
+    if (m){
+      m.emoji = vals.emoji || m.emoji;
+      m.title = vals.title;
+      m.date = vals.date || m.date;
+      toast('已更新回忆');
+    } else {
+      memories.unshift({
+        id:'me' + Date.now(),
+        emoji: vals.emoji || '✨',
+        title: vals.title,
+        date: vals.date || '今天',
+        bg: MEM_BGS[Math.floor(Math.random() * MEM_BGS.length)]
+      });
+      toast('已添加回忆 +5⭐');
+    }
+    renderMemories();
+    refreshRewardSystem();
+    closeModal(simpleEditModal);
+  });
+}
+document.getElementById('addMemoryBtn').addEventListener('click', () => openMemoryEditor(''));
+
+/* ==================== 能力发展 ==================== */
+const abilityBox = document.getElementById('abilityBox');
+const abilitySwitch = document.getElementById('abilitySwitch');
+function renderAbility(cid){
+  const list = abilities[cid] || [];
+  abilityBox.innerHTML = list.map(a => `
+    <div class="ability">
+      <div class="ab-head"><span>${a.name}</span><b>${a.score}%</b></div>
+      <div class="track"><i style="width:${a.score}%"></i></div>
+    </div>`).join('');
+  abilitySwitch.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.cid === cid));
+  requestAnimationFrame(() => {
+    abilityBox.querySelectorAll('.track i').forEach((t, i) => {
+      const w = t.style.width;
+      t.style.width = '0%';
+      setTimeout(() => { t.style.width = w; }, 100 + i * 60);
+    });
+  });
+}
+abilitySwitch.addEventListener('click', e => {
+  const chip = e.target.closest('[data-cid]');
+  if (chip) renderAbility(chip.dataset.cid);
+});
+
+/* ==================== 故事库 ==================== */
+const storyGrid = document.getElementById('storyGrid');
+let storyFilters = {theme:'all', age:'all'};
+const DAILY_STORY_ID = 's1';
+
+function renderStories(){
+  const res = stories.filter(s =>
+    (storyFilters.theme === 'all' || s.theme === storyFilters.theme) &&
+    (storyFilters.age === 'all' || s.age === storyFilters.age)
+  );
+  if (!res.length){
+    storyGrid.innerHTML = `<div class="empty">没有找到符合条件的故事，换个筛选试试吧 📖</div>`;
+    return;
+  }
+  storyGrid.innerHTML = res.map(s => `
+    <div class="story-card" data-story="${s.id}">
+      ${s.id === DAILY_STORY_ID ? `<span class="story-daily-tag">⭐ 每日固定</span>` : ''}
+      <div class="story-cover" style="--bg:${s.bg}">${s.emoji}</div>
+      <h4>${s.title}</h4>
+      <div class="story-author">${s.author}</div>
+      <div class="story-desc">${s.desc}</div>
+      <div class="story-meta">
+        <span>⏱ ${s.duration}</span>
+        <span>🏷 ${s.theme}</span>
+        <span>👶 ${s.age === '低幼' ? '2-4 岁' : s.age === '中童' ? '4-6 岁' : '6-10 岁'}</span>
+      </div>
+    </div>`).join('');
+}
+storyGrid.addEventListener('click', e => {
+  const card = e.target.closest('[data-story]');
+  if (card) openStoryReader(card.dataset.story);
+});
+document.querySelectorAll('[data-sfilter]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const group = chip.dataset.sfilter;
+    document.querySelectorAll(`[data-sfilter="${group}"]`).forEach(c => c.classList.remove('on'));
+    chip.classList.add('on');
+    storyFilters[group] = chip.dataset.value;
+    renderStories();
+  });
+});
+
+/* 每日固定故事 */
+function renderDailyStory(){
+  const s = stories.find(x => x.id === DAILY_STORY_ID);
+  if (!s) return;
+  document.getElementById('dailyStoryTitle').textContent = `《${s.title}》`;
+  document.getElementById('dailyStoryDesc').textContent = `${s.desc} 读完记得点击「记录」，帮孩子颁发一枚习惯奖，也为自己赚一颗星星。`;
+}
+document.getElementById('dailyStoryStartBtn').addEventListener('click', () => {
+  const s = stories.find(x => x.id === DAILY_STORY_ID);
+  openRecordModal(`讲故事《${s.title}》`);
+});
+document.getElementById('dailyStoryReadBtn').addEventListener('click', () => {
+  openStoryReader(DAILY_STORY_ID);
+});
+
+/* 故事阅读 */
+const storyReadModal = document.getElementById('storyReadModal');
+function openStoryReader(id){
+  const s = stories.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('srTitle').textContent = `📖 ${s.title}`;
+  document.getElementById('srBody').innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding-bottom:16px;border-bottom:1px dashed var(--line);">
+      <div style="font-size:48px;flex-shrink:0;">${s.emoji}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:18px;font-weight:800;margin-bottom:4px;">${s.title}</div>
+        <div style="font-size:12.5px;color:var(--muted);font-weight:700;">${s.author} · ${s.duration} · ${s.theme}</div>
+      </div>
+    </div>
+    <div class="story-reader">${s.content.map(p => `<p>${p}</p>`).join('')}</div>
+    <div class="story-tips">
+      <h4>💡 共读小建议</h4>
+      <ul>${s.tips.map(t => `<li>${t}</li>`).join('')}</ul>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" data-close>关闭</button>
+      <button class="btn btn-primary btn-sm" id="srRecordBtn">📝 记录这次讲故事</button>
+    </div>`;
+  document.getElementById('srRecordBtn').addEventListener('click', () => {
+    closeModal(storyReadModal);
+    openRecordModal(`讲故事《${s.title}》`);
+  });
+  storyReadModal.querySelectorAll('[data-close]').forEach(btn => {
+    btn.addEventListener('click', () => closeModal(storyReadModal));
+  });
+  openModal(storyReadModal);
+}
+
+/* ==================== 活动库（50+） ==================== */
+let activities = [
+  {icon:'🎨', bg:'#FFEDE4', title:'厨房里的彩虹画', desc:'用芹菜根、藕片当印章，做一张会呼吸的画', durBucket:'short', cat:'mid', type:'艺术创作', award:'creative', meta:['⏱ 15 分钟','👶 4-6 岁','🎯 精细动作']},
+  {icon:'🖍', bg:'#FFEDF3', title:'地板上的大画布', desc:'铺一张大纸，全家趴在地上一起涂鸦', durBucket:'long', cat:'low', type:'艺术创作', award:'share', meta:['⏱ 30 分钟','👶 2-4 岁','🎯 色彩感知']},
+  {icon:'🪁', bg:'#E7F6EF', title:'阳台风筝工坊', desc:'用吸管和塑料袋做一只迷你风筝，再试飞', durBucket:'long', cat:'high', type:'艺术创作', award:'creative', meta:['⏱ 35 分钟','👶 6-10 岁','🎯 动手创造']},
+  {icon:'🖌', bg:'#FFF0E7', title:'石头彩绘小动物', desc:'捡几块石头，画成瓢虫、小鱼、小猫', durBucket:'mid', cat:'mid', type:'艺术创作', award:'creative', meta:['⏱ 25 分钟','👶 4-8 岁','🎯 艺术表达']},
+  {icon:'🪡', bg:'#F3EEFF', title:'毛线缠绕画', desc:'在纸板上缠出彩色线条，做成独一无二的挂饰', durBucket:'mid', cat:'high', type:'艺术创作', award:'focus', meta:['⏱ 25 分钟','👶 6-10 岁','🎯 手眼协调']},
+  {icon:'🎭', bg:'#FFEDF3', title:'纸盘面具工坊', desc:'剪一剪、贴一贴，做一个自己的动物面具', durBucket:'mid', cat:'mid', type:'艺术创作', award:'creative', meta:['⏱ 20 分钟','👶 4-7 岁','🎯 想象创造']},
+  {icon:'🧵', bg:'#FFF6DE', title:'纽扣拼贴画', desc:'用纽扣、豆子、毛线拼出房子和小树', durBucket:'mid', cat:'mid', type:'艺术创作', award:'focus', meta:['⏱ 20 分钟','👶 4-6 岁','🎯 精细动作']},
+  {icon:'🖼', bg:'#EAF7EE', title:'自然物拼贴画', desc:'用树叶、花瓣、小石子拼出一幅自然画', durBucket:'mid', cat:'mid', type:'艺术创作', award:'creative', meta:['⏱ 25 分钟','👶 4-8 岁','🎯 自然认知']},
+  {icon:'🎵', bg:'#F3EEFF', title:'锅碗瓢盆交响乐', desc:'用勺子敲出节奏，来一场家庭音乐会', durBucket:'short', cat:'low', type:'运动游戏', award:'brave', meta:['⏱ 15 分钟','👶 2-4 岁','🎯 节奏感知']},
+  {icon:'🔍', bg:'#FFF6DE', title:'客厅寻宝大冒险', desc:'画一张藏宝图，让孩子按线索找小惊喜', durBucket:'mid', cat:'high', type:'运动游戏', award:'focus', meta:['⏱ 20 分钟','👶 6-10 岁','🎯 逻辑推理']},
+  {icon:'🏃', bg:'#FFEFE8', title:'客厅障碍赛', desc:'用抱枕和胶带搭一条赛道，计时挑战自己', durBucket:'mid', cat:'high', type:'运动游戏', award:'brave', meta:['⏱ 25 分钟','👶 5-10 岁','🎯 大运动']},
+  {icon:'🦘', bg:'#FFEDE4', title:'袋鼠跳跳跳', desc:'双脚夹住抱枕跳到终点，看谁先到', durBucket:'short', cat:'low', type:'运动游戏', award:'brave', meta:['⏱ 10 分钟','👶 2-5 岁','🎯 大运动']},
+  {icon:'🎳', bg:'#E6F7FA', title:'纸杯保龄球', desc:'用纸杯当球瓶，皮球滚过去，看谁打倒得多', durBucket:'short', cat:'mid', type:'运动游戏', award:'focus', meta:['⏱ 15 分钟','👶 4-7 岁','🎯 手眼协调']},
+  {icon:'🧘', bg:'#EAF7EE', title:'动物瑜伽模仿秀', desc:'学猫伸懒腰、学蛇扭动，一起做动物瑜伽', durBucket:'short', cat:'low', type:'运动游戏', award:'brave', meta:['⏱ 12 分钟','👶 2-5 岁','🎯 身体控制']},
+  {icon:'🪢', bg:'#FFF4E0', title:'跳皮筋 / 跳格子', desc:'用胶带在地上贴出格子，边跳边数数', durBucket:'mid', cat:'mid', type:'运动游戏', award:'focus', meta:['⏱ 20 分钟','👶 4-8 岁','🎯 大运动']},
+  {icon:'⚽', bg:'#FFEFE8', title:'室内足球小将', desc:'用纸团和门框当球门，练习停球和射门', durBucket:'mid', cat:'high', type:'运动游戏', award:'brave', meta:['⏱ 20 分钟','👶 5-10 岁','🎯 协调能力']},
+  {icon:'🎈', bg:'#FFEDF3', title:'气球不落地', desc:'一起拍气球，不让它碰到地面，配合计数', durBucket:'short', cat:'mid', type:'运动游戏', award:'share', meta:['⏱ 10 分钟','👶 4-8 岁','🎯 反应力']},
+  {icon:'🌿', bg:'#EEF4FF', title:'阳台小花园观察', desc:'给每片叶子起名字，记录今天谁又长高了', durBucket:'mid', cat:'mid', type:'科学探索', award:'patient', meta:['⏱ 20 分钟','👶 4-6 岁','🎯 自然认知']},
+  {icon:'💧', bg:'#E6F7FA', title:'水的沉浮实验', desc:'一盆水 + 十样小东西，猜猜谁会浮起来', durBucket:'mid', cat:'high', type:'科学探索', award:'focus', meta:['⏱ 20 分钟','👶 6-10 岁','🎯 科学启蒙']},
+  {icon:'🫧', bg:'#E6F7FA', title:'泡泡水配方实验', desc:'洗洁精 + 糖 + 水，调出最大的泡泡', durBucket:'short', cat:'low', type:'科学探索', award:'patient', meta:['⏱ 15 分钟','👶 2-5 岁','🎯 观察力']},
+  {icon:'🌳', bg:'#EAF7EE', title:'公园自然寻宝', desc:'拿着清单去找：三片不同的叶子、一块石头', durBucket:'long', cat:'high', type:'科学探索', award:'patient', meta:['⏱ 40 分钟','👶 4-10 岁','🎯 自然认知']},
+  {icon:'🤖', bg:'#EDF1FF', title:'乐高机械小挑战', desc:'用齿轮和轴搭一个能转动的结构，比谁转得久', durBucket:'long', cat:'high', type:'科学探索', award:'focus', meta:['⏱ 45 分钟','👶 8-10 岁','🎯 工程思维']},
+  {icon:'🌈', bg:'#F3EEFF', title:'彩虹牛奶实验', desc:'牛奶滴上色素，棉签蘸洗洁精点一下，看颜色跑起来', durBucket:'short', cat:'mid', type:'科学探索', award:'focus', meta:['⏱ 15 分钟','👶 4-8 岁','🎯 科学启蒙']},
+  {icon:'🧲', bg:'#EDF1FF', title:'磁铁寻宝', desc:'拿一块磁铁在家里走一圈，看哪些东西会被吸住', durBucket:'mid', cat:'mid', type:'科学探索', award:'focus', meta:['⏱ 20 分钟','👶 4-7 岁','🎯 物理启蒙']},
+  {icon:'🌱', bg:'#EAF7EE', title:'种子发芽日记', desc:'种一颗豆子，每天画下它的变化，记录生长过程', durBucket:'long', cat:'mid', type:'科学探索', award:'patient', meta:['⏱ 30 分钟','👶 4-9 岁','🎯 观察记录']},
+  {icon:'❄️', bg:'#E6F7FA', title:'冰块融化比赛', desc:'把冰块放在不同地方，看哪块先融化', durBucket:'mid', cat:'mid', type:'科学探索', award:'focus', meta:['⏱ 20 分钟','👶 4-8 岁','🎯 科学思维']},
+  {icon:'🌪', bg:'#FFF6DE', title:'自制小旋风', desc:'用瓶子、水和闪粉做一个漩涡观察瓶', durBucket:'mid', cat:'high', type:'科学探索', award:'creative', meta:['⏱ 25 分钟','👶 5-10 岁','🎯 科学启蒙']},
+  {icon:'🔦', bg:'#F0EEFF', title:'影子长短实验', desc:'用手电筒从不同角度照玩具，观察影子变化', durBucket:'short', cat:'mid', type:'科学探索', award:'focus', meta:['⏱ 15 分钟','👶 4-7 岁','🎯 观察力']},
+  {icon:'📖', bg:'#FFF1E6', title:'故事接龙小剧场', desc:'你说一句我说一句，编一个全世界独有的故事', durBucket:'short', cat:'mid', type:'语言阅读', award:'creative', meta:['⏱ 15 分钟','👶 4-8 岁','🎯 语言表达']},
+  {icon:'🔤', bg:'#E9F3FF', title:'字母寻宝游戏', desc:'把字母卡藏在家里，找到并拼出一个单词', durBucket:'mid', cat:'high', type:'语言阅读', award:'focus', meta:['⏱ 20 分钟','👶 5-8 岁','🎯 早期识字']},
+  {icon:'🎭', bg:'#FFEDF3', title:'绘本角色扮演', desc:'选一本绘本，全家演出来，可以加点新台词', durBucket:'long', cat:'mid', type:'语言阅读', award:'brave', meta:['⏱ 30 分钟','👶 4-8 岁','🎯 表达与共情']},
+  {icon:'📝', bg:'#FFF4E0', title:'看图说话小主播', desc:'看一张图，轮流当小主播，讲讲发生了什么', durBucket:'short', cat:'mid', type:'语言阅读', award:'brave', meta:['⏱ 15 分钟','👶 4-6 岁','🎯 语言表达']},
+  {icon:'🎤', bg:'#F3EEFF', title:'家庭故事电台', desc:'用手机录下孩子讲的故事，回放给他听', durBucket:'mid', cat:'mid', type:'语言阅读', award:'brave', meta:['⏱ 20 分钟','👶 4-9 岁','🎯 语言组织']},
+  {icon:'📚', bg:'#FFF1E6', title:'睡前故事共读', desc:'选一本绘本，读完后聊一聊最喜欢哪一页', durBucket:'mid', cat:'low', type:'语言阅读', award:'polite', meta:['⏱ 20 分钟','👶 2-8 岁','🎯 阅读习惯']},
+  {icon:'🔡', bg:'#E9F3FF', title:'拼音/汉字寻宝', desc:'把字卡贴在墙上，你说词语，孩子去找对应的字', durBucket:'mid', cat:'high', type:'语言阅读', award:'focus', meta:['⏱ 20 分钟','👶 5-8 岁','🎯 识字兴趣']},
+  {icon:'🧸', bg:'#FFEDF3', title:'玩具医院开诊啦', desc:'给玩偶们看病、包扎，学会照顾别人', durBucket:'mid', cat:'mid', type:'角色扮演', award:'polite', meta:['⏱ 25 分钟','👶 4-6 岁','🎯 共情能力']},
+  {icon:'🌙', bg:'#F0EEFF', title:'影子手偶戏', desc:'关掉大灯，用手电筒在墙上演一出戏', durBucket:'mid', cat:'low', type:'角色扮演', award:'brave', meta:['⏱ 20 分钟','👶 2-4 岁','🎯 想象创造']},
+  {icon:'🍽', bg:'#FFF4E0', title:'餐厅小老板', desc:'孩子当老板，家长当客人，点菜、上菜、结账', durBucket:'mid', cat:'mid', type:'角色扮演', award:'polite', meta:['⏱ 25 分钟','👶 4-7 岁','🎯 社交能力']},
+  {icon:'🛒', bg:'#EAF7EE', title:'超市购物游戏', desc:'把家里的东西摆成小超市，用玩具钱币买卖', durBucket:'mid', cat:'mid', type:'角色扮演', award:'share', meta:['⏱ 25 分钟','👶 4-8 岁','🎯 数学应用']},
+  {icon:'🚂', bg:'#E6F7FA', title:'小火车旅行记', desc:'把椅子排成火车，一路“经过”不同城市', durBucket:'short', cat:'low', type:'角色扮演', award:'brave', meta:['⏱ 15 分钟','👶 2-5 岁','🎯 想象创造']},
+  {icon:'👨‍🚒', bg:'#FFEFE8', title:'消防员救援行动', desc:'用玩具车和枕头搭“火灾现场”，一起救援', durBucket:'mid', cat:'mid', type:'角色扮演', award:'brave', meta:['⏱ 20 分钟','👶 4-7 岁','🎯 责任感']},
+  {icon:'🥕', bg:'#EAF7EE', title:'一起做蔬菜拼盘', desc:'洗、切、摆盘，让孩子当一次小小主厨', durBucket:'long', cat:'mid', type:'生活实践', award:'tidy', meta:['⏱ 30 分钟','👶 4-7 岁','🎯 生活自理']},
+  {icon:'🍪', bg:'#FFF4E0', title:'免烤小饼干', desc:'压模具、撒糖粉，做好就能马上吃', durBucket:'long', cat:'mid', type:'生活实践', award:'tidy', meta:['⏱ 35 分钟','👶 4-6 岁','🎯 动手能力']},
+  {icon:'🧦', bg:'#F3EEFF', title:'袜子配对大赛', desc:'把一堆袜子打乱，看谁先配对好，顺便学分类', durBucket:'short', cat:'low', type:'生活实践', award:'tidy', meta:['⏱ 10 分钟','👶 2-5 岁','🎯 分类能力']},
+  {icon:'🍞', bg:'#FFF4E0', title:'一起做三明治', desc:'让孩子自己涂果酱、夹蔬菜，做一份早餐', durBucket:'mid', cat:'mid', type:'生活实践', award:'tidy', meta:['⏱ 20 分钟','👶 4-7 岁','🎯 生活自理']},
+  {icon:'🌱', bg:'#EAF7EE', title:'给植物浇水', desc:'给家里的植物浇水，观察今天和昨天有什么不同', durBucket:'short', cat:'low', type:'生活实践', award:'patient', meta:['⏱ 10 分钟','👶 2-6 岁','🎯 责任感']},
+  {icon:'🧹', bg:'#FFF6DE', title:'玩具回家大行动', desc:'放一首歌，在音乐结束前把所有玩具送回家', durBucket:'short', cat:'low', type:'生活实践', award:'tidy', meta:['⏱ 10 分钟','👶 2-6 岁','🎯 收纳习惯']},
+  {icon:'🥁', bg:'#F3EEFF', title:'身体打击乐', desc:'拍手、跺脚、拍腿，跟着节奏做身体音乐', durBucket:'short', cat:'low', type:'音乐律动', award:'brave', meta:['⏱ 10 分钟','👶 2-5 岁','🎯 节奏感']},
+  {icon:'🎶', bg:'#FFEDF3', title:'儿歌改编大赛', desc:'把熟悉的儿歌换上搞笑歌词，全家一起唱', durBucket:'short', cat:'mid', type:'音乐律动', award:'creative', meta:['⏱ 15 分钟','👶 4-8 岁','🎯 语言创造']},
+  {icon:'🕺', bg:'#FFEFE8', title:'Freeze 舞蹈', desc:'音乐响起时跳舞，音乐停时定住不动', durBucket:'short', cat:'mid', type:'音乐律动', award:'brave', meta:['⏱ 12 分钟','👶 4-8 岁','🎯 身体控制']},
+  {icon:'🎹', bg:'#E9F3FF', title:'水杯音阶', desc:'在几个杯子里装不同高度的水，敲出音阶', durBucket:'mid', cat:'high', type:'音乐律动', award:'focus', meta:['⏱ 20 分钟','👶 5-10 岁','🎯 科学+音乐']},
+  {icon:'🔢', bg:'#E9F3FF', title:'扑克牌比大小', desc:'抽两张牌比大小，大的人赢走，练习数感', durBucket:'short', cat:'mid', type:'数学思维', award:'focus', meta:['⏱ 15 分钟','👶 4-7 岁','🎯 数感培养']},
+  {icon:'🧮', bg:'#FFF6DE', title:'糖果分一分', desc:'把糖果平均分给几个人，理解“平均分”', durBucket:'short', cat:'mid', type:'数学思维', award:'share', meta:['⏱ 12 分钟','👶 4-6 岁','🎯 数学概念']},
+  {icon:'📐', bg:'#EDF1FF', title:'图形寻宝', desc:'在家里找圆形、三角形、方形的东西，画下来', durBucket:'mid', cat:'mid', type:'数学思维', award:'focus', meta:['⏱ 20 分钟','👶 4-7 岁','🎯 图形认知']},
+  {icon:'🕐', bg:'#F3EEFF', title:'时间小管家', desc:'看钟表认整点，安排“几点做什么”的小计划', durBucket:'mid', cat:'high', type:'数学思维', award:'focus', meta:['⏱ 20 分钟','👶 6-9 岁','🎯 时间概念']}
+];
+
+/* ==================== 活动库渲染 ==================== */
+const libGrid = document.getElementById('libGrid');
+const added = new Set();
+let filters = {age:'all', dur:'all', type:'all'};
+const HABITS = [
+  {id:'focus', icon:'🎯', name:'专注星'},{id:'tidy', icon:'🧹', name:'收纳星'},
+  {id:'share', icon:'🤝', name:'分享星'},{id:'polite', icon:'🌸', name:'礼貌星'},
+  {id:'brave', icon:'🦁', name:'勇敢星'},{id:'patient', icon:'⏳', name:'耐心星'},
+  {id:'creative', icon:'💡', name:'创意星'}
+];
+const habitById = id => HABITS.find(h => h.id === id) || {icon:'🏅', name:'习惯星'};
+
+function renderTypeChips(){
+  const types = [...new Set(activities.map(a => a.type))];
+  const row = document.getElementById('typeRow');
+  row.innerHTML = `<span class="filter-label">类型</span>
+    <button class="chip on" data-filter="type" data-value="all">全部</button>` +
+    types.map(t => `<button class="chip" data-filter="type" data-value="${t}">${t}</button>`).join('');
+  row.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      row.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+      chip.classList.add('on');
+      filters.type = chip.dataset.value;
+      renderLibrary();
+    });
+  });
+}
+function renderLibrary(){
+  const res = activities.filter(a =>
+    (filters.age === 'all' || a.cat === filters.age) &&
+    (filters.dur === 'all' || a.durBucket === filters.dur) &&
+    (filters.type === 'all' || a.type === filters.type)
+  );
+  document.getElementById('libCount').textContent = activities.length;
+  document.getElementById('customCount').textContent = activities.filter(a => a.custom).length;
+  document.getElementById('mineCustomText').textContent = `已添加 ${activities.filter(a => a.custom).length} 个`;
+  if (!res.length){
+    libGrid.innerHTML = `<div class="empty">没有找到符合条件的活动，换个筛选条件试试吧 🌈</div>`;
+    return;
+  }
+  libGrid.innerHTML = res.map(a => {
+    const isAdded = added.has(a.title);
+    const h = habitById(a.award);
+    return `<article class="lib-card ${a.custom ? 'custom' : ''}">
+      ${a.custom ? `<div class="lib-edit">
+        <button class="icon-btn" data-custom-edit="${a.title}">✏️</button>
+        <button class="icon-btn del" data-custom-del="${a.title}">🗑</button>
+      </div>` : ''}
+      <div class="lib-icon" style="--c:${a.bg}">${a.icon}</div>
+      <h4>${a.title}</h4>
+      <p>${a.desc}</p>
+      <div class="lib-meta">${a.meta.map(m => `<span>${m}</span>`).join('')}</div>
+      <div class="lib-award">🏅 推荐习惯奖：${h.icon} ${h.name}</div>
+      <div class="lib-actions">
+        <button class="lib-btn ${isAdded ? 'added' : ''}" data-title="${a.title}">
+          ${isAdded ? '✓ 已加入计划' : '＋ 加入计划'}
+        </button>
+        <button class="lib-btn rec" data-rec="${a.title}">📝</button>
+      </div>
+    </article>`;
+  }).join('');
+}
+libGrid.addEventListener('click', e => {
+  const addBtn = e.target.closest('.lib-btn[data-title]');
+  const recBtn = e.target.closest('[data-rec]');
+  const editBtn = e.target.closest('[data-custom-edit]');
+  const delBtn = e.target.closest('[data-custom-del]');
+  if (recBtn){ openRecordModal(recBtn.dataset.rec); return; }
+  if (addBtn){
+    const title = addBtn.dataset.title;
+    if (added.has(title)){ added.delete(title); toast(`已从计划移除「${title}」`); }
+    else { added.add(title); toast(`已加入陪伴计划：「${title}」`); }
+    renderLibrary();
+    return;
+  }
+  if (editBtn){ openCustomActEditor(editBtn.dataset.customEdit); return; }
+  if (delBtn){
+    const title = delBtn.dataset.customDel;
+    if (!confirm(`确定删除自定义活动「${title}」吗？`)) return;
+    activities = activities.filter(x => x.title !== title);
+    renderTypeChips(); renderLibrary();
+    toast(`已删除「${title}」`);
+  }
+});
+document.querySelectorAll('.chip[data-filter]').forEach(chip => {
+  if (chip.dataset.filter === 'type') return;
+  chip.addEventListener('click', () => {
+    const group = chip.dataset.filter;
+    document.querySelectorAll(`.chip[data-filter="${group}"]`).forEach(c => c.classList.remove('on'));
+    chip.classList.add('on');
+    filters[group] = chip.dataset.value;
+    renderLibrary();
+  });
+});
+
+/* ==================== 自定义活动 ==================== */
+const customActModal = document.getElementById('customActModal');
+const caIcon = document.getElementById('caIcon');
+const caTitle = document.getElementById('caTitle');
+const caAge = document.getElementById('caAge');
+const caType = document.getElementById('caType');
+const caDur = document.getElementById('caDur');
+const caAward = document.getElementById('caAward');
+const caGoal = document.getElementById('caGoal');
+const caDesc = document.getElementById('caDesc');
+const caEditId = document.getElementById('caEditId');
+const customActTitleEl = document.getElementById('customActTitle');
+const AWARD_NAMES = {creative:'创意星', focus:'专注星', brave:'勇敢星', patient:'耐心星', share:'分享星', polite:'礼貌星', tidy:'收纳星'};
+
+function ageToCat(str){
+  const m = String(str).match(/(\d+)/g);
+  if (!m) return 'mid';
+  const min = parseInt(m[0], 10);
+  const max = m.length > 1 ? parseInt(m[1], 10) : min;
+  if (max <= 4) return 'low';
+  if (min >= 6) return 'high';
+  return 'mid';
+}
+function durToBucket(str){
+  const m = String(str).match(/(\d+)/);
+  const n = m ? parseInt(m[1], 10) : 20;
+  if (n <= 15) return 'short';
+  if (n <= 25) return 'mid';
+  return 'long';
+}
+function normAge(str){ return /岁/.test(str) ? str : str + '岁'; }
+function normDur(str){ return /分钟/.test(str) ? str : str + '分钟'; }
+
+function openCustomActEditor(title){
+  if (title){
+    const a = activities.find(x => x.title === title);
+    if (!a) return;
+    caEditId.value = title;
+    caIcon.value = a.icon; caTitle.value = a.title;
+    caAge.value = a.meta[1] ? a.meta[1].replace('👶 ','') : '';
+    caType.value = a.type;
+    caDur.value = a.meta[0] ? a.meta[0].replace('⏱ ','') : '';
+    caAward.value = a.award;
+    caGoal.value = a.meta[2] ? a.meta[2].replace('🎯 ','') : '';
+    caDesc.value = a.desc;
+    customActTitleEl.textContent = `✏️ 编辑：${a.title}`;
+  } else resetCustomActForm();
+  openModal(customActModal);
+}
+function resetCustomActForm(){
+  caEditId.value = ''; caIcon.value = '🎪'; caTitle.value = ''; caAge.value = '4-6岁';
+  caType.value = '艺术创作'; caDur.value = '20分钟'; caAward.value = 'creative';
+  caGoal.value = ''; caDesc.value = '';
+  customActTitleEl.textContent = '✏️ 自定义活动';
+}
+document.getElementById('resetCustomActBtn').addEventListener('click', resetCustomActForm);
+document.getElementById('addCustomActivityBtn').addEventListener('click', () => openCustomActEditor(''));
+document.getElementById('saveCustomActBtn').addEventListener('click', () => {
+  const icon = (caIcon.value || '🎪').slice(0, 2);
+  const title = caTitle.value.trim();
+  const age = caAge.value.trim();
+  const type = caType.value;
+  const dur = caDur.value.trim();
+  const award = caAward.value;
+  const goal = caGoal.value.trim();
+  const desc = caDesc.value.trim() || '（暂无描述）';
+  if (!title){ toast('请填写活动名称'); caTitle.focus(); return; }
+  if (!age){ toast('请填写适龄'); caAge.focus(); return; }
+  if (!dur){ toast('请填写时长'); caDur.focus(); return; }
+  const ageNorm = normAge(age);
+  const durNorm = normDur(dur);
+  const obj = {
+    icon, bg:'#FFF0E7', title, desc,
+    durBucket: durToBucket(durNorm), cat: ageToCat(ageNorm), type, award,
+    meta: [`⏱ ${durNorm}`, `👶 ${ageNorm}`, goal ? `🎯 ${goal}` : '🎯 综合发展'],
+    custom: true
+  };
+  const editId = caEditId.value;
+  if (editId){
+    const idx = activities.findIndex(x => x.title === editId);
+    if (idx > -1){ activities[idx] = obj; toast(`已更新「${title}」`); }
+  } else {
+    if (activities.some(x => x.title === title)){ toast('已有同名活动，换个名字吧'); return; }
+    activities.unshift(obj);
+    toast(`已添加自定义活动「${title}」`);
+  }
+  renderTypeChips(); renderLibrary();
+  closeModal(customActModal);
+});
+
+/* ==================== md 导入 ==================== */
+const templateModal = document.getElementById('templateModal');
+const mdInput = document.getElementById('mdInput');
+const EXAMPLE_MD = `## 客厅露营地
+- 图标: ⛺
+- 年龄: 4-8岁
+- 时长: 30分钟
+- 类型: 角色扮演
+- 习惯奖: 创意星
+- 描述: 用毯子和枕头搭一个帐篷，在里面用手电筒讲故事
+- 目标: 想象创造
+
+## 纸杯电话
+- 图标: ☎️
+- 年龄: 5-9岁
+- 时长: 20分钟
+- 类型: 科学探索
+- 习惯奖: 专注星
+- 描述: 两个纸杯 + 一根棉线，做一只能传声的电话，试试能传多远
+- 目标: 科学启蒙
+
+## 厨房小实验：火山喷发
+- 图标: 🌋
+- 年龄: 5-10岁
+- 时长: 25分钟
+- 类型: 科学探索
+- 习惯奖: 专注星
+- 描述: 小苏打 + 白醋，在托盘里做一次火山喷发，观察气泡和泡沫
+- 目标: 科学思维`;
+document.getElementById('fillExampleBtn').addEventListener('click', () => { mdInput.value = EXAMPLE_MD; });
+document.getElementById('clearMdBtn').addEventListener('click', () => { mdInput.value = ''; });
+document.getElementById('openTemplateBtn').addEventListener('click', () => {
+  if (!mdInput.value.trim()) mdInput.value = EXAMPLE_MD;
+  openModal(templateModal);
+});
+function parseMd(text){
+  const blocks = text.split(/\n(?=##\s+)/).map(s => s.trim()).filter(Boolean);
+  const result = [];
+  for (const block of blocks){
+    const lines = block.split('\n').map(s => s.trim());
+    let title = ''; const fields = {};
+    for (const line of lines){
+      if (line.startsWith('## ')) title = line.replace(/^##\s+/, '').trim();
+      else if (line.startsWith('- ')){
+        const m = line.match(/^-\s*([^:：]+)[:：]\s*(.+)$/);
+        if (m) fields[m[1].trim()] = m[2].trim();
+      }
+    }
+    if (title) result.push({ title, fields });
+  }
+  return result;
+}
+document.getElementById('importMdBtn').addEventListener('click', () => {
+  const text = mdInput.value.trim();
+  if (!text){ toast('请先粘贴或填入 md 内容'); return; }
+  const parsed = parseMd(text);
+  if (!parsed.length){ toast('没有解析到活动，请检查 md 格式'); return; }
+  let added = 0, skipped = 0;
+  for (const p of parsed){
+    const f = p.fields;
+    const icon = (f['图标'] || '🎪').slice(0, 2);
+    const age = f['年龄'] || '4-6岁';
+    const dur = f['时长'] || '20分钟';
+    const type = f['类型'] || '艺术创作';
+    const awardName = f['习惯奖'] || '创意星';
+    const desc = f['描述'] || '（暂无描述）';
+    const goal = f['目标'] || '综合发展';
+    let awardId = 'creative';
+    for (const id in AWARD_NAMES){ if (AWARD_NAMES[id] === awardName){ awardId = id; break; } }
+    if (activities.some(a => a.title === p.title)){ skipped++; continue; }
+    activities.unshift({
+      icon, bg:'#FFF6EE', title: p.title, desc,
+      durBucket: durToBucket(dur), cat: ageToCat(age), type, award: awardId,
+      meta: [`⏱ ${dur}`, `👶 ${age}`, `🎯 ${goal}`], custom: true
+    });
+    added++;
+  }
+  renderTypeChips(); renderLibrary();
+  closeModal(templateModal);
+  toast(`导入完成：新增 ${added} 个${skipped ? `，跳过同名 ${skipped} 个` : ''}`);
+});
+
+/* ==================== 首页推荐 ==================== */
+const list = document.getElementById('activityList');
+function shuffle(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function renderRecommend(){
+  // 每日固定：讲故事 + 2 个随机活动
+  const dailyStory = stories.find(x => x.id === DAILY_STORY_ID);
+  const picks = shuffle(activities).slice(0, 2);
+
+  let html = `
+    <div class="activity daily-fixed" data-rec-daily="1">
+      <div class="act-icon" style="--c:linear-gradient(135deg,#FFE7D6,#FFD1E0)">📖</div>
+      <div class="act-info">
+        <h4>讲故事《${dailyStory.title}》 <span class="daily-fixed-tag">⭐ 每日固定</span></h4>
+        <p>${dailyStory.desc.slice(0, 24)}…</p>
+        <div class="act-meta"><span>⏱ ${dailyStory.duration}</span><span>👶 ${dailyStory.age === '低幼' ? '2-4 岁' : dailyStory.age === '中童' ? '4-6 岁' : '6-10 岁'}</span><span>🏅 习惯奖</span></div>
+      </div>
+      <button class="act-go">→</button>
+    </div>`;
+
+  html += picks.map(p => {
+    const h = habitById(p.award);
+    return `<div class="activity">
+      <div class="act-icon" style="--c:${p.bg}">${p.icon}</div>
+      <div class="act-info">
+        <h4>${p.title}</h4>
+        <p>${p.desc}</p>
+        <div class="act-meta">${p.meta.map(m => `<span>${m}</span>`).join('')}<span>🏅 ${h.name}</span></div>
+      </div>
+      <button class="act-go" data-rec="${p.title}">→</button>
+    </div>`;
+  }).join('');
+
+  list.innerHTML = html;
+}
+list.addEventListener('click', e => {
+  const daily = e.target.closest('[data-rec-daily]');
+  const btn = e.target.closest('[data-rec]');
+  if (daily){
+    const s = stories.find(x => x.id === DAILY_STORY_ID);
+    openRecordModal(`讲故事《${s.title}》`);
+    return;
+  }
+  if (btn) openRecordModal(btn.dataset.rec);
+});
+document.getElementById('shuffleBtn').addEventListener('click', () => { renderRecommend(); toast('已为你换一批新灵感 🎲'); });
+document.getElementById('shuffleBtn2').addEventListener('click', () => { renderRecommend(); toast('已为你换一批新灵感 🎲'); });
+
+/* ==================== 活动记录 ==================== */
+const recordModal = document.getElementById('recordModal');
+const recTitle = document.getElementById('recTitle');
+const recKidsBox = document.getElementById('recKids');
+const recEmotionBox = document.getElementById('recEmotion');
+const recFocusBox = document.getElementById('recFocus');
+const recFinishBox = document.getElementById('recFinish');
+const recAwardsBox = document.getElementById('recAwards');
+const recHighlight = document.getElementById('recHighlight');
+const recImprove = document.getElementById('recImprove');
+const EMOTIONS = ['兴奋','投入','平静','有点烦躁'];
+const FOCUS_LEVELS = ['非常专注','专注','较专注','容易分心'];
+const FINISH_LEVELS = ['独立完成','少量协助','需要协助','中途放弃'];
+let recState = { kids:[], emotion:'', focus:'', finish:'', awards:[] };
+
+function chipHTML(list, active, type){
+  return list.map(v => `<button class="chip mini ${active.includes(v) ? 'on' : ''}" data-type="${type}" data-val="${v}">${v}</button>`).join('');
+}
+function renderRecordKids(){
+  recKidsBox.innerHTML = children.map(c => {
+    const on = recState.kids.includes(c.id) || (recState.kids.length === 0 && companions.includes(c.id));
+    return `<button class="chip mini ${on ? 'on' : ''}" data-type="kid" data-val="${c.id}">${c.avatar} ${c.name}</button>`;
+  }).join('');
+}
+function renderRecordChips(){
+  recEmotionBox.innerHTML = chipHTML(EMOTIONS, [recState.emotion], 'emotion');
+  recFocusBox.innerHTML = chipHTML(FOCUS_LEVELS, [recState.focus], 'focus');
+  recFinishBox.innerHTML = chipHTML(FINISH_LEVELS, [recState.finish], 'finish');
+  recAwardsBox.innerHTML = HABITS.map(h =>
+    `<button class="chip mini ${recState.awards.includes(h.id) ? 'on' : ''}" data-type="award" data-val="${h.id}">${h.icon} ${h.name}</button>`
+  ).join('');
+}
+function bindRecordChips(box){
+  box.addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    const type = chip.dataset.type;
+    const val = chip.dataset.val;
+    if (type === 'kid'){
+      const i = recState.kids.indexOf(val);
+      if (i > -1) recState.kids.splice(i, 1); else recState.kids.push(val);
+      renderRecordKids();
+    } else if (type === 'emotion' || type === 'focus' || type === 'finish'){
+      recState[type] = recState[type] === val ? '' : val;
+      renderRecordChips();
+    } else if (type === 'award'){
+      const i = recState.awards.indexOf(val);
+      if (i > -1) recState.awards.splice(i, 1); else recState.awards.push(val);
+      renderRecordChips();
+    }
+  });
+}
+bindRecordChips(recKidsBox); bindRecordChips(recEmotionBox);
+bindRecordChips(recFocusBox); bindRecordChips(recFinishBox); bindRecordChips(recAwardsBox);
+
+let currentActivityTitle = '';
+let currentIsStory = false;
+function openRecordModal(title){
+  currentActivityTitle = title || '';
+  currentIsStory = /^讲故事/.test(title || '');
+  recTitle.textContent = title ? `📝 记录：${title}` : '📝 记录一次陪伴';
+  recState = { kids: companions.slice(), emotion:'', focus:'', finish:'', awards: currentIsStory ? ['polite'] : [] };
+  recHighlight.value = ''; recImprove.value = '';
+  renderRecordKids(); renderRecordChips();
+  openModal(recordModal);
+}
+document.getElementById('addRecordBtn').addEventListener('click', () => openRecordModal(''));
+document.getElementById('addRecordBtn2').addEventListener('click', () => openRecordModal(''));
+document.getElementById('saveRecordBtn').addEventListener('click', () => {
+  if (!recState.kids.length){ toast('请至少选择一个参与的孩子'); return; }
+  if (!currentActivityTitle){
+    const t = prompt('这次陪伴的活动名称是？', '自由玩耍');
+    if (t === null) return;
+    currentActivityTitle = t.trim() || '自由玩耍';
+  }
+  const d = new Date();
+  records.unshift({
+    id:'r' + Date.now(),
+    title: currentActivityTitle,
+    kids: recState.kids.slice(),
+    date: `${d.getMonth()+1}月${d.getDate()}日`,
+    emotion: recState.emotion || '未记录',
+    focus: recState.focus || '未记录',
+    finish: recState.finish || '未记录',
+    highlight: recHighlight.value.trim() || '（这次没有填写亮点）',
+    improve: recImprove.value.trim() || '（这次没有填写改进方向）',
+    awards: recState.awards.slice(),
+    isStory: currentIsStory
+  });
+  renderRecords(); renderHomeTimeline(); updateMineStats();
+  refreshRewardSystem();
+  closeModal(recordModal);
+  const starsGained = 5 + recState.awards.length * 3;
+  toast(`活动记录已保存 ✅ +${starsGained}⭐`);
+});
+
+const recordList = document.getElementById('recordList');
+function renderRecords(){
+  if (!records.length){
+    recordList.innerHTML = `<div class="rec-empty">还没有活动记录～<br>点击「＋ 添加活动记录」记录一次吧 🌱</div>`;
+    return;
+  }
+  recordList.innerHTML = records.map(r => {
+    const kidNames = r.kids.map(id => {
+      const c = children.find(x => x.id === id);
+      return c ? `${c.avatar} ${c.name}` : '';
+    }).filter(Boolean).join(' · ');
+    const awards = r.awards.map(id => {
+      const h = habitById(id);
+      return `<span>${h.icon} ${h.name}</span>`;
+    }).join('');
+    const stars = 5 + r.awards.length * 3;
+    return `<div class="record-item">
+      <div class="rec-head"><h4>${r.isStory ? '📖 ' : ''}${r.title}</h4><span class="rec-date">${r.date}</span></div>
+      <div class="rec-kids">${kidNames || '未指定'}</div>
+      <div class="rec-states"><span>😊 ${r.emotion}</span><span>🎯 ${r.focus}</span><span>✅ ${r.finish}</span></div>
+      <div class="rec-text">✨ <b>亮点：</b>${r.highlight}</div>
+      <div class="rec-text improve">🔧 <b>改进：</b>${r.improve}</div>
+      ${awards ? `<div class="rec-awards">${awards}</div>` : ''}
+      <div class="rec-stars">⭐ 本次获得 +${stars} 星</div>
+    </div>`;
+  }).join('');
+}
+
+/* ==================== 家长成长 ==================== */
+const parentModal = document.getElementById('parentModal');
+const pTitle = document.getElementById('pTitle');
+const pParent = document.getElementById('pParent');
+const pScene = document.getElementById('pScene');
+const pWords = document.getElementById('pWords');
+const pBehavior = document.getElementById('pBehavior');
+const pImprove = document.getElementById('pImprove');
+const pTags = document.getElementById('pTags');
+const pEditId = document.getElementById('pEditId');
+let pTagsSel = [];
+function renderPTags(){
+  pTags.innerHTML = PARENT_TAGS.map(t =>
+    `<button class="chip mini ${pTagsSel.includes(t) ? 'on' : ''}" data-tag="${t}">${t}</button>`
+  ).join('');
+}
+pTags.addEventListener('click', e => {
+  const chip = e.target.closest('[data-tag]');
+  if (!chip) return;
+  const t = chip.dataset.tag;
+  const i = pTagsSel.indexOf(t);
+  if (i > -1) pTagsSel.splice(i, 1); else pTagsSel.push(t);
+  renderPTags();
+});
+function openParentModal(editId){
+  if (editId){
+    const r = parentRecords.find(x => x.id === editId);
+    if (!r) return;
+    pTitle.textContent = `✏️ 编辑家长成长记录`;
+    pParent.value = r.parent; pScene.value = r.scene;
+    pWords.value = r.words; pBehavior.value = r.behavior; pImprove.value = r.improve;
+    pTagsSel = r.tags.slice(); pEditId.value = r.id;
+  } else {
+    pTitle.textContent = '👩 记录家长成长';
+    pParent.value = '妈妈'; pScene.value = '';
+    pWords.value = ''; pBehavior.value = ''; pImprove.value = '';
+    pTagsSel = []; pEditId.value = '';
+  }
+  renderPTags(); openModal(parentModal);
+}
+function resetParentForm(){
+  pTitle.textContent = '👩 记录家长成长';
+  pParent.value = '妈妈'; pScene.value = '';
+  pWords.value = ''; pBehavior.value = ''; pImprove.value = '';
+  pTagsSel = []; pEditId.value = '';
+  renderPTags();
+}
+document.getElementById('addParentRecordBtn').addEventListener('click', () => openParentModal(''));
+document.getElementById('addParentRecordBtn2').addEventListener('click', () => openParentModal(''));
+document.getElementById('resetParentBtn').addEventListener('click', resetParentForm);
+document.getElementById('saveParentBtn').addEventListener('click', () => {
+  const parent = pParent.value;
+  const scene = pScene.value.trim() || '自由玩耍';
+  const words = pWords.value.trim();
+  const behavior = pBehavior.value.trim();
+  const improve = pImprove.value.trim();
+  if (!words && !behavior){ toast('至少写下“我说了什么”或“我做了什么”吧'); return; }
+  const d = new Date();
+  const dateStr = `${d.getMonth()+1}月${d.getDate()}日`;
+  if (pEditId.value){
+    const r = parentRecords.find(x => x.id === pEditId.value);
+    Object.assign(r, {parent, scene, words, behavior, improve, tags:pTagsSel.slice(), date:dateStr});
+    toast('家长成长记录已更新 ✅');
+  } else {
+    parentRecords.unshift({
+      id:'p' + Date.now(), parent, scene, words, behavior, improve,
+      tags: pTagsSel.slice(), date: dateStr
+    });
+    toast('家长成长记录已保存 ✅ +2⭐');
+  }
+  renderParentRecords();
+  updateMineStats();
+  refreshRewardSystem();
+  closeModal(parentModal);
+});
+const parentList = document.getElementById('parentList');
+function renderParentRecords(){
+  if (!parentRecords.length){
+    parentList.innerHTML = `<div class="rec-empty">还没有家长成长记录～<br>点击「记录家长成长」，写下陪伴时自己的语言和行为 🌿</div>`;
+    return;
+  }
+  parentList.innerHTML = parentRecords.map(r => `
+    <div class="parent-item">
+      <div class="p-head">
+        <div class="p-parent">👤 ${r.parent}</div>
+        <span class="p-date">${r.date}</span>
+      </div>
+      <div><span class="p-scene">🎬 ${r.scene}</span></div>
+      ${r.words ? `<div class="p-block words"><b>💬 我说了什么</b>${r.words}</div>` : ''}
+      ${r.behavior ? `<div class="p-block act"><b>👐 我做了什么</b>${r.behavior}</div>` : ''}
+      ${r.improve ? `<div class="p-block imp"><b>🔧 下次改进</b>${r.improve}</div>` : ''}
+      ${r.tags.length ? `<div class="p-tags">${r.tags.map(t => `<span>${t}</span>`).join('')}</div>` : ''}
+    </div>`).join('');
+}
+
+/* ==================== 陪伴建议 ==================== */
+const adviceModal = document.getElementById('adviceModal');
+const adviceManageList = document.getElementById('adviceManageList');
+const aIcon = document.getElementById('aIcon');
+const aTitle = document.getElementById('aTitle');
+const aTag = document.getElementById('aTag');
+const aContent = document.getElementById('aContent');
+const aEditId = document.getElementById('aEditId');
+const adviceFormTitle = document.getElementById('adviceFormTitle');
+function renderAdvicePreview(){
+  document.getElementById('advicePreview').innerHTML = adviceList.slice(0, 6).map(a => `
+    <div class="advice-card">
+      <div class="advice-top"><span class="ai">${a.icon}</span><h4>${a.title}</h4><span class="advice-tag">${a.tag}</span></div>
+      <p>${a.content}</p>
+    </div>`).join('');
+}
+function renderAdviceManage(){
+  adviceManageList.innerHTML = adviceList.map(a => `
+    <div class="manage-row">
+      <div class="child-avatar" style="background:#F1EBFF">${a.icon}</div>
+      <div class="mi"><h4>${a.title} · ${a.tag}</h4><p>${a.content}</p></div>
+      <button class="icon-btn" data-advice-edit="${a.id}">✏️</button>
+      <button class="icon-btn del" data-advice-del="${a.id}">🗑</button>
+    </div>`).join('');
+}
+function resetAdviceForm(){
+  aIcon.value = '💡'; aTitle.value = ''; aTag.value = ''; aContent.value = '';
+  aEditId.value = ''; adviceFormTitle.textContent = '➕ 添加一条新建议';
+}
+document.getElementById('manageAdviceBtn').addEventListener('click', () => {
+  renderAdviceManage(); resetAdviceForm(); openModal(adviceModal);
+});
+document.getElementById('resetAdviceBtn').addEventListener('click', resetAdviceForm);
+adviceManageList.addEventListener('click', e => {
+  const editBtn = e.target.closest('[data-advice-edit]');
+  const delBtn = e.target.closest('[data-advice-del]');
+  if (editBtn){
+    const a = adviceList.find(x => x.id === editBtn.dataset.adviceEdit);
+    if (!a) return;
+    aIcon.value = a.icon; aTitle.value = a.title; aTag.value = a.tag; aContent.value = a.content;
+    aEditId.value = a.id;
+    adviceFormTitle.textContent = `✏️ 正在编辑：${a.title}`;
+    adviceModal.querySelector('.modal').scrollTop = 360;
+    aTitle.focus();
+  }
+  if (delBtn){
+    const id = delBtn.dataset.adviceDel;
+    const a = adviceList.find(x => x.id === id);
+    if (!a) return;
+    if (!confirm(`确定删除建议「${a.title}」吗？`)) return;
+    adviceList = adviceList.filter(x => x.id !== id);
+    renderAdviceManage(); renderAdvicePreview();
+    toast(`已删除建议「${a.title}」`);
+  }
+});
+document.getElementById('saveAdviceBtn').addEventListener('click', () => {
+  const title = aTitle.value.trim();
+  const content = aContent.value.trim();
+  const tag = aTag.value.trim() || '通用';
+  const icon = (aIcon.value || '💡').trim().slice(0, 2) || '💡';
+  if (!title){ toast('请填写建议标题'); aTitle.focus(); return; }
+  if (!content){ toast('请填写建议内容'); aContent.focus(); return; }
+  if (aEditId.value){
+    const a = adviceList.find(x => x.id === aEditId.value);
+    Object.assign(a, {icon, title, tag, content});
+    toast(`已更新建议「${title}」`);
+  } else {
+    adviceList.push({id:'a' + Date.now(), icon, title, tag, content});
+    toast(`已添加建议「${title}」`);
+  }
+  renderAdviceManage(); renderAdvicePreview(); resetAdviceForm();
+});
+
+/* ==================== 首页时光机 ==================== */
+function renderHomeTimeline(){
+  const tl = document.getElementById('homeTimeline');
+  const items = records.slice(0, 5).map((r, i) => {
+    const colors = ['#FF8A5B','#4FCE9E','#B09BF8','#FFC93C','#6BA8F5'];
+    const kidNames = r.kids.map(id => {
+      const c = children.find(x => x.id === id);
+      return c ? c.name : '';
+    }).filter(Boolean).join('、');
+    return `<div class="tl-item">
+      <div class="tl-dot" style="background:${colors[i % 5]}"></div>
+      <div class="tl-time">${r.date}</div>
+      <div class="tl-text">${r.isStory ? '📖 ' : ''}和${kidNames || '孩子'}一起玩了「${r.title}」<span class="dur">${r.focus}</span></div>
+    </div>`;
+  }).join('');
+  tl.innerHTML = items || `<div style="color:var(--muted);font-size:13px;padding:10px 0;">还没有陪伴记录，去活动库或故事库开始吧 ✨</div>`;
+}
+
+/* ==================== 我的页统计 ==================== */
+function updateMineStats(){
+  const awardTotal = records.reduce((s, r) => s + r.awards.length, 0);
+  document.getElementById('mineAwardText').textContent =
+    `已颁发 ${awardTotal} 枚 · 覆盖 ${new Set(records.flatMap(r => r.awards)).size} 种`;
+  document.getElementById('mineParentText').textContent =
+    `已记录 ${parentRecords.length} 条 · 涉及 ${new Set(parentRecords.map(p => p.parent)).size} 位家人`;
+}
+
+/* ==================== 开关 ==================== */
+document.querySelectorAll('[data-switch]').forEach(row => {
+  row.addEventListener('click', () => {
+    const sw = row.querySelector('.switch');
+    sw.classList.toggle('on');
+    const name = row.querySelector('h4').textContent;
+    toast(`${name} 已${sw.classList.contains('on') ? '开启' : '关闭'}`);
+  });
+});
+
+/* ==================== 初始化 ==================== */
+renderChildren();
+renderMineChildren();
+renderFamily();
+renderGrowthStats();
+renderMilestones();
+renderMemories();
+renderAbility('c1');
+renderTypeChips();
+renderLibrary();
+renderRecommend();
+renderRecords();
+renderParentRecords();
+renderAdvicePreview();
+renderDailyStory();
+renderStories();
+renderHomeTimeline();
+updateMineStats();
+refreshRewardSystem(false);
+
+window.addEventListener('load', () => {
+  document.querySelectorAll('.bar').forEach((b, i) => {
+    const h = b.style.height;
+    b.style.height = '0%';
+    setTimeout(() => { b.style.height = h; }, 300 + i * 70);
+  });
+});
+</script>
+
+
+<!-- ===== 全站统一导航（site-nav.js）· 由站内构建脚本注入 ===== -->
+<script src="./site-nav.js"
+        data-title="陪伴星球"
+        data-actions="custom"
+        data-theme-default="light"
+        data-sections='[{"ico":"🏠","name":"首页","sel":".nav-links a[data-page=home]","click":true},{"ico":"🎪","name":"活动库","sel":".nav-links a[data-page=library]","click":true},{"ico":"📖","name":"故事库","sel":".nav-links a[data-page=story]","click":true},{"ico":"🌱","name":"成长记录","sel":".nav-links a[data-page=growth]","click":true},{"ico":"🏆","name":"奖励","sel":".nav-links a[data-page=reward]","click":true},{"ico":"👤","name":"我的","sel":".nav-links a[data-page=mine]","click":true}]'></script>
+</body>
+</html>
