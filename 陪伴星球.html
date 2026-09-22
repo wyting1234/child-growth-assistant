@@ -411,6 +411,7 @@ main{max-width:1180px;margin:0 auto;padding:28px 32px 80px;position:relative;z-i
 .vip{font-size:11px;font-weight:800;padding:4px 10px;border-radius:9px;background:linear-gradient(135deg,#FFD98E,#FFB347);color:#8A5A10;}
 .me-info p{font-size:13px;color:var(--muted);font-weight:600;}
 .lock-note{font-size:11px;color:#B0A8A0;font-weight:700;background:#F8F4F0;padding:5px 11px;border-radius:9px;display:inline-flex;align-items:center;gap:5px;margin-left:auto;}
+.me-edit-btn{margin-left:auto;flex-shrink:0;}
 
 .list{display:flex;flex-direction:column;}
 .list-row{display:flex;align-items:center;gap:14px;padding:15px 4px;border-bottom:1px solid var(--line);cursor:pointer;transition:.2s;}
@@ -547,7 +548,7 @@ main{max-width:1180px;margin:0 auto;padding:28px 32px 80px;position:relative;z-i
   <div class="hero card fade" style="animation-delay:.05s">
     <div class="hero-text">
       <p class="eyebrow" id="today">今天</p>
-      <h1>早上好，小星妈妈 👋</h1>
+      <h1 id="homeGreeting">早上好，小星妈妈 👋</h1>
       <p class="sub" id="heroSub">今天想和小星一起玩点什么？我们已经为你准备好了。</p>
       <div class="quick">
         <button class="btn btn-primary" id="startBtn">▶ 开始陪伴计时</button>
@@ -797,13 +798,13 @@ main{max-width:1180px;margin:0 auto;padding:28px 32px 80px;position:relative;z-i
   </div>
 
   <div class="grid">
-    <section class="card me-card span-12">
-      <div class="me-avatar">🐻</div>
+    <section class="card me-card span-12" id="meCard">
+      <div class="me-avatar" id="meAvatar">🐻</div>
       <div class="me-info">
-        <h3>小星妈妈 <span class="vip" id="mineRankTag">秩序白银</span></h3>
+        <h3><span id="mineNameText">小星妈妈</span> <span class="vip" id="mineRankTag">秩序白银</span></h3>
         <p id="mineStatsLine">138****6688 · 已陪伴 128 天 · 累计 96 小时</p>
       </div>
-      <div class="lock-note">🔒 家长资料不可编辑</div>
+      <button class="btn btn-ghost btn-sm me-edit-btn" id="editProfileBtn">✏️ 编辑资料</button>
     </section>
 
     <section class="card span-6">
@@ -949,6 +950,30 @@ main{max-width:1180px;margin:0 auto;padding:28px 32px 80px;position:relative;z-i
       <div class="modal-actions">
         <button class="btn btn-ghost btn-sm" id="resetAdviceBtn">清空表单</button>
         <button class="btn btn-primary btn-sm" id="saveAdviceBtn">保存建议</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 家长资料编辑 ==================== -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal">
+    <div class="modal-head"><h3>✏️ 编辑家长资料</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="form-label">🐻 头像（输入一个 emoji）</div>
+      <input class="f-in" id="pfAvatar" maxlength="2" placeholder="🐻">
+      <div class="form-label">👤 昵称</div>
+      <input class="f-in" id="pfName" maxlength="12" placeholder="小星妈妈">
+      <div class="form-label">📱 手机号（展示用，可打码）</div>
+      <input class="f-in" id="pfPhone" maxlength="20" placeholder="138****6688">
+      <div class="form-label">📅 已陪伴天数 · ⏱ 累计小时</div>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+        <input class="f-in" id="pfDays" type="number" min="0" max="99999" placeholder="128">
+        <input class="f-in" id="pfHours" type="number" min="0" max="99999" placeholder="96">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" data-close>取消</button>
+        <button class="btn btn-primary btn-sm" id="saveProfileBtn">保存资料</button>
       </div>
     </div>
   </div>
@@ -1460,6 +1485,46 @@ function showLevelUp(newRank){
   setTimeout(() => flash.classList.remove('show'), 2600);
 }
 
+/* ==================== 家长资料（可编辑） ==================== */
+const CGA_PROFILE_KEY = 'cga_parent_profile_v1';
+function cgaDefaultProfile(){ return { avatar:'🐻', name:'小星妈妈', phone:'138****6688', joinedDays:128, hours:96 }; }
+function cgaLoadProfile(){
+  try { const d = JSON.parse(localStorage.getItem(CGA_PROFILE_KEY)); if (d && typeof d === 'object') return Object.assign(cgaDefaultProfile(), d); } catch(e){}
+  return cgaDefaultProfile();
+}
+function cgaSaveProfile(p){ try { localStorage.setItem(CGA_PROFILE_KEY, JSON.stringify(p)); } catch(e){} }
+let cgaParentProfile = cgaLoadProfile();
+function cgaGreetWord(){ const h = new Date().getHours(); return h < 11 ? '早上好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好'; }
+function cgaRenderProfile(){
+  const av = document.getElementById('meAvatar'); if (av) av.textContent = cgaParentProfile.avatar || '🐻';
+  const nm = document.getElementById('mineNameText'); if (nm) nm.textContent = cgaParentProfile.name || '家长';
+  const g  = document.getElementById('homeGreeting'); if (g) g.textContent = cgaGreetWord() + '，' + (cgaParentProfile.name || '家长') + ' 👋';
+}
+function cgaOpenProfileEditor(){
+  document.getElementById('pfAvatar').value = cgaParentProfile.avatar || '🐻';
+  document.getElementById('pfName').value   = cgaParentProfile.name || '';
+  document.getElementById('pfPhone').value  = cgaParentProfile.phone || '';
+  document.getElementById('pfDays').value   = cgaParentProfile.joinedDays != null ? cgaParentProfile.joinedDays : '';
+  document.getElementById('pfHours').value  = cgaParentProfile.hours != null ? cgaParentProfile.hours : '';
+  openModal(profileModal);
+}
+function cgaSaveProfileEditor(){
+  const avatar = (document.getElementById('pfAvatar').value || '').trim() || '🐻';
+  const name   = (document.getElementById('pfName').value || '').trim() || '家长';
+  const phone  = (document.getElementById('pfPhone').value || '').trim() || '—';
+  const d = parseInt(document.getElementById('pfDays').value, 10);
+  const h = parseInt(document.getElementById('pfHours').value, 10);
+  cgaParentProfile = { avatar:avatar, name:name, phone:phone, joinedDays: isNaN(d) ? 128 : d, hours: isNaN(h) ? 96 : h };
+  cgaSaveProfile(cgaParentProfile);
+  cgaRenderProfile();
+  refreshRewardSystem(false);
+  closeModal(profileModal);
+  toast('家长资料已更新 ✅');
+}
+const _cgaEpb = document.getElementById('editProfileBtn'); if (_cgaEpb) _cgaEpb.addEventListener('click', cgaOpenProfileEditor);
+const _cgaSpb = document.getElementById('saveProfileBtn'); if (_cgaSpb) _cgaSpb.addEventListener('click', cgaSaveProfileEditor);
+cgaRenderProfile();
+
 function refreshRewardSystem(showUpgrade = true){
   const prevRank = lastRankId ? RANKS.find(r => r.id === lastRankId) : null;
   starCache = computeStars();
@@ -1478,7 +1543,7 @@ function refreshRewardSystem(showUpgrade = true){
   const mineTag = document.getElementById('mineRankTag');
   if (mineTag) mineTag.textContent = cur.name;
   const mineStatsLine = document.getElementById('mineStatsLine');
-  if (mineStatsLine) mineStatsLine.textContent = `138****6688 · 已陪伴 128 天 · 累计 ${starCache.total} 颗星星`;
+  if (mineStatsLine) mineStatsLine.textContent = `${cgaParentProfile.phone} · 已陪伴 ${cgaParentProfile.joinedDays} 天 · 累计 ${cgaParentProfile.hours} 小时 · ${starCache.total} 颗星星`;
   const mineStarText = document.getElementById('mineStarText');
   if (mineStarText) mineStarText.textContent = `${starCache.total} 颗 · ${cur.name}`;
 
