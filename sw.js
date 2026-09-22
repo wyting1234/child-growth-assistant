@@ -1,11 +1,12 @@
 /* 儿童成长助手 - Service Worker（离线可用 + PWA 可安装）
+   v19：首页成就墙支持按宝宝切换（宝宝1/宝宝2），修复成就墙溢出卡片。
    v18：新增「游戏改变世界.html」「陪伴星球.html」，并入预缓存清单。
    v17：同步模块拆分为「内核 + 两个后端 + 界面 + 备份中心」5 个独立文件，
         全部纳入预缓存，避免离线打开时同步按钮点了没反应。
    v14：HTML 改为「网络优先 + 超时回退缓存」，修复「推送后仍显示旧版」；
         预缓存改用 cache:'reload' 绕过 GitHub Pages 的 HTTP 缓存（HTML 默认 max-age=600），
         避免后台更新反而把旧副本又写回缓存。 */
-const CACHE = 'child-growth-v18';
+const CACHE = 'child-growth-v19';
 const CORE = [
   './', './index.html', './study-record.html', './情商club.html', './成长复盘.html',
   './朝暮计-双端适配版.html', './account-manager.js', './site-nav.js', './manifest.json',

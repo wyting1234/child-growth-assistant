@@ -72,7 +72,7 @@ main{max-width:1180px;margin:0 auto;padding:28px 32px 80px;position:relative;z-i
 .target-edit{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#B08A6E;background:#FFF6EE;padding:5px 11px;border-radius:9px;cursor:pointer;transition:.2s;}
 .target-edit:hover{background:#FFE9DE;color:var(--orange);}
 
-.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:20px;}
 .span-3{grid-column:span 3;}
 .span-4{grid-column:span 4;}
 .span-5{grid-column:span 5;}
@@ -140,13 +140,13 @@ main{max-width:1180px;margin:0 auto;padding:28px 32px 80px;position:relative;z-i
 .rank-step.on .rs-name{color:#FFD98E;}
 
 /* 成就墙（奖励） */
-.achv-list{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.achv-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
 .achv{
   aspect-ratio:1;border-radius:18px;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:4px;
   background:linear-gradient(150deg,#FFF6EE,#FFEFE0);
   border:1.5px solid #FBE7D6;cursor:pointer;transition:.26s;
-  text-align:center;padding:6px;position:relative;
+  text-align:center;padding:6px;position:relative;min-width:0;
 }
 .achv span:first-child{font-size:24px;}
 .achv span:last-child{font-size:10px;font-weight:800;color:#B08A6E;line-height:1.25;}
@@ -155,6 +155,18 @@ main{max-width:1180px;margin:0 auto;padding:28px 32px 80px;position:relative;z-i
 .achv.lock{background:#F8F5F2;border-color:#F0EAE3;filter:grayscale(1);opacity:.55;}
 .achv.lock:hover{transform:translateY(-2px) rotate(0);}
 .achv.unlocked{background:linear-gradient(150deg,#FFF6DE,#FFEEC0);border-color:#FFD98E;}
+
+/* 成就墙 · 宝宝切换 + 段位标签 */
+.achv-kids{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.achv-kid{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:5px;
+  padding:8px 6px;border-radius:13px;border:1.5px solid #F0EAE3;background:#F8F5F2;
+  font-size:12px;font-weight:800;color:#98908A;cursor:pointer;transition:.2s;font-family:inherit;}
+.achv-kid em{font-style:normal;font-size:15px;line-height:1;}
+.achv-kid.on{background:linear-gradient(150deg,#FFF6EE,#FFEFE0);border-color:#FFC93C;color:#8A5A10;}
+.achv-kid:hover{transform:translateY(-2px);}
+.achv-rank-tag{font-size:12px;font-weight:800;color:#8A5A10;background:linear-gradient(150deg,#FFF6DE,#FFEEC0);
+  border:1.5px solid #FFD98E;padding:4px 10px;border-radius:10px;white-space:nowrap;cursor:default;}
+
 
 /* 星星来源 */
 .star-sources{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
@@ -509,7 +521,7 @@ main{max-width:1180px;margin:0 auto;padding:28px 32px 80px;position:relative;z-i
   .brand span{display:none;}
   .story-hero{flex-direction:column;align-items:flex-start;padding:22px;gap:16px;}
   .story-hero-emoji{font-size:56px;}
-  .achv-list{grid-template-columns:repeat(3,1fr);}
+  .achv-list{grid-template-columns:repeat(3,minmax(0,1fr));}
   .star-sources{grid-template-columns:1fr;}
   .rank-head{gap:12px;}
   .rank-emblem{width:62px;height:62px;font-size:30px;}
@@ -590,7 +602,8 @@ main{max-width:1180px;margin:0 auto;padding:28px 32px 80px;position:relative;z-i
     </section>
 
     <section class="card span-3 fade" style="animation-delay:.2s">
-      <div class="card-title"><h3>🏅 成就墙</h3></div>
+      <div class="card-title"><h3>🏅 成就墙</h3><span class="achv-rank-tag" id="achvRankTag" title="当前宝宝的段位与星星">—</span></div>
+      <div class="achv-kids" id="achvKids"></div>
       <div class="achv-list" id="badgeWall"></div>
     </section>
 
@@ -1439,6 +1452,50 @@ function renderAchievements(containerId){
   if (tEl) tEl.textContent = ACHIEVEMENTS.length;
 }
 
+/* ==================== 成就墙 · 按宝宝查看（首页） ==================== */
+let achvChildId = children[0] ? children[0].id : 'c1';
+function childStars(cid){
+  let s = 0;
+  records.forEach(r => { if (r.kids && r.kids.includes(cid)) s += 5 + r.awards.length * 3; });
+  // 家庭共同星星（家长成长 / 里程碑 / 回忆）计入每个宝宝
+  s += parentRecords.length * 2 + milestones.length * 10 + memories.length * 5;
+  return s;
+}
+function renderAchvForChild(){
+  const c = children.find(x => x.id === achvChildId);
+  const total = c ? childStars(c.id) : 0;
+  const { cur } = getRank(total);
+  const tag = document.getElementById('achvRankTag');
+  if (tag) tag.textContent = `${cur.emoji} ${cur.name} · ${total}⭐`;
+  const el = document.getElementById('badgeWall');
+  if (!el) return;
+  el.innerHTML = ACHIEVEMENTS.map(a => {
+    const unlocked = total >= a.req;
+    return `<div class="achv ${unlocked ? 'unlocked' : 'lock'}" title="${a.desc}">
+      <span>${a.emoji}</span>
+      <span>${a.name}</span>
+      <span class="achv-req">${unlocked ? '✓ 已解锁' : a.req + '⭐'}</span>
+    </div>`;
+  }).join('');
+}
+function renderAchvKids(){
+  const kids = document.getElementById('achvKids');
+  if (!kids) return;
+  if (!children.find(c => c.id === achvChildId)) achvChildId = children[0] ? children[0].id : null;
+  kids.innerHTML = children.map((c, i) => `
+    <button class="achv-kid ${c.id === achvChildId ? 'on' : ''}" data-kid="${c.id}">
+      <em>${c.avatar}</em>宝宝${i + 1} · ${c.name}
+    </button>`).join('');
+  renderAchvForChild();
+}
+const _achvKidsBox = document.getElementById('achvKids');
+if (_achvKidsBox) _achvKidsBox.addEventListener('click', e => {
+  const b = e.target.closest('.achv-kid');
+  if (!b) return;
+  achvChildId = b.dataset.kid;
+  renderAchvKids();
+});
+
 function renderRankLadderDetail(){
   const el = document.getElementById('rankLadderDetail');
   if (!el) return;
@@ -1534,7 +1591,7 @@ function refreshRewardSystem(showUpgrade = true){
   renderRankCard('homeRankCard');
   renderRankCard('rewardRankCard');
   renderStarSources();
-  renderAchievements('badgeWall');
+  renderAchvKids();
   renderAchievements('rewardBadgeWall');
   renderRankLadderDetail();
   renderStarLog();
@@ -1735,7 +1792,7 @@ manageChildList.addEventListener('click', e => {
     children = children.filter(x => x.id !== id);
     companions = companions.filter(x => x !== id);
     if (!companions.length) companions = [children[0].id];
-    renderManageList(); renderChildren(); renderMineChildren();
+    renderManageList(); renderChildren(); renderMineChildren(); renderAchvKids();
     toast(`已删除「${c.name}」的档案`);
   }
 });
@@ -1755,7 +1812,7 @@ document.getElementById('saveChildBtn').addEventListener('click', () => {
     children.push({id:'c' + Date.now(), name, age, gender:fGender.value, avatar, tags, mood:''});
     toast(`已添加宝贝「${name}」`);
   }
-  renderManageList(); renderChildren(); renderMineChildren(); resetForm();
+  renderManageList(); renderChildren(); renderMineChildren(); renderAchvKids(); resetForm();
 });
 function renderMineChildren(){
   const box = document.getElementById('mineChildList');
