@@ -165,8 +165,6 @@ main{max-width:1180px;margin:0 auto;padding:28px 32px 80px;position:relative;z-i
 .achv-kid em{font-style:normal;font-size:15px;line-height:1;}
 .achv-kid.on{background:linear-gradient(150deg,#FFF6EE,#FFEFE0);border-color:#FFC93C;color:#8A5A10;}
 .achv-kid:hover{transform:translateY(-2px);}
-.achv-rank-tag{font-size:12px;font-weight:800;color:#8A5A10;background:linear-gradient(150deg,#FFF6DE,#FFEEC0);
-  border:1.5px solid #FFD98E;padding:4px 10px;border-radius:10px;white-space:nowrap;cursor:default;}
 
 
 /* 星星来源 */
@@ -604,7 +602,7 @@ main{max-width:1180px;margin:0 auto;padding:28px 32px 80px;position:relative;z-i
 
     <section class="card span-3 fade" style="animation-delay:.2s">
       <div class="achv-kids" id="achvKids"></div>
-      <div class="card-title"><h3>🏅 成就墙</h3><span class="achv-rank-tag" id="achvRankTag" title="当前宝宝的段位与星星">—</span></div>
+      <div class="card-title"><h3>🏅 成就墙</h3></div>
       <div class="achv-list" id="badgeWall"></div>
     </section>
 
@@ -1381,10 +1379,10 @@ function getRank(total){
   return { cur, next, progress, idx };
 }
 
-function renderRankCard(containerId){
+function renderRankCard(containerId, totalOverride){
   const el = document.getElementById(containerId);
   if (!el) return;
-  const total = starCache.total;
+  const total = (totalOverride != null) ? totalOverride : starCache.total;
   const { cur, next, progress, idx } = getRank(total);
 
   const ladder = RANKS.filter((r, i) => i % 3 === 0 || i === RANKS.length - 1);
@@ -1465,9 +1463,7 @@ function childStars(cid){
 function renderAchvForChild(){
   const c = children.find(x => x.id === achvChildId);
   const total = c ? childStars(c.id) : 0;
-  const { cur } = getRank(total);
-  const tag = document.getElementById('achvRankTag');
-  if (tag) tag.textContent = `${cur.emoji} ${cur.name} · ${total}⭐`;
+  renderRankCard('homeRankCard', total);
   const el = document.getElementById('badgeWall');
   if (!el) return;
   el.innerHTML = ACHIEVEMENTS.map(a => {

@@ -9,7 +9,7 @@
    v14：HTML 改为「网络优先 + 超时回退缓存」，修复「推送后仍显示旧版」；
         预缓存改用 cache:'reload' 绕过 GitHub Pages 的 HTTP 缓存（HTML 默认 max-age=600），
         避免后台更新反而把旧副本又写回缓存。 */
-const CACHE = 'child-growth-v22';
+const CACHE = 'child-growth-v23';
 const CORE = [
   './', './index.html', './study-record.html', './情商club.html', './成长复盘.html',
   './朝暮计-双端适配版.html', './account-manager.js', './site-nav.js', './manifest.json',
