@@ -58,6 +58,10 @@
     { id: 'homework', bases: ['growth_homework', 'homework_subjects'] },
     { id: 'todo',     bases: ['todos'] },
     { id: 'time',     bases: ['time_records'] },
+    // 课时记录器：整份数据在 lesson_recorder_v3 一个键里。
+    // 片 id 特意取 'lesson' —— 与兜底规则（取第一个下划线前的段）算出来的一样，
+    // 所以这条只是把它写明白，不会把已有数据挪到别的片上去。
+    { id: 'lesson',   bases: ['lesson_recorder'] },
     { id: 'daily',    bases: ['daily_temp', 'daily_fixed', 'daily_sign', 'daily_behavior'] },
     { id: 'behavior', bases: ['growth_behavior', 'growth_behavior_cfg'] },
     { id: 'target',   bases: ['growth_targets', 'growth_subjects', 'growth_actions',

@@ -2941,7 +2941,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             <div class="logo">🌱</div>
             <div class="meta">
                 <div class="name" id="siteName" title="儿女学习时光">儿女学习时光</div>
-                <div class="sub"><span id="sidebarToolCount">9</span> 个网页 · <span id="sidebarAccount">未选择</span></div>
+                <div class="sub"><span id="sidebarToolCount">10</span> 个网页 · <span id="sidebarAccount">未选择</span></div>
             </div>
             <button id="collapseBtn" title="收起侧边栏" aria-label="收起侧边栏">‹</button>
         </div>
@@ -2964,7 +2964,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             <button class="side-btn" id="sidebarThemeBtn" title="切换页面深色/浅色模式"><span>🌗</span><span>页面变色</span></button>
             <!-- 版本徽标：导航栏左边下侧。两行文案由侧栏 JS 统一填充（同一套侧栏复用到各页） -->
             <div id="buildTag" title="构建版本（导航版本不低于本页版本）">
-                <span class="vt-nav">导航：V20261012 aa</span>
+                <span class="vt-nav">导航：V20261012 ad</span>
                 <span class="vt-tool">儿女学习时光：V20261012 AA</span>
             </div>
         </div>
@@ -8885,6 +8885,7 @@ var COMPLETION_FILTER_RANGE = 'all';
                 { key: 'home',     ico: '🏠', name: '总览',        href: './index.html' },
                 { key: 'review',   ico: '🌱', name: '成长复盘',    href: './成长复盘.html' },
                 { key: 'study',    ico: '📚', name: '学习记录',    href: './study-record.html' },
+                { key: 'lesson',   ico: '🗓️', name: '课时记录器',  href: './课时记录器.html' },
                 { key: 'eq',       ico: '💬', name: '情商club',    href: './情商club.html' },
                 { key: 'times',    ico: '⏱️', name: '时间统计',    href: './时间统计.html' },
                 { key: 'chaomu',   ico: '🌅', name: '朝暮计',      href: './朝暮计-双端适配版.html' },
@@ -8900,9 +8901,9 @@ var COMPLETION_FILTER_RANGE = 'all';
             /* 版本号（推送批次）：日期 + 字母递增（aa → ab → …）。
                导航版本用小写、页面版本用大写，且**导航版本不低于页面版本**。
                与 site-nav.js 保持同一套口径，改版本时两处一起改。 */
-            var NAV_VER = 'V20261012 aa';
+            var NAV_VER = 'V20261012 ad';
             var PAGE_VER_DEFAULT = 'V20261012 AA';
-            var PAGE_VERS = {};   // 单页单独迭代时在这里抬高，如 { review: 'V20261012 AB' }
+            var PAGE_VERS = { lesson: 'V20261012 AD' };   // 单页单独迭代时在这里抬高，如 { review: 'V20261012 AB' }
 
             function $(id) { return document.getElementById(id); }
 
@@ -8910,6 +8911,7 @@ var COMPLETION_FILTER_RANGE = 'all';
             // （导航项首页叫「总览」，但版本行要写站名「儿女学习时光」）
             var PAGE_LABEL = {
                 home: '儿女学习时光', review: '成长复盘', study: '学习记录',
+                lesson: '课时记录器',
                 eq: '情商club', times: '时间统计', chaomu: '朝暮计',
                 goal: '学习目标', gameedu: '游戏改变世界', planet: '陪伴星球'
             };
@@ -8921,6 +8923,7 @@ var COMPLETION_FILTER_RANGE = 'all';
                 try { p = decodeURIComponent(window.location.pathname.split('/').pop() || ''); } catch (e) { p = ''; }
                 if (p === '成长复盘.html') return 'review';
                 if (p === 'study-record.html') return 'study';
+                if (p === '课时记录器.html') return 'lesson';
                 if (p === '情商club.html') return 'eq';
                 if (p === '时间统计.html') return 'times';
                 if (p === '朝暮计-双端适配版.html') return 'chaomu';
@@ -8984,6 +8987,13 @@ var COMPLETION_FILTER_RANGE = 'all';
                         });
                     } else if (key === 'study') {
                         try { var u = JSON.parse(localStorage.getItem('studyUsers_v21') || '[]'); total = u.length; } catch (e) {}
+                    } else if (key === 'lesson') {
+                        // 课时记录器：整份数据放在一个 JSON 里（lesson_recorder_v3），
+                        // 用「已记课时数」当使用量，与其它工具保持同一套粗粒度口径。
+                        try {
+                            var lr = JSON.parse(localStorage.getItem('lesson_recorder_v3') || 'null');
+                            if (lr && Array.isArray(lr.lessons)) total = lr.lessons.length;
+                        } catch (e) {}
                     }
                 } catch (e) {}
                 return total;

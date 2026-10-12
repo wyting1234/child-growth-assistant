@@ -1,4 +1,8 @@
 /* 儿女学习时光 - Service Worker（离线可用 + PWA 可安装）
+   v26：新增「课时记录器.html」——全站第 10 个工具。它自带 212px 内部导航栏，
+        所以是「自有侧栏 + site-nav 抽屉」并存：桌面把抽屉悬浮标签右移 212px
+        避免遮挡，侧栏底部补「返回导航中心 / 云端同步」两个站点入口；
+        页面本身只引入 backup-hub.js 埋点，不加载同步引擎。
    v25：全站同步入口收敛完成。
         ① 同步引擎（cga-shard + sync-github + sync-gitee）只在 index.html 加载，
            index.html 就是导航中心；其余页面一律不加载引擎。
@@ -24,11 +28,11 @@
    v14：HTML 改为「网络优先 + 超时回退缓存」，修复「推送后仍显示旧版」；
         预缓存改用 cache:'reload' 绕过 GitHub Pages 的 HTTP 缓存（HTML 默认 max-age=600），
         避免后台更新反而把旧副本又写回缓存。 */
-const CACHE = 'child-growth-v25';
+const CACHE = 'child-growth-v26';
 const CORE = [
   './', './index.html', './study-record.html', './情商club.html', './成长复盘.html',
   './朝暮计-双端适配版.html', './learning-goal.html', './时间统计.html',
-  './游戏改变世界.html', './陪伴星球.html',
+  './游戏改变世界.html', './陪伴星球.html', './课时记录器.html',
   './account-manager.js', './site-nav.js', './manifest.json',
   './cga-shard.js', './sync-github.js', './sync-gitee.js', './backup-hub.js'
 ];

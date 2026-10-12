@@ -1,0 +1,3320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#4f46e5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="儿女学习时光">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<title>儿女学习时光 · 课时记录器</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f6fb;--panel:#fff;--text:#111827;--muted:#6b7280;--border:#e8ebf0;
+  --primary:#4f46e5;--primary-soft:#eef2ff;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;
+  --radius:14px;--shadow:0 1px 2px rgba(16,24,40,.05),0 10px 28px -16px rgba(16,24,40,.25);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+#app{display:grid;grid-template-columns:212px 1fr;min-height:100vh}
+
+.sidebar{background:#fff;border-right:1px solid var(--border);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{font-weight:700;font-size:15px;padding:6px 10px 16px;letter-spacing:.3px;display:flex;align-items:center;gap:6px}
+.brand small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
+.sidebar nav{display:flex;flex-direction:column;gap:3px}
+.sidebar nav button{display:flex;align-items:center;gap:8px;background:none;border:0;text-align:left;
+  padding:9px 11px;border-radius:10px;font-size:13.5px;color:#374151;cursor:pointer;font-family:inherit;transition:.15s}
+.sidebar nav button:hover{background:#f6f7fb}
+.sidebar nav button.active{background:var(--primary-soft);color:var(--primary);font-weight:600}
+.sidebar .foot{margin-top:16px;padding:10px;font-size:11px;color:var(--muted);border-top:1px dashed var(--border)}
+
+main{padding:20px 22px 60px;min-width:0}
+h2.page-title{font-size:18px;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+h2.page-title .sub{font-size:12px;color:var(--muted);font-weight:400}
+
+.btn{font-family:inherit;font-size:13px;padding:7px 13px;border-radius:9px;border:1px solid var(--border);
+  background:#fff;color:#374151;cursor:pointer;transition:.15s;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.btn:hover{background:#f7f8fc;border-color:#d5d9e2}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{background:#4338ca}
+.btn.danger{color:var(--bad);border-color:#fecaca;background:#fff}
+.btn.danger:hover{background:#fef2f2}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:#f3f4f8}
+.btn.xs{padding:4px 8px;font-size:12px;border-radius:7px}
+.btn.success{background:#10b981;border-color:#10b981;color:#fff}
+.btn.success:hover{background:#059669}
+.spacer{flex:1}
+.muted{color:var(--muted)}
+.empty{color:var(--muted);font-size:13px;padding:18px;text-align:center;background:#fafbfe;border-radius:10px;border:1px dashed var(--border)}
+.tag{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:1px 7px;border-radius:99px;background:#f1f3f9;color:#4b5563}
+.tag.ok{background:#e7f8f1;color:#047857}
+.tag.warn{background:#fef4e2;color:#b45309}
+.tag.bad{background:#fdecec;color:#b91c1c}
+.tag.in{background:#eef2ff;color:#4338ca}
+.tag.out{background:#fdf2f8;color:#9d174d}
+.tag.goal{background:#fff7ed;color:#c2410c}
+.tag.muted{background:#f3f4f6;color:#9ca3af}
+.tag.cat{background:#e0f2fe;color:#0369a1}
+
+.cal-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.cal-title{font-size:15px;font-weight:600;min-width:150px}
+.cal-nav{display:flex;gap:4px}
+.seg{display:flex;background:#eef0f6;border-radius:9px;padding:3px}
+.seg button{border:0;background:none;font-family:inherit;font-size:12.5px;padding:4px 12px;border-radius:7px;cursor:pointer;color:#4b5563}
+.seg button.active{background:#fff;color:var(--primary);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.cal-legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;color:var(--muted)}
+.cal-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-wd{text-align:center;font-size:12px;color:var(--muted);padding:4px 0}
+.cal-cell{background:var(--panel);border:1px solid var(--border);border-radius:10px;min-height:98px;padding:6px;
+  display:flex;flex-direction:column;gap:4px;cursor:pointer;transition:.15s;overflow:hidden}
+.cal-cell:hover{border-color:#c7cdf7;box-shadow:0 0 0 3px var(--primary-soft)}
+.cal-cell.muted{opacity:.42}
+.cal-cell.today{border-color:var(--primary);background:linear-gradient(180deg,#fff,#f8f8ff)}
+.cal-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600}
+.cal-count{background:var(--primary-soft);color:var(--primary);border-radius:99px;padding:0 6px;font-size:10.5px;font-weight:600}
+.cal-items{display:flex;flex-direction:column;gap:3px;overflow:hidden}
+.cal-chip{font-size:11px;padding:2px 5px;border-radius:6px;background:#f6f7fb;color:#374151;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid var(--c,#999)}
+.cal-more{font-size:10.5px;color:var(--muted);padding-left:4px}
+.cal-todo{font-size:11px;color:var(--warn);margin-top:auto}
+
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.week-col{background:var(--panel);border:1px solid var(--border);border-radius:11px;display:flex;flex-direction:column;min-height:220px;overflow:hidden}
+.week-col.today{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+.week-head{display:flex;align-items:center;gap:5px;padding:8px 9px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);cursor:pointer}
+.week-head b{color:var(--text);font-size:13px}
+.week-head .mini-add{margin-left:auto;border:0;background:#f1f3f9;color:var(--primary);width:20px;height:20px;
+  border-radius:6px;cursor:pointer;font-size:14px;line-height:1;font-family:inherit}
+.week-body{padding:7px;display:flex;flex-direction:column;gap:6px;overflow:auto;flex:1}
+.lcard{border-radius:9px;padding:7px 8px;background:#fafbff;border-left:3px solid var(--c,#999);cursor:pointer;transition:.15s}
+.lcard:hover{background:#f2f4ff}
+.lcard-top{display:flex;align-items:center;gap:5px;font-size:11.5px;color:#374151}
+.lcard-top .time{margin-left:auto;color:var(--muted);font-size:11px}
+.lcard-title{font-size:12.5px;font-weight:600;margin:3px 0 4px;word-break:break-word}
+.lcard-tags{display:flex;gap:4px;flex-wrap:wrap}
+.empty-mini{font-size:11.5px;color:#b8bcc7;text-align:center;padding:10px 0}
+.week-todo{font-size:11.5px;color:#b45309;background:#fffbeb;border-radius:7px;padding:4px 7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+#modal-root{display:none}
+#modal-root.open{display:block}
+.modal-mask{position:fixed;inset:0;background:rgba(17,24,39,.42);z-index:60;display:flex;justify-content:center;
+  align-items:flex-start;padding:34px 16px;overflow:auto;backdrop-filter:blur(2px)}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:700px;padding:18px 20px 16px;
+  box-shadow:0 24px 60px -20px rgba(16,24,40,.4);animation:pop .16s ease}
+@keyframes pop{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+.modal-head{display:flex;align-items:center;margin-bottom:14px}
+.modal-head h3{font-size:16px}
+.modal-head .btn{margin-left:auto}
+.modal-foot{display:flex;gap:8px;margin-top:16px;align-items:center;padding-top:12px;border-top:1px solid var(--border)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.fld.span2{grid-column:span 2}
+.fld input,.fld select,.fld textarea{font-family:inherit;font-size:13.5px;color:var(--text);padding:8px 10px;
+  border:1px solid var(--border);border-radius:9px;background:#fcfcfe;outline:none;transition:.15s;width:100%}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px var(--primary-soft)}
+.fld.chk{flex-direction:row;align-items:center;gap:6px;color:var(--text);font-size:13px}
+.fld.chk input{width:auto}
+h4.sec{font-size:13px;color:#374151;margin:16px 0 8px;display:flex;align-items:center;gap:6px}
+
+.pull-area{background:#f8f9fd;border-radius:12px;padding:14px;margin-top:14px;border:1px dashed #c7cdf7}
+.pull-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.pull-header b{font-size:14px;color:var(--primary)}
+.detail-group{margin-bottom:10px;background:#fff;border-radius:9px;padding:8px 12px;border:1px solid var(--border)}
+.dg-head{font-size:12.5px;font-weight:600;color:#4338ca;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+
+/* 知识点条目 */
+.dg-items{display:flex;flex-direction:column;gap:5px}
+.detail-item{display:flex;align-items:center;gap:4px;background:#fafbff;border-radius:8px;padding:3px 4px;border:1px solid #e5e7eb;transition:.12s}
+.detail-item:hover{border-color:#a5b4fc;background:#fff}
+.detail-item .detail-chip{flex:1;display:flex;align-items:center;gap:7px;background:transparent;border:0;border-radius:6px;
+  padding:5px 8px;cursor:pointer;font-size:12.5px;color:#374151;transition:.12s;user-select:none;text-align:left}
+.detail-item .detail-chip input{display:none}
+.detail-item .detail-chip .check-mark{width:15px;height:15px;border-radius:4px;border:1.5px solid #d1d5db;display:inline-flex;
+  align-items:center;justify-content:center;font-size:10px;color:#fff;transition:.12s;flex-shrink:0}
+.detail-item .detail-chip.on .check-mark{background:var(--primary);border-color:var(--primary)}
+.detail-item .detail-chip.on .check-mark::before{content:'✓'}
+.detail-item .detail-chip.on{color:var(--primary);font-weight:600}
+.detail-item .detail-chip.on::before{content:none !important}
+.quick-btn{width:26px;height:26px;border:0;background:#eef2ff;color:#4f46e5;border-radius:6px;cursor:pointer;
+  font-size:13px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;transition:.12s;flex-shrink:0}
+.quick-btn:hover{background:var(--primary);color:#fff}
+.quick-btn:disabled{background:#10b981;color:#fff;cursor:default}
+.pull-actions{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--border);padding-top:12px}
+
+.day-check{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.day-check .cc{background:#f8f9fd;border-radius:10px;padding:8px 10px;text-align:center}
+.day-check .cc span{display:block;font-size:11px;color:var(--muted)}
+.day-check .cc b{font-size:17px}
+.bar{height:6px;border-radius:99px;background:#eef0f6;overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#6366f1,#10b981);border-radius:99px;transition:width .3s}
+.day-actions{display:flex;gap:8px;margin-top:12px}
+.day-lessons{display:flex;flex-direction:column;gap:9px}
+.day-lesson{background:#fafbff;border-radius:11px;padding:10px 12px;border-left:4px solid var(--c,#999)}
+.dl-head{display:flex;align-items:center;gap:6px;font-size:12.5px;flex-wrap:wrap}
+.dl-title{font-weight:600;margin:5px 0 7px;font-size:13.5px}
+.dl-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.dl-controls select,.dl-controls input[type=text],.dl-controls .note-input{font-family:inherit;font-size:12.5px;
+  padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:#fff;outline:none}
+.dl-controls .grow{flex:1;min-width:140px}
+.todo-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:9px;background:#fafbff;margin-bottom:5px;font-size:13px}
+.todo-row.done span{text-decoration:line-through;color:var(--muted)}
+.todo-row em{margin-left:auto;font-style:normal}
+
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#fff;border:1px solid var(--border);
+  border-radius:12px;padding:10px 12px;margin-bottom:14px}
+.filter-bar select,.filter-bar input{font-family:inherit;font-size:13px;padding:6px 9px;border:1px solid var(--border);
+  border-radius:8px;background:#fcfcfe;outline:none;color:var(--text)}
+.filter-bar select:focus,.filter-bar input:focus{border-color:var(--primary);background:#fff}
+.rec-list{display:flex;flex-direction:column;gap:8px}
+.rec{background:#fff;border:1px solid var(--border);border-radius:12px;padding:11px 13px;display:flex;gap:11px;align-items:flex-start;transition:.15s}
+.rec:hover{box-shadow:var(--shadow)}
+.rec .cdot{width:9px;height:9px;border-radius:50%;margin-top:6px;flex:0 0 auto}
+.rec .body{flex:1;min-width:0}
+.rec .r1{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.rec .r2{font-weight:600;font-size:14px;margin:3px 0 5px;word-break:break-word}
+.rec .r3{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.rec .note{font-size:12.5px;color:#6b7280;margin-top:6px;background:#f8f9fd;padding:6px 9px;border-radius:8px}
+.rec .ops{display:flex;gap:4px;flex:0 0 auto}
+.detail-mini{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.detail-mini .dm{font-size:11px;padding:2px 7px;border-radius:6px;background:#eef2ff;color:#4338ca}
+
+.todo-add{display:flex;gap:8px;flex-wrap:wrap;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:14px}
+.todo-add input[type=text]{flex:1;min-width:180px}
+.todo-add input,.todo-add select{font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:9px;background:#fcfcfe;outline:none}
+.todo-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:11px;padding:10px 12px;margin-bottom:7px}
+.todo-item input[type=checkbox]{width:17px;height:17px;accent-color:var(--primary);cursor:pointer}
+.todo-item .txt{flex:1;font-size:13.5px}
+.todo-item.done .txt{text-decoration:line-through;color:#9ca3af}
+.pri{font-size:11px;padding:1px 7px;border-radius:99px}
+.pri.高{background:#fdecec;color:#b91c1c}
+.pri.中{background:#fef4e2;color:#b45309}
+.pri.低{background:#eef2ff;color:#4338ca}
+
+.flash-wrap{max-width:620px;margin:0 auto}
+.flash-card{background:#fff;border-radius:18px;box-shadow:var(--shadow);padding:34px 28px;text-align:center;min-height:230px;
+  display:flex;flex-direction:column;justify-content:center;gap:14px;border:1px solid var(--border)}
+.flash-front{font-size:20px;font-weight:600;line-height:1.6}
+.flash-back{font-size:16px;color:#374151;line-height:1.7;padding-top:14px;border-top:1px dashed var(--border);white-space:pre-wrap}
+.flash-ops{display:flex;gap:9px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.flash-progress{text-align:center;font-size:12.5px;color:var(--muted);margin-bottom:12px}
+
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px}
+.stat-card span{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+.stat-card b{font-size:23px;letter-spacing:-.5px}
+.panel{background:#fff;border:1px solid var(--border);border-radius:13px;padding:15px 17px;margin-bottom:14px}
+.panel h4{font-size:13.5px;margin-bottom:12px;color:#374151}
+.stat-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12.5px}
+.stat-row .lbl{width:70px;flex:0 0 auto;color:#4b5563;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat-row .bar2{flex:1;height:16px;background:#f1f3f9;border-radius:8px;overflow:hidden}
+.stat-row .bar2 i{display:block;height:100%;border-radius:8px;transition:width .4s}
+.stat-row .val{width:130px;flex:0 0 auto;text-align:right;color:var(--muted);font-size:12px}
+.days{display:flex;gap:8px;align-items:flex-end;height:110px;padding-top:6px}
+.days .dcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
+.days .dbar{width:100%;max-width:38px;background:linear-gradient(180deg,#818cf8,#4f46e5);border-radius:6px 6px 3px 3px;min-height:3px;transition:height .4s}
+.days .dlab{font-size:11px;color:var(--muted)}
+.days .dnum{font-size:11px;color:#4b5563;font-weight:600}
+
+.goal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.goal-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 13px;border-top:3px solid var(--c,#ccc)}
+.goal-card .gt{font-weight:600;font-size:14px;margin-bottom:3px}
+.goal-card .gd{font-size:12px;color:var(--muted);min-height:18px;margin-bottom:8px}
+.goal-card .gm{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--muted);margin-bottom:9px}
+.goal-card .go{display:flex;gap:6px}
+
+.mod-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.mod-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:11px;padding:11px 13px}
+.mod-item .swatch{width:16px;height:16px;border-radius:5px}
+.mod-item .nm{font-weight:600}
+.mod-item .meta{font-size:12px;color:var(--muted)}
+
+.cat-toolbar{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.cat-toolbar select{font-family:inherit;font-size:13px;padding:6px 9px;border:1px solid var(--border);border-radius:8px;background:#fcfcfe;outline:none}
+.cat-card{background:#fff;border:1px solid var(--border);border-radius:13px;padding:14px 16px;margin-bottom:12px;border-left:4px solid var(--primary)}
+.cat-head{display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap}
+.cat-head .title{font-size:15px;font-weight:700}
+.cat-head .path{font-size:12px;color:var(--muted);background:#f1f3f9;border-radius:99px;padding:2px 10px}
+.cat-head .spacer{flex:1}
+.cat-subjects{padding-left:4px}
+.cat-subject{background:#fafbff;border-radius:10px;padding:10px 12px;margin-bottom:8px;border-left:3px solid #c7cdf7}
+.cat-subject .cs-name{font-weight:600;font-size:13.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.cat-unit{border-left:2px solid #eef0f6;padding-left:12px;margin-left:5px;margin-bottom:8px}
+.cat-unit .cu-name{font-size:12.5px;font-weight:600;color:#4b5563;margin-bottom:5px}
+.cat-lesson{background:#fff;border-radius:8px;padding:8px 10px;margin-bottom:5px;border-left:3px solid #e0e7ff}
+.cat-lesson .cl-head{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;flex-wrap:wrap}
+.cat-lesson .cl-head .hrs{font-size:11px;color:var(--muted);font-weight:400}
+.cat-lesson .cl-head .ops{margin-left:auto;display:flex;gap:4px}
+.cat-detail{display:flex;gap:6px;font-size:12px;margin-top:5px;align-items:flex-start}
+.cat-detail .k{color:var(--muted);flex:0 0 auto;min-width:56px}
+.cat-detail .v{display:flex;flex-wrap:wrap;gap:4px}
+.cat-detail .v span{background:#eef2ff;color:#4338ca;border-radius:5px;padding:1px 6px;font-size:11.5px}
+
+.help-box{background:#f8f9fd;border-radius:10px;padding:11px 13px;font-size:12px;color:#4b5563;line-height:1.8;margin-bottom:12px}
+.help-box code{background:#e9ecf5;border-radius:4px;padding:1px 5px;font-size:11.5px;font-family:ui-monospace,Menlo,monospace}
+.help-box pre{background:#111827;color:#e5e7eb;border-radius:8px;padding:10px 12px;font-size:11.5px;
+  overflow:auto;margin:7px 0;line-height:1.65;font-family:ui-monospace,Menlo,monospace}
+textarea.import{width:100%;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.6;
+  padding:11px 13px;border:1px solid var(--border);border-radius:10px;background:#fcfcfe;outline:none;min-height:200px;resize:vertical}
+textarea.import:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px var(--primary-soft)}
+
+/* 课程表面板 / 近日课程 */
+.tbl-week{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
+.tbl-col{background:#fafbff;border:1px solid var(--border);border-radius:10px;padding:8px;min-height:78px}
+.tbl-col.today{border-color:var(--primary);background:linear-gradient(180deg,#fff,#f8f8ff)}
+.tbl-h{font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:6px}
+.tbl-col.today .tbl-h{color:var(--primary)}
+.tbl-item{display:flex;flex-direction:column;gap:1px;background:#fff;border-left:3px solid var(--c,#999);border-radius:6px;
+  padding:4px 6px;margin-bottom:5px;font-size:11.5px;overflow:hidden}
+.tbl-item b{color:#374151;font-size:12px}
+.tbl-item span{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.upcoming{display:flex;flex-direction:column;gap:5px;background:#fff;border:1px solid var(--border);border-radius:12px;
+  padding:10px 12px;margin-bottom:12px}
+.up-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px}
+.up-day{flex:0 0 auto;font-weight:700;color:var(--primary);background:var(--primary-soft);border-radius:6px;padding:1px 8px;font-size:12px}
+/* —— 课程表：天 × 节次 网格 —— */
+.tt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+.tt-grid{display:grid;gap:5px;min-width:640px}
+.tt-corner,.tt-h,.tt-slot{background:#f6f7fb;border-radius:7px;padding:6px 4px;text-align:center;font-size:11.5px;color:var(--muted);font-weight:600}
+.tt-h.today{background:var(--primary-soft);color:var(--primary)}
+.tt-h i{display:block;font-style:normal;font-size:10px;opacity:.85}
+.tt-slot{background:transparent;border:1px dashed #e3e6f0;color:#6b7280;display:flex;align-items:center;justify-content:center}
+.tt-cell{background:#fff;border:1px solid var(--border);border-left:3px solid var(--c,#cbd5e1);border-radius:7px;padding:5px 6px;min-height:42px;display:flex;flex-direction:column;gap:1px;justify-content:center}
+.tt-cell.empty{border-left-color:#eef0f6;color:#c8ccd8;text-align:center;font-size:11px}
+.tt-cell.today{background:linear-gradient(180deg,#fff,#f8f9ff)}
+.tt-cell b{font-size:12px;color:#374151}
+.tt-cell span{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbl-chip{display:inline-flex;align-items:center;gap:5px;border-left:3px solid var(--c,#cbd5e1)}
+.tbl-chip em{font-style:normal;font-size:10.5px;color:#0369a1;background:#e0f2fe;border-radius:4px;padding:0 4px}
+.up-chip{display:inline-flex;align-items:center;gap:5px;border-left:3px solid var(--c,#cbd5e1);font-weight:400;background:#fff}
+.up-chip em{font-style:normal;font-size:10.5px;color:#0369a1;background:#e0f2fe;border-radius:4px;padding:0 4px}
+.up-chip:hover{border-color:var(--primary);background:var(--primary-soft)}
+/* —— 课内 / 课外 双类型 —— */
+.tt-cell{justify-content:flex-start}
+.tt-item{border-left:3px solid var(--c,#cbd5e1);background:#fbfcff;border-radius:5px;padding:3px 5px;line-height:1.25;width:100%;text-align:left}
+.tt-item b{font-size:11.5px;font-weight:600;color:#374151;display:block}
+.tt-item span{font-size:10.5px;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt-item.out{border-left-style:dashed;border-left-color:#ec4899;background:#fdf2f8}
+.tt-item.out b{color:#be185d}
+.tt-legend{margin-top:9px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tt-lg-tip{font-size:11.5px;color:var(--muted)}
+.tt-lg-out{font-size:11.5px;color:#be185d;background:#fdf2f8;border:1px solid #fbcfe8;border-radius:999px;padding:2px 9px}
+.tbl-chip.out{border-left-color:#ec4899}
+.tbl-chip.out em{color:#be185d;background:#fce7f3}
+.up-chip.out{border-left-color:#ec4899}
+.up-chip.out em{color:#be185d;background:#fce7f3}
+@media(max-width:900px){ .tbl-week{grid-template-columns:repeat(2,1fr)} }
+
+/* ============ 名称管理面板（课程设计页内） ============ */
+.name-panel{border:1px solid #ddd6fe;background:linear-gradient(180deg,#fbfaff,#fff);border-radius:14px;padding:12px 14px;margin-bottom:14px}
+.np-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.np-head b{font-size:14px;color:#4c1d95}
+.np-sub{font-size:11.5px;color:var(--muted)}
+.np-body{margin-top:10px;display:flex;flex-direction:column;gap:10px}
+.np-row{border-top:1px dashed #e9e4ff;padding-top:9px}
+.np-row:first-child{border-top:0;padding-top:0}
+.np-label{font-size:12.5px;font-weight:600;color:#5b21b6;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.np-cnt{font-weight:400;font-size:11px;color:#7c6f9e;background:#f3f0ff;border-radius:999px;padding:1px 7px}
+.np-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.np-chip{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:3px 6px 3px 8px}
+.np-chip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.np-chip em{font-style:normal;font-size:10.5px;color:#6b7280;background:#f3f4f6;border-radius:999px;padding:0 5px}
+.np-x{border:0;background:transparent;color:#b91c1c;cursor:pointer;font-size:13px;line-height:1;padding:0 2px}
+.np-x:hover{background:#fee2e2;border-radius:50%}
+.np-empty{font-size:12px;color:var(--muted)}
+.np-add{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.np-add input{padding:7px 10px;border:1px solid var(--border);border-radius:9px;font-family:inherit;font-size:13px;outline:none}
+.np-add input[type=text]{flex:1;min-width:150px}
+.np-add input[type=color]{width:42px;height:34px;padding:0;cursor:pointer;background:#fff}
+
+@media(max-width:900px){
+  #app{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--border);padding:12px}
+  .sidebar nav{flex-direction:row;overflow-x:auto;gap:6px}
+  .sidebar nav button{white-space:nowrap}
+  .sidebar .foot{display:none}
+  main{padding:14px}
+  .cal-grid{gap:3px}
+  .cal-cell{min-height:74px;padding:4px}
+  .cal-chip{font-size:10px}
+  .week-grid{grid-template-columns:1fr;gap:8px}
+  .week-col{min-height:auto}
+  .form-grid{grid-template-columns:1fr}
+  .fld.span2{grid-column:span 1}
+  .day-check{grid-template-columns:repeat(3,1fr)}
+}
+
+/* ============ 与全站统一导航（site-nav.js）对接 ============
+   本页自带 212px 的内部导航栏（工具自己的 7 个视图），而全站抽屉的悬浮标签
+   默认贴在 left:0 —— 会正好压住这个导航栏。桌面上把它右移一个导航栏的宽度，
+   既保住站内「汉堡按钮位置固定」的直觉，也不遮挡工具自身的菜单。
+   窄屏（<=900px）时本页导航栏变成顶部横条，不再有左列，悬浮标签回到 left:0。
+   ID 选择器优先级高于 site-nav.js 的 .snav-btn，加载先后不影响结果。 */
+@media(min-width:901px){
+  #siteDrawerToggle{ left: 212px; }
+  /* 212px 宽的品牌区里，「📚 课时记录器」+「Lesson Recorder」会各折一行、
+     被拆成三行。这里固定成「名称一行 + 英文小字一行」。 */
+  .brand{flex-direction:column;align-items:flex-start;gap:1px;padding-bottom:14px}
+  .brand .brand-name{white-space:nowrap}
+}
+
+/* 底部站点入口（返回导航中心 / 云端同步）：常驻可见的一条回路 */
+.foot-link{display:flex;align-items:center;gap:8px;width:100%;margin-top:6px;padding:8px 10px;
+  border:1px solid var(--border);border-radius:9px;background:#fff;color:#374151;
+  font-family:inherit;font-size:12.5px;cursor:pointer;text-align:left;transition:.15s}
+.foot-link:hover{background:#f6f7fb;border-color:#d5d9e2}
+</style>
+</head>
+<body>
+
+<!-- 写入时间埋点：backup-hub.js 在**加载时**就给 localStorage.setItem 打钩，
+     把每个键的最后写入时间记进 __hub_meta_v1__（不依赖 initHub，页面上不会多出任何 UI）。
+     全站同源共用一份 localStorage，所以每一页的写入都必须被记下来 —— 否则云端同步
+     在判新旧时只能把「无时间戳」当成「本机刚写过」，取不回另一台设备的较新值。
+     这里只引入埋点，不 mount()：备份与同步的入口仍统一在导航中心。 -->
+<script src="./backup-hub.js"></script>
+<div id="app">
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-name">📚 课时记录器</span><small>Lesson Recorder</small></div>
+    <nav>
+      <button data-view="calendar" class="active">📅 日历 / 周历</button>
+      <button data-view="curriculum">📐 课程设计</button>
+      <button data-view="lessons">📝 课时记录</button>
+      <button data-view="todos">✅ 待办清单</button>
+      <button data-view="cards">🎴 复习闪卡</button>
+      <button data-view="goals">🎯 学习目标库</button>
+      <button data-view="stats">📊 统计分析</button>
+    </nav>
+    <div class="foot">
+      <!-- 站点入口：本页自带侧栏，是全站抽屉之外常驻可见的一条回路。
+           两者都只做跳转 —— 全站只有导航中心（index.html）跑同步引擎，
+           子页再挂一套实现只会多出一个云端副本、多一套合并策略。 -->
+      <button class="foot-link" id="lrGoHome">🧭 返回导航中心</button>
+      <button class="foot-link" id="lrGoSync">☁️ 云端同步</button>
+      <div style="font-weight:600;color:#4b5563;letter-spacing:.2px;margin-top:10px">课时记录器：V20261012 AD</div>
+      <div style="margin-top:2px">导航：V20261012 ad</div>
+      <div style="margin-top:6px">数据保存在本机浏览器 · 建议定期备份</div>
+    </div>
+  </aside>
+  <main><section id="view"></section></main>
+</div>
+<div id="modal-root"></div>
+
+<script>
+/* ==================== 基础工具 ==================== */
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-3);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fmtDate(d){ const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; }
+function parseDate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y, m-1, d); }
+function todayStr(){ return fmtDate(new Date()); }
+function addDays(s,n){ const d=parseDate(s); d.setDate(d.getDate()+n); return fmtDate(d); }
+function startOfWeek(s){ const d=parseDate(s); const off=(d.getDay()+6)%7; d.setDate(d.getDate()-off); return fmtDate(d); }
+function weekDays(cursor){ const s=startOfWeek(cursor); return Array.from({length:7},(_,i)=>addDays(s,i)); }
+function monthMatrix(cursor){
+  const d = parseDate(cursor);
+  const first = new Date(d.getFullYear(), d.getMonth(), 1);
+  const last  = new Date(d.getFullYear(), d.getMonth()+1, 0);
+  const start = startOfWeek(fmtDate(first));
+  const endWeekStart = startOfWeek(fmtDate(last));
+  const total = Math.round((parseDate(endWeekStart) - parseDate(start))/86400000) + 7;
+  return Array.from({length: total}, (_, i) => addDays(start, i));
+}
+const WD = ['一','二','三','四','五','六','日'];
+
+/* ==================== 详情类型映射 ==================== */
+const DETAIL_LABELS = {
+  goals:'🎯 学习目标', contents:'📖 学习内容', chars:'🈶 生字词',
+  words:'🔤 单词', grammar:'📐 语法', methods:'🔧 方法',
+  recite:'📜 背诵', sentences:'💬 句型', formulas:'🧮 公式',
+  experiments:'🧪 实验', points:'💡 考点', other:'📌 其他'
+};
+const DETAIL_KEY_MAP = {
+  '目标':'goals','学习目标':'goals',
+  '内容':'contents','学习内容':'contents',
+  '生字':'chars','字词':'chars','词语':'chars','生字词':'chars','生字新词':'chars',
+  '单词':'words','词汇':'words','核心词汇':'words','重点单词':'words',
+  '语法':'grammar','语法点':'grammar','语法项':'grammar',
+  '方法':'methods','解题方法':'methods','学习方法':'methods','技巧':'methods',
+  '背诵':'recite','背诵内容':'recite','默写':'recite',
+  '句型':'sentences','句式':'sentences','核心句型':'sentences',
+  '公式':'formulas','定理':'formulas',
+  '实验':'experiments',
+  '考点':'points','重点':'points','难点':'points',
+  '其他':'other','说明':'other'
+};
+function splitList(s){
+  return String(s).split(/[、，,;；\s]+/).map(x=>x.trim()).filter(Boolean);
+}
+
+/* ==================== 状态管理 ==================== */
+const KEY = 'lesson_recorder_v3';
+let state;
+
+/* ==================== 课程表结构：天 × 节次 ==================== */
+/* 一节课 = 某个「星期几」的某个「节次」上什么学科；节次按 早自习 / 上午N / 下午N / 晚自习 排列 */
+const TBL_DEFAULT_SLOTS = ['早自习','上午1','上午2','上午3','上午4','下午1','下午2','下午3','晚自习'];
+const TBL_GROUP_KEYS = {
+  '早自习':'早自习','早读':'早自习','早修':'早自习','晨读':'早自习','晨课':'早自习',
+  '上午':'上午','早上':'上午','午前':'上午',
+  '下午':'下午','午后':'下午',
+  '晚自习':'晚自习','晚修':'晚自习','晚上':'晚自习','晚辅导':'晚自习','夜自习':'晚自习'
+};
+function emptyTimetable(){ return { slots: TBL_DEFAULT_SLOTS.slice(), grid: {} }; }
+function isNoneWord(p){
+  const t = String(p || '').trim();
+  if(!t) return true;
+  if(/^[—\-–~·.、\/\\*×]+$/.test(t)) return true;
+  return /^(无|无课|没有|空|空课|休息|放假|none|nil|null|x)$/i.test(t);
+}
+function cnNum(d){
+  const map = { '一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10 };
+  if(/^\d+$/.test(d)) return Number(d);
+  return map[d] || d;
+}
+/* 把各种写法归一成节次名：第一节→第1节，早读→早自习，上午第一节→上午1 */
+function normalizeSlotName(s){
+  let t = String(s || '').trim();
+  if(!t) return '';
+  if(TBL_GROUP_KEYS[t]) return TBL_GROUP_KEYS[t];
+  let m = t.match(/^第\s*([一二三四五六七八九十\d]+)\s*节$/);
+  if(m) return '第' + cnNum(m[1]) + '节';
+  m = t.match(/^(早自习|早读|早修|晨读|上午|早上|午前|下午|午后|晚自习|晚修|晚上|夜自习)\s*第?\s*([一二三四五六七八九十\d]+)?\s*节?$/);
+  if(m){
+    const g = TBL_GROUP_KEYS[m[1]] || m[1];
+    if(g === '早自习' || g === '晚自习') return g;
+    return g + (m[2] ? cnNum(m[2]) : 1);
+  }
+  return t;
+}
+/* 拆分「学科 + 讲到哪」：语文:第1课 春 / 语文（第1课 春） / 语文 */
+function splitSubject(tok){
+  const t = String(tok || '').trim();
+  const m = t.match(/^([^：:（()）]{1,12}?)\s*[：:（(]\s*(.*?)\s*[）)]?$/);
+  if(m && m[1].trim()) return { subject: m[1].trim(), content: (m[2] || '').trim() };
+  return { subject: t, content: '' };
+}
+/* 旧数据（数组：一课一行）→ 新结构（网格） */
+function migrateTimetable(raw){
+  if(Array.isArray(raw)){
+    const t = emptyTimetable();
+    const pool = TBL_DEFAULT_SLOTS.filter(s => s !== '早自习' && s !== '晚自习');
+    raw.forEach(e => {
+      const w = String(e.weekday || '');
+      const subj = String(e.subject || '').trim();
+      if(!w || !subj) return;
+      t.grid[w] = t.grid[w] || {};
+      const used = Object.keys(t.grid[w]).length;
+      const slot = normalizeSlotName(e.slot || '') || pool[used] || ('上午' + (used + 1));
+      t.grid[w][slot] = [{ subject: subj, content: String(e.lessonName || '').trim(), kind: KIND_IN }];
+    });
+    /* 只保留真正用到的节次，避免老数据迁移后出现一堆空行 */
+    const used = [];
+    for(const w of Object.keys(t.grid)) for(const s of Object.keys(t.grid[w])) if(!used.includes(s)) used.push(s);
+    const known = TBL_DEFAULT_SLOTS.filter(s => used.includes(s));
+    t.slots = known.concat(used.filter(s => !TBL_DEFAULT_SLOTS.includes(s)));
+    return t;
+  }
+  if(raw && typeof raw === 'object'){
+    const t = emptyTimetable();
+    t.slots = (Array.isArray(raw.slots) && raw.slots.length) ? raw.slots.slice() : TBL_DEFAULT_SLOTS.slice();
+    const g = (raw.grid && typeof raw.grid === 'object') ? raw.grid : {};
+    for(const w of Object.keys(g)){
+      const day = {};
+      for(const s of Object.keys(g[w] || {})){
+        const list = entriesOf(g[w][s]);
+        if(list.length) day[s] = list;
+      }
+      if(Object.keys(day).length) t.grid[String(w)] = day;
+    }
+    return t;
+  }
+  return emptyTimetable();
+}
+/* —— 课表分两类：课内（一套含所有科目）/ 课外（按单科粘贴） ——
+   同一个「天 × 节次」格子里允许并存两类安排，所以格子存的是【条目数组】：
+   grid['1']['下午3'] = [ {subject:'数学', content:'', kind:'in'},
+                          {subject:'钢琴', content:'第3课', kind:'out'} ]
+   kind: 'in' = 课内, 'out' = 课外 —— 两类共用同一张课表，都进日历与统计。 */
+const KIND_IN = 'in', KIND_OUT = 'out';
+const kindLabel = k => (k === KIND_OUT ? '课外' : '课内');
+const kindIcon  = k => (k === KIND_OUT ? '🎹' : '📘');
+const typeOfKind = k => (k === KIND_OUT ? '课外' : '课内');
+const kindOfType = t => (String(t || '') === '课外' ? KIND_OUT : KIND_IN);
+/* 把任意历史写法（字符串 / 单个对象 / 数组）统一成条目数组 */
+function entriesOf(v){
+  if(!v) return [];
+  const arr = Array.isArray(v) ? v : [v];
+  const out = [];
+  for(const it of arr){
+    let e = null;
+    if(typeof it === 'string'){ e = { subject: it.trim(), content: '', kind: KIND_IN }; }
+    else if(it && typeof it === 'object'){
+      e = {
+        subject: String(it.subject || '').trim(),
+        content: String(it.content || '').trim(),
+        kind: (it.kind === KIND_OUT ? KIND_OUT : KIND_IN)
+      };
+    }
+    if(e && e.subject) out.push(e);
+  }
+  return out;
+}
+const entriesIn = (grid, w, slot) => entriesOf(((grid || {})[String(w)] || {})[slot]);
+/* 节次排序权重：早自习 < 上午N < 下午N < 晚自习 < 第N节 < 其他
+   课内 / 课外用同一把尺子，所以两类粘完之后节次仍然按时间顺序排。 */
+function ttSlotRank(s){
+  const t = String(s || '');
+  if(t === '早自习') return 0;
+  let m = t.match(/^上午(\d+)$/); if(m) return 100 + Number(m[1]);
+  m = t.match(/^下午(\d+)$/);     if(m) return 200 + Number(m[1]);
+  if(t === '晚自习') return 300;
+  m = t.match(/^第(\d+)节$/);     if(m) return 400 + Number(m[1]);
+  return 900;
+}
+/* prefer：用户显式给出的节次顺序，用于同权重时的先后 */
+function sortSlots(list, prefer){
+  const pool = Array.isArray(prefer) ? prefer : [];
+  return list.slice().sort((a, b) => {
+    const ra = ttSlotRank(a), rb = ttSlotRank(b);
+    if(ra !== rb) return ra - rb;
+    const pa = pool.indexOf(a), pb = pool.indexOf(b);
+    if(pa >= 0 || pb >= 0) return (pa < 0 ? 999 : pa) - (pb < 0 ? 999 : pb);
+    return 0;
+  });
+}
+function tblSlots(){
+  const t = state.timetable;
+  if(!t || !Array.isArray(t.slots) || !t.slots.length) return TBL_DEFAULT_SLOTS.slice();
+  return t.slots;
+}
+/* 课表里「确实排了课」的节次集合：用来决定网格显示几行，避免一堆空行 */
+function usedSlotsIn(grid){
+  const out = [];
+  for(const w of Object.keys(grid || {})){
+    for(const s of Object.keys(grid[w] || {})){
+      if(entriesOf(grid[w][s]).length && !out.includes(s)) out.push(s);
+    }
+  }
+  return out;
+}
+function tblGrid(){ return (state.timetable && state.timetable.grid) || {}; }
+function gridNow(){ return JSON.parse(JSON.stringify(tblGrid())); }
+function tblEntries(weekday, slot){ return entriesOf((tblGrid()[String(weekday)] || {})[slot]); }
+/* 兼容旧调用：返回该格第一条 */
+function tblCell(weekday, slot){ return tblEntries(weekday, slot)[0] || null; }
+/* 取该格里指定类型的条目（课外单科按 subject 再过滤） */
+function tblEntryOfKind(weekday, slot, kind, subject){
+  return tblEntries(weekday, slot).find(e => e.kind === kind && (!subject || e.subject === subject)) || null;
+}
+function tblHasAnyIn(t){
+  if(!t || !t.grid) return false;
+  for(const w of Object.keys(t.grid)) for(const s of Object.keys(t.grid[w] || {})){
+    if(entriesOf(t.grid[w][s]).length) return true;
+  }
+  return false;
+}
+function tblHasAny(){ return tblHasAnyIn(state.timetable); }
+/* 全部课表条目（扁平），可按 kind / subject 过滤 */
+function tblAllEntries(kind){
+  const out = []; const g = tblGrid();
+  for(const w of Object.keys(g)) for(const s of Object.keys(g[w] || {})){
+    entriesOf(g[w][s]).forEach(e => {
+      if(kind === undefined || e.kind === kind) out.push({ weekday: Number(w), slot: s, subject: e.subject, content: e.content, kind: e.kind });
+    });
+  }
+  return out;
+}
+function tblSlotCount(kind){ return tblAllEntries(kind).length; }
+function tblKindCounts(){
+  const all = tblAllEntries();
+  return { in: all.filter(e => e.kind === KIND_IN).length, out: all.filter(e => e.kind === KIND_OUT).length, total: all.length };
+}
+/* 课外单科分布：[{subject, count, days:[1,3]}] */
+function tblOutSubjects(){
+  const map = {};
+  tblAllEntries(KIND_OUT).forEach(e => {
+    const k = e.subject;
+    map[k] = map[k] || { subject: k, count: 0, days: [] };
+    map[k].count++;
+    if(!map[k].days.includes(e.weekday)) map[k].days.push(e.weekday);
+  });
+  return Object.values(map).sort((a, b) => b.count - a.count || a.subject.localeCompare(b.subject));
+}
+/* 某天按节次顺序排好的课：只含真正排了课的节次（同格内 课内 在前、课外 在后） */
+function daySlots(weekday){
+  const g = tblGrid()[String(weekday)] || {};
+  const out = [];
+  tblSlots().forEach(s => {
+    const list = entriesOf(g[s]).slice()
+      .sort((a, b) => (a.kind === KIND_IN ? 0 : 1) - (b.kind === KIND_IN ? 0 : 1));
+    list.forEach(e => out.push({ slot: s, subject: e.subject, content: e.content || '', kind: e.kind }));
+  });
+  return out;
+}
+/* 课时记录里「时间」一栏的显示：优先显示节次 */
+const slotLabel = l => [l.slot, l.time].filter(Boolean).join(' · ');
+
+function defaultState(){
+  const cn={id:'m_cn',name:'语文',color:'#ef4444'};
+  const ma={id:'m_ma',name:'数学',color:'#3b82f6'};
+  const en={id:'m_en',name:'英语',color:'#10b981'};
+  return {
+    modules:[cn,ma,en],
+    goals:[],
+    lessons:[], todos:[], cards:[],
+    curriculum:[], timetable: emptyTimetable(),
+    timetablePeriod:{ from:'', to:'' },
+    dict:{ grade:[], course:[], textbook:[] }
+  };
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return defaultState();
+    const s = JSON.parse(raw);
+    s.modules ||= []; s.goals ||= []; s.lessons ||= []; s.todos ||= []; s.cards ||= [];
+    s.curriculum ||= [];
+    s.timetablePeriod ||= { from:'', to:'' };
+    s.timetable = migrateTimetable(s.timetable);
+    s.lessons.forEach(l => { if(l.slot === undefined) l.slot = ''; });
+    if(Array.isArray(s.curriculum) && s.curriculum.length > 0
+       && (s.curriculum[0].subject !== undefined || s.curriculum[0].units !== undefined)
+       && s.curriculum[0].subjects === undefined){
+      s.curriculum = [{
+        id: uid(), grade:'', course:'', textbook:'',
+        subjects: s.curriculum.map(sub => ({ id: sub.id || uid(), subject: sub.subject, units: sub.units || [] }))
+      }];
+    }
+    s.curriculum.forEach(c => { if(!c.subjects) c.subjects = []; });
+    /* ---- 统一名称字典：年级 / 课程 / 教材（学科字典 = modules） ---- */
+    s.dict ||= { grade:[], course:[], textbook:[] };
+    ['grade','course','textbook'].forEach(k => { if(!Array.isArray(s.dict[k])) s.dict[k] = []; });
+    s.curriculum.forEach(c => ['grade','course','textbook'].forEach(k => {
+      const v = String(c[k] || '').trim();
+      if(v && !s.dict[k].some(x => normName(x) === normName(v))) s.dict[k].push(v);
+    }));
+    s.lessons.forEach(l => { if(l.duration === undefined) l.duration = 0; });
+    return s;
+  }catch(e){ return defaultState(); }
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+state = load();
+
+/* ==================== 查询辅助 ==================== */
+const moduleById = id => state.modules.find(m => m.id === id);
+const goalById   = id => state.goals.find(g => g.id === id);
+const moduleName = id => moduleById(id)?.name || '未分类';
+const moduleColor= id => moduleById(id)?.color || '#9ca3af';
+const lessonsOn  = d => state.lessons.filter(l => l.date === d).sort((a,b) => {
+  const sl = tblSlots();
+  const ia = a.slot ? sl.indexOf(a.slot) : -1, ib = b.slot ? sl.indexOf(b.slot) : -1;
+  const oa = ia < 0 ? 999 : ia, ob = ib < 0 ? 999 : ib;
+  if(oa !== ob) return oa - ob;
+  return (a.time||'').localeCompare(b.time||'');
+});
+
+/* —— 课程表有效周期 & 课表查询 —— */
+const moduleIdOfName = name => state.modules.find(m => m.name === name)?.id || '';
+function inTimetablePeriod(date){
+  const p = state.timetablePeriod || {};
+  if(p.from && date < p.from) return false;
+  if(p.to   && date > p.to)   return false;
+  return true;
+}
+function timetablePeriodLabel(){
+  const p = state.timetablePeriod || {};
+  if(!p.from && !p.to) return '未设置有效周期';
+  return `${p.from || '不限'} ~ ${p.to || '不限'}`;
+}
+const WD_INDEX = d => ((parseDate(d).getDay() + 6) % 7) + 1;
+function timetableOn(date){
+  if(!inTimetablePeriod(date)) return [];
+  return daySlots(WD_INDEX(date));
+}
+function upcomingSchedule(span){
+  const out = [];
+  for(let i = 0; i < span; i++){
+    const d = addDays(todayStr(), i);
+    if(!inTimetablePeriod(d)) continue;
+    const list = timetableOn(d);
+    if(list.length) out.push({ date: d, list });
+  }
+  return out;
+}
+
+/* ==================== 统一名称字典 ====================
+   学科字典 = state.modules（学科就是原先的「模块」）
+   年级 / 课程 / 教材 字典 = state.dict
+   规则：名称类字段一律下拉选取；新增只在「课程设计 → 🧩 名称管理」里做；
+        粘贴导入的文本名一律先归一，再对齐字典里的写法，避免同一个名字出现多种拼法。
+=================================================================== */
+let namePanelOpen = true;
+function normName(s){
+  return String(s === undefined || s === null ? '' : s).trim()
+    .replace(/[\s\u3000]+/g, '')
+    .replace(/[\uFF21-\uFF3A\uFF41-\uFF5A\uFF10-\uFF19]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/\uFF08/g, '(').replace(/\uFF09/g, ')')
+    .replace(/[:\uFF1A]/g, '')
+    .toLowerCase();
+}
+/* 学科名归一：命中字典就返回字典里的写法，否则原样返回 */
+function canonSubject(name){
+  const t = String(name === undefined || name === null ? '' : name).trim();
+  if(!t) return '';
+  const k = normName(t);
+  const hit = state.modules.find(m => normName(m.name) === k);
+  return hit ? hit.name : t;
+}
+function canonDict(kind, name){
+  const t = String(name === undefined || name === null ? '' : name).trim();
+  if(!t) return '';
+  const k = normName(t);
+  const hit = (state.dict && state.dict[kind] ? state.dict[kind] : []).find(x => normName(x) === k);
+  return hit || t;
+}
+function addDictEntry(kind, name){
+  const v = String(name === undefined || name === null ? '' : name).trim();
+  if(!v) return '';
+  state.dict = state.dict || { grade:[], course:[], textbook:[] };
+  state.dict[kind] = state.dict[kind] || [];
+  if(!state.dict[kind].some(x => normName(x) === normName(v))) state.dict[kind].push(v);
+  return v;
+}
+/* 字典词条 + 现有分类里实际用到的值（保证老数据也能在下拉里选到） */
+function dictList(kind){
+  const base = ((state.dict && state.dict[kind]) || []).slice();
+  (state.curriculum || []).forEach(c => {
+    const v = String(c[kind] || '').trim();
+    if(v && !base.some(x => normName(x) === normName(v))) base.push(v);
+  });
+  return base;
+}
+/* 学科候选：名称管理的学科 + 课程内容 / 课表里出现过的学科 */
+function subjectDict(){
+  const base = state.modules.map(m => m.name);
+  const extra = [];
+  (state.curriculum || []).forEach(c => (c.subjects || []).forEach(s => extra.push(s.subject)));
+  tblAllEntries().forEach(e => extra.push(e.subject));
+  extra.forEach(v => { if(v && !base.some(x => normName(x) === normName(v))) base.push(v); });
+  return base;
+}
+function addSubject(name){
+  const nm = String(name === undefined || name === null ? '' : name).trim();
+  if(!nm) return '';
+  const k = normName(nm);
+  const hit = state.modules.find(m => normName(m.name) === k);
+  if(hit) return hit.name;
+  state.modules.push({ id: uid(), name: nm, color: randColor() });
+  return nm;
+}
+function optList(list, sel){
+  return (list || []).map(v =>
+    `<option ${normName(v) === normName(sel) && normName(sel) ? 'selected' : ''}>${esc(v)}</option>`).join('');
+}
+function countLessonsOf(cat){
+  return (((cat || {}).subjects) || []).reduce((n,s) =>
+    n + ((s.units) || []).reduce((m,u) => m + ((u.lessons) || []).length, 0), 0);
+}
+/* 按「学科 / 单元 / 课时」名字归并：同名复用同一对象，details 去重相加 */
+function mergeSubjectsInto(existing, parsed){
+  for(const ps of parsed){
+    let s = existing.find(x => normName(x.subject) === normName(ps.subject));
+    if(!s){ s = { id: uid(), subject: ps.subject, units: [] }; existing.push(s); }
+    s.subject = ps.subject;
+    s.units = s.units || [];
+    for(const pu of ps.units){
+      let u = s.units.find(x => normName(x.name) === normName(pu.name));
+      if(!u){ u = { id: uid(), name: pu.name, lessons: [] }; s.units.push(u); }
+      u.lessons = u.lessons || [];
+      for(const pl of pu.lessons){
+        let l = u.lessons.find(x => normName(x.name) === normName(pl.name));
+        if(!l){ l = { id: uid(), name: pl.name, hours: pl.hours || 1, details: {} }; u.lessons.push(l); }
+        l.details = l.details || {};
+        for(const k of Object.keys(pl.details || {})){
+          const cur = l.details[k] || (l.details[k] = []);
+          for(const v of pl.details[k]){
+            if(!cur.some(x => normName(x) === normName(v))) cur.push(v);
+          }
+        }
+        if(!l.hours) l.hours = pl.hours || 1;
+      }
+    }
+  }
+  return existing;
+}
+
+function moduleIdByName(name){
+  const nm = canonSubject(name) || String(name || '').trim();
+  if(!nm) return state.modules[0] ? state.modules[0].id : '';
+  let m = state.modules.find(x => normName(x.name) === normName(nm));
+  if(!m){ m = { id: uid(), name: nm, color: randColor() }; state.modules.push(m); }
+  return m.id;
+}
+const COLORS = ['#ef4444','#f97316','#f59e0b','#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6','#ec4899','#14b8a6'];
+function randColor(){ return COLORS[Math.floor(Math.random()*COLORS.length)]; }
+
+function findCurriculumLessonById(id){
+  for(const cat of state.curriculum){
+    for(const s of (cat.subjects || [])){
+      for(const u of (s.units || [])){
+        for(const l of (u.lessons || [])){
+          if(l.id === id) return { category: cat, subject: s.subject, unit: u.name, lesson: l };
+        }
+      }
+    }
+  }
+  return null;
+}
+function firstLessonOfSubject(subject){
+  for(const cat of state.curriculum){
+    for(const s of (cat.subjects || [])){
+      if(subject && s.subject !== subject) continue;
+      for(const u of (s.units || [])){
+        if((u.lessons || []).length) return { category: cat, subject: s.subject, unit: u.name, lesson: u.lessons[0] };
+      }
+    }
+  }
+  return null;
+}
+function findCurriculumLessonByName(subject, name){
+  for(const cat of state.curriculum){
+    for(const s of (cat.subjects || [])){
+      if(subject && s.subject !== subject) continue;
+      for(const u of (s.units || [])){
+        for(const l of (u.lessons || [])){
+          if(l.name === name || l.name.includes(name) || name.includes(l.name)){
+            return { category: cat, subject: s.subject, unit: u.name, lesson: l };
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/* ==================== 课程设计解析 ==================== */
+function parseCurriculum(text){
+  const rawLines = String(text).split(/\r?\n/);
+  const lines = [];
+  for(const raw of rawLines){
+    if(!raw.trim()) continue;
+    const m = raw.match(/^(\s*)/);
+    const indent = m[1].replace(/\t/g,'  ').length;
+    lines.push({ indent, text: raw.trim() });
+  }
+  if(!lines.length) return [];
+  const indents = [...new Set(lines.map(l => l.indent))].sort((a,b)=>a-b);
+  const levelOf = ind => indents.indexOf(ind);
+  const subjects = [];
+  let curSubject=null, curUnit=null, curLesson=null;
+  for(const line of lines){
+    let content = line.text;
+    if(/^[-*]\s+/.test(content)) content = content.replace(/^[-*]\s+/, '');
+    const lv = levelOf(line.indent);
+    const dm = content.match(/^([^：:]{1,8})[：:]\s*(.+)$/);
+    if(dm && curLesson && lv >= 2){
+      const key = dm[1].trim(); const val = dm[2].trim();
+      const mapped = DETAIL_KEY_MAP[key];
+      if(mapped){
+        if(!curLesson.details[mapped]) curLesson.details[mapped] = [];
+        curLesson.details[mapped].push(...splitList(val));
+        continue;
+      }
+    }
+    if(lv === 0){ curSubject = { id: uid(), subject: content, units: [] }; subjects.push(curSubject); curUnit = null; curLesson = null; }
+    else if(lv === 1){
+      if(!curSubject){ curSubject = { id: uid(), subject:'未分类', units: [] }; subjects.push(curSubject); }
+      curUnit = { id: uid(), name: content, lessons: [] }; curSubject.units.push(curUnit); curLesson = null;
+    }else if(lv === 2){
+      if(!curUnit){
+        if(!curSubject){ curSubject = { id: uid(), subject:'未分类', units: [] }; subjects.push(curSubject); }
+        curUnit = { id: uid(), name:'未分组', lessons: [] }; curSubject.units.push(curUnit);
+      }
+      curLesson = { id: uid(), name: content, hours: 1, details: {} };
+      curUnit.lessons.push(curLesson);
+    }else if(curLesson){
+      if(!curLesson.details.other) curLesson.details.other = [];
+      curLesson.details.other.push(content);
+    }
+  }
+  return subjects;
+}
+
+/* ============ 课程表解析：天 × 节次 ============
+   模式 A 一行一天（推荐）：周一 早自习 无 上午 语文 英语 下午 数学 体育
+   模式 B 矩阵表（Tab / 多空格对齐）：首行是 周X，首列是节次
+   模式 C 旧式一课一行：周一 语文 第1课 春  → 顺序填入非自习节次
+==================================================== */
+function parseTimetable(text, opts){
+  opts = opts || {};
+  const kind = (opts.kind === KIND_OUT) ? KIND_OUT : KIND_IN;
+  const wdMap = { '一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'日':7,'天':7 };
+  const rawLines = String(text || '').split(/\r?\n/).filter(l => l.trim() && !/^\s*(#|\/\/)/.test(l));
+  const grid = {}; const slots = []; const dayOrder = [];
+  const pushSlot = s => { if(s && !slots.includes(s)) slots.push(s); };
+  const put = (w, slot, subject, content) => {
+    const sj = String(subject || '').trim();
+    if(!sj || !slot) return;
+    grid[w] = grid[w] || {};
+    grid[w][slot] = [{ subject: sj, content: String(content || '').trim(), kind }];
+    if(!dayOrder.includes(w)) dayOrder.push(w);
+  };
+  /* 已知学科名（模块 / 课程内容库）：用于判断「带内容的学科」后面哪些词仍属内容 */
+  const knownSubjects = new Set();
+  subjectDict().forEach(n => knownSubjects.add(n));
+  const isWd = tok => /^(周|星期|礼拜)[一二三四五六日天]$/.test(String(tok || '').trim());
+  const wdOf = tok => wdMap[String(tok).trim().replace(/^(周|星期|礼拜)/, '')];
+  const finalize = () => {
+    const known = TBL_DEFAULT_SLOTS.filter(s => slots.includes(s));
+    const unknown = slots.filter(s => !TBL_DEFAULT_SLOTS.includes(s));
+    return { slots: known.concat(unknown), grid };
+  };
+  if(!rawLines.length) return finalize();
+
+  /* ---------- 模式 B：矩阵表 ---------- */
+  const firstCols = rawLines[0].split(/\t+|\s{2,}/);
+  if(firstCols.filter(isWd).length >= 2){
+    const colMap = {};
+    firstCols.forEach((c, i) => { if(isWd(c)) colMap[i] = wdOf(c); });
+    const firstWdIdx = Number(Object.keys(colMap)[0]);
+    for(let li = 1; li < rawLines.length; li++){
+      const cells = rawLines[li].split(/\t+|\s{2,}/);
+      let slot = normalizeSlotName((cells[0] || '').trim());
+      if(!slot){
+        const w0 = colMap[firstWdIdx];
+        const used = Object.keys(grid[String(w0)] || {}).length;
+        slot = '第' + (used + 1) + '节';
+      }
+      let any = false;
+      for(const idx of Object.keys(colMap)){
+        const w = colMap[idx];
+        const cellRaw = (cells[Number(idx)] || '').trim();
+        if(!cellRaw || isNoneWord(cellRaw)) continue;
+        const sp = splitSubject(cellRaw);
+        put(w, slot, sp.subject || cellRaw, sp.content);
+        any = true;
+      }
+      if(any) pushSlot(slot);
+    }
+    return finalize();
+  }
+
+  /* ---------- 模式 A：一行一天 ---------- */
+  for(const raw of rawLines){
+    let line = raw.trim();
+    line = line.replace(/^(星期|礼拜)\s*([一二三四五六日天])/, '周$2')
+               .replace(/^周\s+([一二三四五六日天])/, '周$1');
+    const head = line.match(/^周([一二三四五六日天])/);
+    if(!head) continue;
+    const weekday = wdMap[head[1]];
+    let rest = line.slice(head[0].length).replace(/^[\s：:、,，.．\-—]+/, '').trim();
+    if(!rest) continue;
+    /* 兼容旧写法里可选的「第N节」「08:00-08:45」前缀，解析后忽略 */
+    rest = rest.replace(/^第\s*[\d一二三四五六七八九十]+\s*节\s*/, '')
+               .replace(/^\d{1,2}:\d{2}\s*[-~—到至]\s*\d{1,2}:\d{2}\s*/, '')
+               .replace(/^\d{1,2}:\d{2}\s*/, '');
+
+    /* 先保护括号里的内容 语文（第1课 春），避免被空格切开 */
+    const HOLD = '\u0001';
+    const shielded = rest.replace(/[（(][^（()）]*[)）]/g, m => m.replace(/[\s\t]+/g, HOLD));
+    const parts = shielded.split(/[\s\t]+/).filter(Boolean)
+      .map(p => p.split(HOLD).join(' '))
+      .flatMap(p => {
+        const g = p.match(/^(早自习|早读|早修|上午|早上|下午|午后|晚自习|晚上|晚修)\s*[：:]\s*(.+)$/);
+        if(g) return [g[1], g[2]];
+        if(p.length > 1 && p.indexOf('/') > -1) return p.split('/').filter(Boolean);
+        return [p];
+      });
+
+    const hasGroup = parts.some(p => TBL_GROUP_KEYS[p]);
+    if(hasGroup){
+      let group = null, n = 0, absorb = null;
+      for(const p of parts){
+        const gk = TBL_GROUP_KEYS[p];
+        if(gk){ absorb = null; group = gk; n = 0; if(gk === '早自习' || gk === '晚自习') pushSlot(gk); continue; }
+        if(group === null){ group = '上午'; n = 0; }
+        if(isNoneWord(p)){ absorb = null; n++; continue; }
+        /* 「上午 语文:第1课 春」：带内容的学科后面的词继续并入它的内容 */
+        if(absorb && !/[：:（(]/.test(p) && !knownSubjects.has(p)){
+          const c0 = grid[weekday][absorb];
+          if(c0 && c0[0]){ c0[0].content = (c0[0].content ? c0[0].content + ' ' : '') + p; continue; }
+        }
+        let slot;
+        if(group === '早自习' || group === '晚自习') slot = group;
+        else { n++; slot = group + n; }
+        pushSlot(slot);
+        const sp = splitSubject(p);
+        const subj = sp.subject || p;
+        put(weekday, slot, subj, sp.content);
+        knownSubjects.add(subj);
+        absorb = sp.content ? slot : null;
+      }
+    }else{
+      /* 模式 C：旧式一课一行 → 顺序填入非自习节次 */
+      const pool = TBL_DEFAULT_SLOTS.filter(s => s !== '早自习' && s !== '晚自习');
+      const used = Object.keys(grid[String(weekday)] || {}).filter(s => pool.includes(s)).length;
+      const slot = pool[used] || ('第' + (used + 1) + '节');
+      pushSlot(slot);
+      const sp = splitSubject(parts[0]);
+      const tail = parts.slice(1).join(' ').trim();
+      put(weekday, slot, sp.subject || parts[0], tail || sp.content);
+    }
+  }
+  return finalize();
+}
+
+/* ============ 课外单科课表解析 ============
+   课外按「单科」粘贴：学科名在弹窗里填，正文可以只写「周几 + 节次」。
+   周一 下午3 第3课        → 周一 下午3 = 该学科，讲到 第3课
+   周一 下午3 钢琴 第3课   → 学科名写在正文里也认（会被去重）
+   周一 第3课              → 没写节次，按「课外节次顺序」依次排
+   周六 上午2 第5课        → 分组词+序号也认
+   一周多天写多行即可；同一门课覆盖时会整门清掉重写。
+==================================================== */
+function parseExtraTimetable(text, subjectName, poolSlots){
+  const subj = String(subjectName || '').trim();
+  const pool = (Array.isArray(poolSlots) && poolSlots.length)
+    ? poolSlots.map(normalizeSlotName).filter(Boolean)
+    : ['下午3','下午4','晚自习'];
+  const wdMap = { '一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'日':7,'天':7 };
+  const rawLines = String(text || '').split(/\r?\n/).filter(l => l.trim() && !/^\s*(#|\/\/)/.test(l));
+  const grid = {}; const slots = [];
+  const pushSlot = s => { if(s && !slots.includes(s)) slots.push(s); };
+  const put = (w, slot, subject, content) => {
+    const sj = String(subject || '').trim();
+    if(!sj || !slot) return;
+    grid[w] = grid[w] || {};
+    grid[w][slot] = [{ subject: sj, content: String(content || '').trim(), kind: KIND_OUT }];
+  };
+  /* 判断一个词是不是「节次」而不是「学习内容」 */
+  const isSlotWord = tok => {
+    const t = String(tok || '').trim();
+    if(!t || TBL_GROUP_KEYS[t]) return false;
+    const ns = normalizeSlotName(t);
+    if(!ns) return false;
+    return TBL_DEFAULT_SLOTS.includes(ns)
+        || /^第[一二三四五六七八九十\d]+节$/.test(ns)
+        || /^(上午|下午|早自习|晚自习)\d+$/.test(ns);
+  };
+  for(const raw of rawLines){
+    let line = raw.trim()
+      .replace(/^(星期|礼拜)\s*([一二三四五六日天])/, '周$2')
+      .replace(/^周\s+([一二三四五六日天])/, '周$1');
+    const head = line.match(/^周([一二三四五六日天])/);
+    if(!head) continue;
+    const weekday = wdMap[head[1]];
+    let rest = line.slice(head[0].length).replace(/^[\s：:、,，.．\-—]+/, '').trim();
+    /* 允许写清时间：16:00-17:00，解析后忽略（课表本身不记小时分钟） */
+    rest = rest.replace(/^\d{1,2}:\d{2}\s*[-~—到至]\s*\d{1,2}:\d{2}\s*/, '')
+               .replace(/^\d{1,2}:\d{2}\s*/, '');
+    if(!rest) continue;
+
+    let slot = '', group = null; const content = [];
+    for(const tok of rest.split(/[\s\t、,，\/]+/).filter(Boolean)){
+      if(tok === subj) continue;                     /* 正文里重复写了学科名 → 跳过 */
+      const gk = TBL_GROUP_KEYS[tok];
+      if(gk){
+        if(gk === '早自习' || gk === '晚自习'){ slot = gk; group = null; }
+        else { group = gk; slot = ''; }
+        continue;
+      }
+      if(isSlotWord(tok)){ slot = normalizeSlotName(tok); group = null; continue; }
+      if(isNoneWord(tok)) continue;
+      content.push(tok);
+    }
+    if(!slot){
+      const day = grid[String(weekday)] || {};
+      if(group){
+        const used = Object.keys(day).filter(k => k.indexOf(group) === 0).length;
+        slot = group + (used + 1);
+      }else{
+        const used = Object.keys(day).length;
+        slot = pool[used] || ('第' + (used + 1) + '节');
+      }
+    }
+    pushSlot(slot);
+    put(weekday, slot, subj, content.join(' '));
+  }
+  return { slots: sortSlots(slots, pool), grid };
+}
+
+/* ==================== 视图路由 ==================== */
+let view = 'calendar';
+let calMode = 'month';
+let calCursor = todayStr();
+let statsRange = 'all';
+let statsFrom = '';
+let statsTo = '';
+let todoFilter = 'all';
+let cardQueue = null;
+let cardFlipped = false;
+let currentDayDate = null;
+let curExpanded = {};
+let catFilter = { grade:'', course:'', textbook:'' };
+let importCategoryId = null;
+
+function render(){
+  document.querySelectorAll('.sidebar nav button').forEach(b =>
+    b.classList.toggle('active', b.dataset.view === view));
+  const v = document.getElementById('view');
+  v.scrollTop = 0;
+  switch(view){
+    case 'calendar':   renderCalendar();   break;
+    case 'curriculum': renderCurriculum(); break;
+    case 'lessons':    renderLessons();    break;
+    case 'todos':      renderTodos();      break;
+    case 'cards':      renderCards();      break;
+    case 'goals':      renderGoals();      break;
+    case 'modules':    renderCurriculum(); break;   /* 模块管理已并入课程设计 */
+    case 'stats':      renderStats();      break;
+  }
+}
+document.querySelector('.sidebar nav').addEventListener('click', e => {
+  const b = e.target.closest('button[data-view]');
+  if(b){ view = b.dataset.view; if(view !== 'cards') cardFlipped = false; render(); }
+});
+
+/* ==================== 弹窗基础 ==================== */
+function openModal(html, dayDate){
+  const root = document.getElementById('modal-root');
+  currentDayDate = dayDate || null;
+  root.innerHTML = `<div class="modal-mask"><div class="modal">${html}</div></div>`;
+  root.classList.add('open');
+}
+function closeModal(){
+  const root = document.getElementById('modal-root');
+  root.classList.remove('open');
+  root.innerHTML = '';
+  currentDayDate = null;
+}
+function refreshDayModal(){
+  if(!currentDayDate) return;
+  const m = document.querySelector('#modal-root .modal');
+  const sc = m ? m.scrollTop : 0;
+  const d = currentDayDate;
+  openDayModal(d);
+  const m2 = document.querySelector('#modal-root .modal');
+  if(m2) m2.scrollTop = sc;
+  render();
+}
+
+/* ==================== 公共操作处理（供视图与弹窗复用） ==================== */
+function handleCommonAction(a, el){
+  /* 日历导航 */
+  if(a === 'cal-prev' || a === 'cal-next'){
+    const step = a === 'cal-prev' ? -1 : 1;
+    const d = parseDate(calCursor);
+    if(calMode === 'month') d.setMonth(d.getMonth() + step);
+    else d.setDate(d.getDate() + step * 7);
+    calCursor = fmtDate(d); renderCalendar();
+    return true;
+  }
+  if(a === 'cal-today'){ calCursor = todayStr(); renderCalendar(); return true; }
+  if(a === 'cal-mode'){ calMode = el.dataset.mode; renderCalendar(); return true; }
+  if(a === 'day'){ openDayModal(el.dataset.date); return true; }
+  if(a === 'add-lesson'){ openLessonModal(null, el.dataset.date || todayStr(), el.dataset.date || null); return true; }
+  if(a === 'edit-lesson'){ openLessonModal(el.dataset.id, null, currentDayDate); return true; }
+  if(a === 'save-lesson'){ saveLessonForm(el.dataset.id || null); return true; }
+  if(a === 'del-lesson'){
+    if(confirm('确定删除这节课时记录吗？')){
+      state.lessons = state.lessons.filter(x => x.id !== el.dataset.id);
+      save(); closeModal(); render();
+    }
+    return true;
+  }
+  if(a === 'quick-todo'){
+    const txt = prompt('待办内容：');
+    if(txt && txt.trim()){
+      state.todos.push({id:uid(), text:txt.trim(), moduleId:state.modules[0]?.id || '', dueDate:el.dataset.date,
+        priority:'中', done:false, createdAt:Date.now()});
+      save(); refreshDayModal();
+    }
+    return true;
+  }
+  /* 分类 */
+  if(a === 'cat-new'){ openCategoryModal(); return true; }
+  if(a === 'cat-save'){ saveCategoryForm(); return true; }
+  if(a === 'cat-del'){
+    const cat = state.curriculum.find(c => c.id === el.dataset.id);
+    if(!cat) return true;
+    const cnt = (cat.subjects||[]).reduce((n,s)=>n+(s.units||[]).reduce((m,u)=>m+(u.lessons||[]).length,0),0);
+    if(!confirm(`确定删除分类「${cat.grade||''} ${cat.course||''} ${cat.textbook||''}」？包含 ${cnt} 个课时。`)) return true;
+    state.curriculum = state.curriculum.filter(c => c.id !== el.dataset.id);
+    save(); render(); return true;
+  }
+  if(a === 'cur-import-cat'){ importCategoryId = el.dataset.id; openCurriculumImport(); return true; }
+  if(a === 'cur-do-import'){ doCurriculumImport(); return true; }
+  if(a === 'cat-subject-del'){
+    if(confirm('删除该学科及其下所有单元、课时？')){
+      for(const c of state.curriculum){ c.subjects = (c.subjects||[]).filter(s => s.id !== el.dataset.id); }
+      save(); render();
+    }
+    return true;
+  }
+  if(a === 'cur-lesson-del'){
+    if(confirm('删除该课时？')){
+      for(const c of state.curriculum){
+        for(const s of (c.subjects||[])){
+          for(const u of (s.units||[])){ u.lessons = (u.lessons||[]).filter(l => l.id !== el.dataset.id); }
+        }
+      }
+      save(); render();
+    }
+    return true;
+  }
+  if(a === 'cur-lesson-toggle'){ curExpanded[el.dataset.id] = !curExpanded[el.dataset.id]; render(); return true; }
+  if(a === 'cur-lesson-use'){
+    const cl = findCurriculumLessonById(el.dataset.id);
+    if(!cl) return true;
+    closeModal();
+    openLessonModal(null, todayStr(), null, cl.lesson.id);
+    return true;
+  }
+  /* 课程表 */
+  if(a === 'tbl-import'){ openTimetableImport(KIND_IN); return true; }
+  if(a === 'tbl-import-out'){ openTimetableImport(KIND_OUT); return true; }
+  if(a === 'tbl-view'){ view = 'calendar'; calMode = 'week'; render(); return true; }
+  if(a === 'tbl-do-import'){ doTimetableImport(el.dataset.kind === 'out' ? KIND_OUT : KIND_IN); return true; }
+  if(a === 'autofill'){ openAutoFill(); return true; }
+  if(a === 'autofill-do'){ doAutoFill(); return true; }
+  if(a === 'cur-clear'){
+    if(confirm('确定清空全部课程设计与课程表数据？此操作不可恢复。')){
+      state.curriculum = []; state.timetable = emptyTimetable();
+      save(); closeModal(); render();
+    }
+    return true;
+  }
+  /* 课时记录 */
+  if(a === 'rec-edit'){ openLessonModal(el.dataset.id, null, null); return true; }
+  if(a === 'rec-del'){
+    if(confirm('确定删除这条课时记录？')){
+      state.lessons = state.lessons.filter(x => x.id !== el.dataset.id);
+      save(); renderLessons();
+    }
+    return true;
+  }
+  /* 待办 */
+  if(a === 'todo-add'){
+    const inp = document.getElementById('td-text');
+    const txt = inp.value.trim();
+    if(!txt) return inp.focus(), true;
+    state.todos.push({
+      id: uid(), text: txt,
+      moduleId: document.getElementById('td-module').value,
+      dueDate: document.getElementById('td-date').value,
+      priority: document.getElementById('td-pri').value,
+      done: false, createdAt: Date.now()
+    });
+    save(); renderTodos(); return true;
+  }
+  if(a === 'todo-del'){
+    state.todos = state.todos.filter(x => x.id !== el.dataset.id);
+    save(); renderTodos(); return true;
+  }
+  if(a === 'todo-filter'){ todoFilter = el.dataset.todofilter; renderTodos(); return true; }
+  /* 闪卡 */
+  if(a === 'card-flip'){ cardFlipped = !cardFlipped; renderCards(); return true; }
+  if(a === 'card-rate'){ rateCard(el.dataset.id, Number(el.dataset.grade)); return true; }
+  if(a === 'card-reset'){ cardQueue = null; cardFlipped = false; renderCards(); return true; }
+  if(a === 'card-del'){
+    state.cards = state.cards.filter(x => x.id !== el.dataset.id);
+    if(cardQueue) cardQueue = cardQueue.filter(x => x !== el.dataset.id);
+    save(); renderCards(); return true;
+  }
+  if(a === 'card-add'){
+    const front = document.getElementById('cd-front').value.trim();
+    const back  = document.getElementById('cd-back').value.trim();
+    if(!front || !back){ alert('请填写卡片正反面'); return true; }
+    state.cards.push({
+      id: uid(), moduleId: document.getElementById('cd-module').value,
+      front, back, interval: 0, reps: 0, due: todayStr()
+    });
+    save(); cardQueue = null; renderCards(); return true;
+  }
+  /* 目标库 */
+  if(a === 'goal-add'){
+    const title = document.getElementById('gl-title').value.trim();
+    if(!title){ alert('请填写知识点名称'); return true; }
+    state.goals.push({
+      id: uid(),
+      moduleId: document.getElementById('gl-module').value,
+      title,
+      desc: document.getElementById('gl-desc').value.trim(),
+      level: document.getElementById('gl-level').value
+    });
+    save(); renderGoals(); return true;
+  }
+  if(a === 'goal-del'){ state.goals = state.goals.filter(x => x.id !== el.dataset.id); save(); renderGoals(); return true; }
+  if(a === 'goal-plan'){
+    const g = goalById(el.dataset.id);
+    if(!g) return true;
+    const d = prompt('安排到哪一天？(YYYY-MM-DD)', todayStr());
+    if(!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return true;
+    const t = prompt('上课时间（可留空）', '');
+    state.lessons.push({
+      id: uid(), date: d, time: t || '', duration: 0, moduleId: g.moduleId, type: '课内',
+      goalId: g.id, title: g.title, status: '未完成', mastered: false, note: '',
+      detailItems: [], createdAt: Date.now()
+    });
+    save(); alert(`已把「${g.title}」加入 ${d} 的日历`); renderGoals(); return true;
+  }
+  /* ---- 名称管理（学科 = 模块；年级 / 课程 / 教材 = 字典词条） ---- */
+  if(a === 'name-panel-toggle'){ namePanelOpen = !namePanelOpen; renderCurriculum(); return true; }
+  if(a === 'mod-del'){
+    const m = moduleById(el.dataset.id);
+    if(!m) return true;
+    const cnt = state.lessons.filter(l => l.moduleId === m.id).length;
+    const msg = cnt
+      ? `「${m.name}」下有 ${cnt} 条课时记录，删除后这些记录将变为「未分类」。确定删除？`
+      : `确定从名称管理里删除学科「${m.name}」？`;
+    if(!confirm(msg)) return true;
+    state.modules = state.modules.filter(x => x.id !== m.id);
+    state.goals = state.goals.filter(g => g.moduleId !== m.id);
+    save(); render(); return true;
+  }
+  if(a === 'mod-add'){
+    const name = String(((document.getElementById('md-name') || {}).value) || '').trim();
+    const color = ((document.getElementById('md-color') || {}).value) || randColor();
+    if(!name){ alert('请输入学科名称'); return true; }
+    if(state.modules.some(m => normName(m.name) === normName(name))){
+      alert(`学科「${name}」已存在（名称管理里已有同义写法）`); return true;
+    }
+    state.modules.push({ id: uid(), name, color });
+    save(); render(); return true;
+  }
+  if(a === 'dict-add'){
+    const kind = el.dataset.kind;
+    const v = String(((document.getElementById('dict-new-' + kind) || {}).value) || '').trim();
+    if(!v){ alert('请输入名称'); return true; }
+    if(dictList(kind).some(x => normName(x) === normName(v))){ alert(`「${v}」已存在`); return true; }
+    addDictEntry(kind, v);
+    save(); render(); return true;
+  }
+  if(a === 'dict-del'){
+    const kind = el.dataset.kind, name = el.dataset.name;
+    const used = state.curriculum.filter(c => normName(c[kind] || '') === normName(name)).length;
+    const msg = used
+      ? `「${name}」已被 ${used} 个分类使用。删除词条不会改动已有分类，继续？`
+      : `确定删除词条「${name}」？`;
+    if(!confirm(msg)) return true;
+    state.dict[kind] = (state.dict[kind] || []).filter(x => normName(x) !== normName(name));
+    save(); render(); return true;
+  }
+  if(a === 'dict-quick-add'){   /* 新建分类弹窗内联新增词条：加进字典 + 直接选中，不丢当前填写 */
+    const kind = el.dataset.kind, target = el.dataset.target;
+    const labelMap = { grade:'年级', course:'课程', textbook:'教材' };
+    const v = prompt(`新增${labelMap[kind] || '词条'}名称（会写入名称管理，以后随取随用）：`);
+    if(v && v.trim()){
+      const canon = addDictEntry(kind, v);
+      const sel = document.getElementById(target);
+      if(sel){
+        let opt = Array.from(sel.options).find(o => o.value === canon);
+        if(!opt){ opt = document.createElement('option'); opt.value = canon; opt.textContent = canon; sel.appendChild(opt); }
+        sel.value = canon;
+      }
+      save();
+    }
+    return true;
+  }
+  if(a === 'subj-quick-add'){   /* 粘贴课外课表弹窗内联新增学科 */
+    const v = prompt('新增学科名称（会写入名称管理，其它地方从此只能下拉选取）：');
+    if(v && v.trim()){
+      const canon = addSubject(v);
+      const sel = document.getElementById('tbl-subject');
+      if(sel){
+        let opt = Array.from(sel.options).find(o => o.value === canon);
+        if(!opt){ opt = document.createElement('option'); opt.value = canon; opt.textContent = canon; sel.appendChild(opt); }
+        sel.value = canon;
+      }
+      save();
+    }
+    return true;
+  }
+  /* 统计 */
+  if(a === 'stat-range'){
+    statsRange = el.dataset.range;
+    statsFrom = ''; statsTo = '';
+    renderStats(); return true;
+  }
+  /* 粘贴课程内容：先选目标分类 */
+  if(a === 'cur-content-import'){
+    if(!state.curriculum.length){ alert('请先点「新建分类」（年级 / 课程 / 教材），再粘贴课程内容'); return true; }
+    if(state.curriculum.length === 1){ importCategoryId = state.curriculum[0].id; openCurriculumImport(); return true; }
+    const pickHtml = `<div class="modal-head"><h3>📚 粘贴课程内容 · 选择目标分类</h3><button class="btn ghost" data-action="modal-close">✕</button></div>
+      <div class="help-box">课程内容归属于某个分类（年级 / 课程 / 教材）。请选择要导入到哪个分类：</div>
+      <div class="mod-list">${state.curriculum.map(c => {
+        const label = [c.grade, c.course, c.textbook].filter(Boolean).join(' · ') || '未命名分类';
+        const n = (c.subjects||[]).reduce((k,s)=>k+(s.units||[]).reduce((m,u)=>m+(u.lessons||[]).length,0),0);
+        return `<div class="mod-item"><span class="nm">📂 ${esc(label)}</span><span class="meta">${n} 课时</span><span class="spacer"></span><button class="btn xs primary" data-action="cur-pick-cat" data-id="${c.id}">选它</button></div>`;
+      }).join('')}</div>`;
+    openModal(pickHtml);
+    return true;
+  }
+  if(a === 'cur-pick-cat'){ importCategoryId = el.dataset.id; openCurriculumImport(); return true; }
+  /* 从该日课表一键带入课程内容 */
+  if(a === 'pick-tbl'){
+    applyTimetableToForm(Number(el.dataset.w || 0), el.dataset.slot || '', el.dataset.kind || '');
+    return true;
+  }
+  /* 近日课程：点一下 = 开「添加课时」并把该节课带进表单 */
+  if(a === 'up-tbl'){
+    const d0 = el.dataset.date, s0 = el.dataset.slot || '', k0 = el.dataset.kind || '';
+    openLessonModal(null, d0, null);
+    applyTimetableToForm(WD_INDEX(d0), s0, k0);
+    return true;
+  }
+  /* 快捷添加（知识点条目） */
+  if(a === 'detail-todo'){ return quickAddTodo(el); }
+  if(a === 'detail-card'){ return quickAddCard(el); }
+  if(a === 'detail-goal'){ return quickAddGoal(el); }
+  /* 批量：勾选项加入待办 / 闪卡 / 目标（此前缺失路由，按钮无效） */
+  if(a === 'import-todos'){ importSelectedToTodos(); return true; }
+  if(a === 'import-cards'){ importSelectedToCards(); return true; }
+  if(a === 'import-goals'){ importSelectedToGoals(); return true; }
+  return false;
+}
+
+/* ==================== 视图事件委托（关键修复） ==================== */
+document.getElementById('view').addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if(!el) return;
+  const a = el.dataset.action;
+  if(handleCommonAction(a, el)) return;
+});
+
+document.getElementById('view').addEventListener('change', e => {
+  const el = e.target;
+  if(el.dataset.filter){ lessonFilter[el.dataset.filter] = el.value; renderLessons(); return; }
+  if(el.dataset.catfilter){ catFilter[el.dataset.catfilter] = el.value; renderCurriculum(); return; }
+  if(el.dataset.toggleTodo){
+    const t = state.todos.find(x => x.id === el.dataset.toggleTodo);
+    if(t){ t.done = el.checked; save(); renderTodos(); }
+    return;
+  }
+});
+
+/* ==================== 弹窗事件委托 ==================== */
+document.getElementById('modal-root').addEventListener('click', e => {
+  /* 点击蒙层关闭 */
+  if(e.target.classList && e.target.classList.contains('modal-mask')){ closeModal(); render(); return; }
+  const el = e.target.closest('[data-action]');
+  if(!el) return;
+  const a = el.dataset.action;
+  if(a === 'modal-close'){ closeModal(); render(); return; }
+  if(handleCommonAction(a, el)) return;
+});
+
+document.getElementById('modal-root').addEventListener('change', e => {
+  const el = e.target;
+  if(el.dataset.change){
+    const l = state.lessons.find(x => x.id === el.dataset.id);
+    if(!l) return;
+    if(el.dataset.change === 'status')   l.status = el.value;
+    if(el.dataset.change === 'mastered') l.mastered = el.checked;
+    if(el.dataset.change === 'note')     l.note = el.value;
+    save(); refreshDayModal(); return;
+  }
+  if(el.dataset.toggleTodo){
+    const t = state.todos.find(x => x.id === el.dataset.toggleTodo);
+    if(t){ t.done = el.checked; save(); refreshDayModal(); }
+    return;
+  }
+  if(el.id === 'lf-curriculum'){ applyCurriculumToForm(el.value); return; }
+  if(el.dataset.detailType){
+    el.closest('.detail-chip').classList.toggle('on', el.checked);
+    return;
+  }
+});
+
+document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeModal(); render(); } });
+
+/* ==================== 快捷添加（知识点条目） ==================== */
+function quickAddTodo(btn){
+  const type = btn.dataset.qtype;
+  const value = btn.dataset.qvalue;
+  const moduleId = document.getElementById('lf-module').value;
+  const date = document.getElementById('lf-date').value || todayStr();
+  state.todos.push({
+    id: uid(), text: value, moduleId,
+    dueDate: date, priority: '中', done: false, createdAt: Date.now()
+  });
+  save();
+  markSelected(type, value);
+  flashBtn(btn, '📝', '✓');
+  return true;
+}
+
+function quickAddCard(btn){
+  const type = btn.dataset.qtype;
+  const value = btn.dataset.qvalue;
+  const moduleId = document.getElementById('lf-module').value;
+  let front = value;
+  let back = `类型：${DETAIL_LABELS[type] || type}\n（请补充释义或答案）`;
+  if(type === 'words'){ back = `单词：${value}\n词义/用法：（请补充）`; }
+  if(type === 'formulas'){ back = `公式：${value}\n（请补充适用条件）`; }
+  if(type === 'grammar'){ front = `语法点：${value}`; back = `（请补充规则与例句）`; }
+  state.cards.push({
+    id: uid(), moduleId, front, back,
+    interval: 0, reps: 0, due: todayStr()
+  });
+  save();
+  markSelected(type, value);
+  flashBtn(btn, '🃏', '✓');
+  return true;
+}
+
+function quickAddGoal(btn){
+  const type = btn.dataset.qtype;
+  const value = btn.dataset.qvalue;
+  const moduleId = document.getElementById('lf-module').value;
+  if(state.goals.some(g => g.title === value && g.moduleId === moduleId)){
+    flashBtn(btn, '🎯', '✓');
+    return true;
+  }
+  state.goals.push({
+    id: uid(), moduleId, title: value,
+    desc: `来自课程设计：${DETAIL_LABELS[type] || type}`,
+    level: '基础'
+  });
+  save();
+  markSelected(type, value);
+  flashBtn(btn, '🎯', '✓');
+  return true;
+}
+
+function markSelected(type, value){
+  const area = document.getElementById('lf-detail-area');
+  if(!area) return;
+  const chip = area.querySelector(`.detail-chip input[data-detail-type="${type}"][value="${cssEscape(value)}"]`);
+  if(!chip) return;
+  if(!chip.checked){
+    chip.checked = true;
+    chip.closest('.detail-chip').classList.add('on');
+    const cnt = area.querySelectorAll('.detail-chip input:checked').length;
+    const el = area.querySelector('#sel-count');
+    if(el) el.textContent = cnt;
+  }
+}
+
+function cssEscape(s){ return String(s).replace(/["\\]/g, '\\$&'); }
+
+function flashBtn(btn, orig, ok){
+  const original = btn.textContent;
+  btn.textContent = ok;
+  btn.disabled = true;
+  btn.style.background = '#10b981';
+  btn.style.color = '#fff';
+  setTimeout(() => {
+    btn.textContent = orig;
+    btn.disabled = false;
+    btn.style.background = '';
+    btn.style.color = '';
+  }, 900);
+}
+
+/* ==================== 课表 / 近日课程 渲染 ==================== */
+/* 把「某天某节次」的课带进「添加课时」表单：节次 → 模块 → 课程内容 → 标题 → 知识点 */
+function applyTimetableToForm(weekday, slotName, kind){
+  const list = (weekday && slotName) ? tblEntries(weekday, slotName) : [];
+  if(!list.length) return false;
+  const cell = (kind ? list.find(e => e.kind === kind) : null) || list[0];
+  const subject = cell.subject, kw = cell.content || '';
+  const ss = document.getElementById('lf-slot'); if(ss) ss.value = slotName;
+  const ts = document.getElementById('lf-type'); if(ts) ts.value = typeOfKind(cell.kind);
+  const newMid = moduleIdByName(subject);
+  const ms = document.getElementById('lf-module'); if(ms) ms.value = newMid;
+  const gs = document.getElementById('lf-goal'); if(gs) gs.innerHTML = goalOptions(newMid, '');
+  const found = (kw ? findCurriculumLessonByName(subject, kw) : null) || firstLessonOfSubject(subject);
+  const ti = document.getElementById('lf-title');
+  const cs = document.getElementById('lf-curriculum');
+  if(found){
+    if(cs) cs.value = found.lesson.id;
+    if(ti && !ti.value.trim()) ti.value = found.lesson.name;
+    applyCurriculumToForm(found.lesson.id, []);
+  }else{
+    if(cs) cs.value = '';
+    if(ti && !ti.value.trim()) ti.value = kw || subject;
+    renderDetailPicker(null, []);
+  }
+  save();
+  return true;
+}
+function renderDayTimetableChips(date){
+  const box = document.getElementById('lf-tbl-box');
+  if(!box) return;
+  const w = WD_INDEX(date);
+  const list = timetableOn(date);
+  if(!tblHasAny()){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.style.display = '';
+  if(!list.length){
+    box.innerHTML = `<span style="color:#0369a1;font-weight:600;">📋 该日课表</span>
+      <div style="margin-top:6px;font-size:12px;color:var(--muted)">周${WD[w-1]} 一节都没排${inTimetablePeriod(date) ? '' : '（该日期超出课表有效周期）'}</div>`;
+    return;
+  }
+  const emptySlots = tblSlots().filter(s => !list.some(x => x.slot === s));
+  box.innerHTML = `<span style="color:#0369a1;font-weight:600;">📋 该日课表（点节次可快速带入课程内容）</span>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:7px">
+      ${list.map(e => `<button type="button" class="btn xs tbl-chip${e.kind === KIND_OUT ? ' out' : ''}" data-action="pick-tbl" data-slot="${esc(e.slot)}" data-w="${w}" data-kind="${e.kind}"
+        style="--c:${moduleColor(moduleIdOfName(e.subject))}"><em>${esc(e.slot)}</em>${e.kind === KIND_OUT ? ' 🎹' : ''} ${esc(e.subject)}${e.content ? ` · ${esc(e.content)}` : ''}</button>`).join('')}
+    </div>
+    ${emptySlots.length ? `<div style="margin-top:6px;font-size:11.5px;color:var(--muted)">空节次：${emptySlots.map(esc).join('、')}</div>` : ''}`;
+}
+function upcomingHTML(){
+  const up = upcomingSchedule(4);
+  if(!up.length) return '';
+  const t = todayStr();
+  return `<div class="upcoming">
+    ${up.map(u => {
+      const dt = parseDate(u.date);
+      const lbl = u.date === t ? '今天' : u.date === addDays(t, 1) ? '明天' : `周${WD[(dt.getDay()+6)%7]}`;
+      return `<div class="up-row"><span class="up-day">${lbl}</span>
+        ${u.list.map(e => `<button class="btn xs up-chip${e.kind === KIND_OUT ? ' out' : ''}" data-action="up-tbl" data-date="${u.date}" data-slot="${esc(e.slot)}" data-kind="${e.kind}"
+           style="--c:${moduleColor(moduleIdOfName(e.subject))}"
+           title="点一下直接记录这节课：${kindLabel(e.kind)} · ${esc(e.slot)} ${esc(e.subject)}${e.content ? ' · ' + esc(e.content) : ''}"
+           ><em>${esc(e.slot)}</em>${e.kind === KIND_OUT ? ' 🎹' : ''} ${esc(e.subject)}${e.content ? ` · ${esc(e.content)}` : ''}</button>`).join('')}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+/* 单个格子：课内与课外可能同时排在同一节 */
+function ttCellHTML(w, slot, todayW){
+  const list = tblEntries(w, slot);
+  const cls = 'tt-cell' + (w === todayW ? ' today' : '') + (list.length ? '' : ' empty');
+  if(!list.length) return `<div class="${cls}">·</div>`;
+  return `<div class="${cls}">${list.map(e => {
+    const out = (e.kind === KIND_OUT);
+    const col = moduleColor(moduleIdOfName(e.subject));
+    return `<div class="tt-item${out ? ' out' : ''}" style="--c:${col}" title="${esc(kindLabel(e.kind))} · ${esc(e.subject + (e.content ? ' · ' + e.content : ''))}">
+      <b>${out ? '🎹' : ''}${esc(e.subject)}</b>${e.content ? `<span>${esc(e.content)}</span>` : ''}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function timetablePanelHTML(){
+  if(!tblHasAny()) return '';
+  const slots = tblSlots();
+  const todayW = WD_INDEX(todayStr());
+  const days = [1,2,3,4,5,6,7];
+  const c = tblKindCounts();
+  const outSubs = tblOutSubjects();
+  return `<div class="panel">
+    <h4 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      📋 课程表
+      <span class="muted" style="font-weight:400;font-size:12px">有效周期：${esc(timetablePeriodLabel())} · <b style="color:#4f46e5">📘 课内 ${c.in} 节</b> · <b style="color:#db2777">🎹 课外 ${c.out} 节</b></span>
+      <span class="spacer"></span>
+      <button class="btn xs" data-action="tbl-import">📘 课内课表</button>
+      <button class="btn xs" style="border-color:#f9a8d4;color:#be185d" data-action="tbl-import-out">🎹 课外单科</button>
+    </h4>
+    <div class="tt-wrap">
+      <div class="tt-grid" style="grid-template-columns:66px repeat(7,minmax(84px,1fr))">
+        <div class="tt-corner">节次</div>
+        ${days.map(w => `<div class="tt-h ${w === todayW ? ' today' : ''}">周${WD[w-1]}${w === todayW ? '<i>今天</i>' : ''}</div>`).join('')}
+        ${slots.map(slot => `
+          <div class="tt-slot">${esc(slot)}</div>
+          ${days.map(w => ttCellHTML(w, slot, todayW)).join('')}
+        `).join('')}
+      </div>
+    </div>
+    ${outSubs.length ? `<div class="tt-legend"><span class="tt-lg-tip">课外单科：</span>${outSubs.map(s =>
+      `<span class="tt-lg-out">🎹 ${esc(s.subject)} · 每周 ${s.count} 节（周${s.days.slice().sort((a,b)=>a-b).map(d => WD[d-1]).join('、')}）</span>`).join('')}</div>` : ''}
+    <div style="font-size:11.5px;color:var(--muted);margin-top:8px">
+      课表只回答「某天第几节上什么课」（不含小时分钟）；具体讲到哪一课，在「添加课时」时用下拉选择课程内容。<br>
+      课内课表一次粘完所有科目，课外课表按单科反复粘贴 —— 两类共用同一张课表，都会出现在学习日历与统计分析中。
+    </div>
+  </div>`;
+}
+
+/* ==================== 日历视图 ==================== */
+function renderCalendar(){
+  const v = document.getElementById('view');
+  const cd = parseDate(calCursor);
+  let title;
+  if(calMode === 'month'){
+    title = `${cd.getFullYear()} 年 ${cd.getMonth()+1} 月`;
+  }else{
+    const s = parseDate(startOfWeek(calCursor)), e = parseDate(addDays(startOfWeek(calCursor), 6));
+    title = `${s.getMonth()+1}月${s.getDate()}日 — ${e.getMonth()+1}月${e.getDate()}日`;
+  }
+  const days = calMode === 'month' ? monthMatrix(calCursor) : weekDays(calCursor);
+  v.innerHTML = `
+    <h2 class="page-title">📅 学习日历 <span class="sub">点击日期查看 / 补充当天完成情况　·　课表有效周期：${esc(timetablePeriodLabel())}</span></h2>
+    <div class="cal-toolbar">
+      <div class="cal-nav">
+        <button class="btn ghost" data-action="cal-prev">‹</button>
+        <button class="btn ghost" data-action="cal-today">今天</button>
+        <button class="btn ghost" data-action="cal-next">›</button>
+      </div>
+      <div class="cal-title">${title}</div>
+      <span class="spacer"></span>
+      <div class="seg">
+        <button class="${calMode==='month'?'active':''}" data-action="cal-mode" data-mode="month">月</button>
+        <button class="${calMode==='week'?'active':''}" data-action="cal-mode" data-mode="week">周</button>
+      </div>
+      <button class="btn" data-action="autofill">⚡ 自动填充</button>
+      <button class="btn primary" data-action="add-lesson" data-date="${todayStr()}">＋ 添加课时</button>
+    </div>
+    <div class="cal-legend">
+      ${state.modules.map(m => `<span><i style="background:${m.color}"></i>${esc(m.name)}</span>`).join('') || '<span class="muted">还没有模块</span>'}
+    </div>
+    ${upcomingHTML()}
+    ${timetablePanelHTML()}
+    ${calMode === 'month' ? monthHTML(days) : weekHTML(days)}
+  `;
+}
+
+function monthHTML(days){
+  const curM = parseDate(calCursor).getMonth();
+  return `<div class="cal-grid">
+    ${WD.map(w => `<div class="cal-wd">周${w}</div>`).join('')}
+    ${days.map(d => {
+      const dt = parseDate(d);
+      const ls = lessonsOn(d);
+      const td = state.todos.filter(t => t.dueDate === d && !t.done);
+      const cls = ['cal-cell'];
+      if(dt.getMonth() !== curM) cls.push('muted');
+      if(d === todayStr()) cls.push('today');
+      return `<div class="${cls.join(' ')}" data-action="day" data-date="${d}">
+        <div class="cal-top">
+          <span class="cal-num">${dt.getDate()}</span>
+          ${ls.length ? `<span class="cal-count">${ls.length}节</span>` : ''}
+        </div>
+        <div class="cal-items">
+          ${ls.slice(0,3).map(l => `<div class="cal-chip" style="--c:${moduleColor(l.moduleId)}" title="${esc(l.title)}">
+            ${slotLabel(l) ? `<b>${esc(slotLabel(l))}</b> ` : ''}${esc(moduleName(l.moduleId))}·${esc(l.title)}
+            ${l.status === '已完成' ? '✓' : l.status === '部分完成' ? '◐' : '○'}
+          </div>`).join('')}
+          ${ls.length > 3 ? `<div class="cal-more">+${ls.length-3} 更多</div>` : ''}
+        </div>
+        ${td.length ? `<div class="cal-todo">⏳ ${td.length} 项待办</div>` : ''}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function weekHTML(days){
+  return `<div class="week-grid">
+    ${days.map(d => {
+      const dt = parseDate(d);
+      const ls = lessonsOn(d);
+      const td = state.todos.filter(t => t.dueDate === d && !t.done);
+      const wd = WD[(dt.getDay()+6)%7];
+      return `<div class="week-col ${d === todayStr() ? 'today' : ''}">
+        <div class="week-head" data-action="day" data-date="${d}">
+          <span>周${wd}</span><b>${dt.getMonth()+1}/${dt.getDate()}</b>
+          <button class="mini-add" data-action="add-lesson" data-date="${d}" title="添加课时">＋</button>
+        </div>
+        <div class="week-body">
+          ${ls.map(l => `
+            <div class="lcard" style="--c:${moduleColor(l.moduleId)}" data-action="edit-lesson" data-id="${l.id}">
+              <div class="lcard-top"><b>${esc(moduleName(l.moduleId))}</b>${slotLabel(l) ? `<span class="time">${esc(slotLabel(l))}</span>` : ''}</div>
+              <div class="lcard-title">${esc(l.title)}</div>
+              <div class="lcard-tags">
+                <span class="tag ${l.type==='课内'?'in':'out'}">${l.type}</span>
+                <span class="tag ${l.status==='已完成'?'ok':l.status==='部分完成'?'warn':'bad'}">${l.status}</span>
+                <span class="tag ${l.mastered?'ok':'muted'}">${l.mastered?'已掌握':'未掌握'}</span>
+              </div>
+            </div>`).join('') || '<div class="empty-mini">暂无课时</div>'}
+          ${td.map(t => `<div class="week-todo">⏳ ${esc(t.text)}</div>`).join('')}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+/* ==================== 某天详情弹窗 ==================== */
+function dayLessonHTML(l){
+  const m = moduleById(l.moduleId);
+  const g = l.goalId ? goalById(l.goalId) : null;
+  const cl = l.curriculumLessonId ? findCurriculumLessonById(l.curriculumLessonId) : null;
+  const detailItems = l.detailItems || [];
+  const dur = l.duration ? `⏱ ${l.duration}分钟` : '';
+  return `<div class="day-lesson" style="--c:${m?.color || '#9ca3af'}">
+    <div class="dl-head">
+      <b>${esc(m?.name || '未分类')}</b>
+      ${slotLabel(l) ? `<span class="muted">🕐 ${esc(slotLabel(l))}</span>` : ''}
+      ${dur ? `<span class="muted">${dur}</span>` : ''}
+      <span class="tag ${l.type==='课内'?'in':'out'}">${l.type}</span>
+      ${g ? `<span class="tag goal">🎯 ${esc(g.title)}</span>` : ''}
+      ${cl ? `<span class="tag cat">📐 ${esc(cl.lesson.name)}</span>` : ''}
+      <span class="spacer"></span>
+      <button class="btn xs ghost" data-action="edit-lesson" data-id="${l.id}">编辑</button>
+      <button class="btn xs ghost danger" data-action="del-lesson" data-id="${l.id}">删除</button>
+    </div>
+    <div class="dl-title">${esc(l.title)}</div>
+    ${detailItems.length ? `<div class="detail-mini">${detailItems.map(d =>
+      `<span class="dm" title="${esc(DETAIL_LABELS[d.type] || d.type)}">${esc(d.value)}</span>`).join('')}</div>` : ''}
+    <div class="dl-controls" style="margin-top:8px">
+      <label class="fld" style="flex-direction:row;align-items:center;gap:5px">
+        <span>学习状况</span>
+        <select data-change="status" data-id="${l.id}">
+          ${['未完成','部分完成','已完成'].map(s => `<option ${l.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </label>
+      <label class="fld chk">
+        <input type="checkbox" data-change="mastered" data-id="${l.id}" ${l.mastered?'checked':''}> 已掌握
+      </label>
+      <input class="note-input grow" data-change="note" data-id="${l.id}"
+             value="${esc(l.note||'')}" placeholder="补充学习情况：错题 / 薄弱点 / 下节计划…">
+    </div>
+  </div>`;
+}
+
+function openDayModal(date){
+  const dt = parseDate(date);
+  const ls = lessonsOn(date);
+  const todos = state.todos.filter(t => t.dueDate === date);
+  const done = ls.filter(l => l.status === '已完成').length;
+  const part = ls.filter(l => l.status === '部分完成').length;
+  const mastered = ls.filter(l => l.mastered).length;
+  const totalDur = ls.reduce((s,l) => s + (l.duration||0), 0);
+  const rate = ls.length ? Math.round((done + part * 0.5) / ls.length * 100) : 0;
+  const wd = WD[(dt.getDay()+6)%7];
+
+  const html = `
+    <div class="modal-head">
+      <h3>${dt.getFullYear()}年${dt.getMonth()+1}月${dt.getDate()}日 · 周${wd}</h3>
+      <button class="btn ghost" data-action="modal-close">✕</button>
+    </div>
+    <div class="day-check">
+      <div class="cc"><span>课时数</span><b>${ls.length}</b></div>
+      <div class="cc"><span>已完成</span><b style="color:var(--ok)">${done}</b></div>
+      <div class="cc"><span>部分完成</span><b style="color:var(--warn)">${part}</b></div>
+      <div class="cc"><span>已掌握</span><b style="color:var(--primary)">${mastered}</b></div>
+      <div class="cc"><span>学习时长</span><b>${totalDur}分</b></div>
+    </div>
+    <div class="bar"><i style="width:${rate}%"></i></div>
+    <div class="day-actions">
+      <button class="btn primary" data-action="add-lesson" data-date="${date}">＋ 添加课时</button>
+      <button class="btn" data-action="quick-todo" data-date="${date}">＋ 添加待办</button>
+    </div>
+
+    <h4 class="sec">📋 课时 · 学习内容与状况</h4>
+    <div class="day-lessons">
+      ${ls.map(dayLessonHTML).join('') || '<div class="empty">这一天还没有课时记录</div>'}
+    </div>
+
+    <h4 class="sec">✅ 完成情况核查清单</h4>
+    ${ls.length ? `<div style="font-size:13px">
+      ${ls.map(l => `<div class="todo-row" style="background:${l.status==='已完成'?'#f0fdf7':'#fffdf5'}">
+        <span style="color:${l.status==='已完成'?'var(--ok)':l.status==='部分完成'?'var(--warn)':'var(--bad)'};font-weight:700">
+          ${l.status==='已完成'?'✓':l.status==='部分完成'?'◐':'○'}</span>
+        <span>${esc(l.title)}</span>
+        ${l.duration ? `<span class="muted" style="font-size:11px">${l.duration}分</span>` : ''}
+        ${(l.detailItems||[]).length ? `<span class="muted" style="font-size:11px">${esc((l.detailItems||[]).slice(0,3).map(d=>d.value).join('·'))}</span>` : ''}
+        <em class="tag ${l.mastered?'ok':'muted'}">${l.mastered?'已掌握':'待巩固'}</em>
+      </div>`).join('')}
+    </div>` : '<div class="empty">暂无内容可核查</div>'}
+
+    <h4 class="sec">⏳ 当日待办</h4>
+    <div>
+      ${todos.map(t => `<label class="todo-row ${t.done?'done':''}">
+        <input type="checkbox" data-toggle-todo="${t.id}" ${t.done?'checked':''} style="accent-color:var(--primary)">
+        <span>${esc(t.text)}</span>
+        <em class="tag">${esc(moduleName(t.moduleId))}</em>
+      </label>`).join('') || '<div class="empty">当日无待办</div>'}
+    </div>
+
+    <div class="modal-foot">
+      <span class="spacer"></span>
+      <button class="btn primary" data-action="modal-close">完成</button>
+    </div>`;
+  openModal(html, date);
+}
+
+/* ==================== 课时添加 / 编辑弹窗 ==================== */
+let lessonCtx = { backDate: null };
+
+function goalOptions(mid, sel){
+  const gs = state.goals.filter(g => g.moduleId === mid);
+  return `<option value="">（不使用目标库）</option>`
+    + gs.map(g => `<option value="${g.id}" ${g.id === sel ? 'selected' : ''}>${esc(g.title)}</option>`).join('')
+    + `<option value="__custom" ${sel === '__custom' ? 'selected' : ''}>✎ 自定义内容</option>`;
+}
+
+function curriculumOptions(selectedId){
+  let html = `<option value="">— 手动输入（或从下方课程设计选择） —</option>`;
+  for(const cat of state.curriculum){
+    const catLabel = [cat.grade, cat.course, cat.textbook].filter(Boolean).join(' · ') || '未命名分类';
+    let hasAny = false;
+    let group = `<optgroup label="${esc(catLabel)}">`;
+    for(const s of (cat.subjects || [])){
+      for(const u of (s.units || [])){
+        for(const l of (u.lessons || [])){
+          hasAny = true;
+          group += `<option value="${l.id}" ${l.id === selectedId ? 'selected' : ''}>${esc(s.subject)} · ${esc(u.name)} · ${esc(l.name)}</option>`;
+        }
+      }
+    }
+    group += `</optgroup>`;
+    if(hasAny) html += group;
+  }
+  return html;
+}
+
+function openLessonModal(lessonId, date, backDate, presetCurriculumId){
+  const editing = lessonId ? state.lessons.find(x => x.id === lessonId) : null;
+  const d = editing?.date || date || todayStr();
+  if(!state.modules.length){ alert('请先到【课程设计 → 🧩 名称管理】添加学科'); return; }
+  const mid = editing?.moduleId || state.modules[0].id;
+  lessonCtx.backDate = backDate || null;
+
+  const html = `
+    <div class="modal-head">
+      <h3>${editing ? '编辑课时' : '添加课时'}</h3>
+      <button class="btn ghost" data-action="modal-close">✕</button>
+    </div>
+    <div class="form-grid">
+      <label class="fld"><span>日期</span><input type="date" id="lf-date" value="${d}"></label>
+      <label class="fld"><span>节次（来自课表，可留空）</span>
+        <select id="lf-slot">
+          <option value="">—</option>
+          ${tblSlots().map(s => `<option ${editing?.slot === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}
+        </select>
+      </label>
+      <label class="fld"><span>上课时间（可留空）</span><input type="time" id="lf-time" value="${editing?.time || ''}"></label>
+      <label class="fld"><span>学习时长（分钟）</span>
+        <input type="number" id="lf-duration" min="0" step="5" value="${editing?.duration || ''}" placeholder="例如 45">
+      </label>
+      <label class="fld"><span>课内 / 课外</span>
+        <select id="lf-type">${['课内','课外'].map(t => `<option ${editing?.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
+      </label>
+      <label class="fld span2"><span>模块</span>
+        <select id="lf-module">
+          ${state.modules.map(m => `<option value="${m.id}" ${m.id === mid ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}
+        </select>
+      </label>
+      <div class="fld span2" id="lf-tbl-box" style="border:1px dashed #c7cdf7;padding:10px;border-radius:10px;background:#f8f9fd;display:none"></div>
+      <label class="fld span2" style="border:1px solid #c7cdf7;padding:10px;border-radius:10px;background:#f8f9fd;">
+        <span style="color:var(--primary);font-weight:600;">📚 选择课程内容（自动拉取知识点）</span>
+        <select id="lf-curriculum" style="margin-top:6px;">${curriculumOptions(editing?.curriculumLessonId || presetCurriculumId || '')}</select>
+      </label>
+      <label class="fld span2"><span>学习目标（来自目标库）</span>
+        <select id="lf-goal">${goalOptions(mid, editing?.goalId || '')}</select>
+      </label>
+      <label class="fld span2"><span>上课内容（标题）</span>
+        <input id="lf-title" value="${esc(editing?.title || '')}" placeholder="例如：一元二次方程求根公式练习">
+      </label>
+      <label class="fld span2"><span>学习内容（可编辑）</span>
+        <textarea id="lf-contents" rows="2" placeholder="本节课的学习内容，例如：朗读全文；赏析修辞；例题练习">${esc((editing?.contents || []).join('；'))}</textarea>
+      </label>
+      <label class="fld"><span>完成状况</span>
+        <select id="lf-status">${['未完成','部分完成','已完成'].map(s => `<option ${editing?.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+      </label>
+      <label class="fld"><span>是否掌握</span>
+        <select id="lf-mastered">
+          <option value="0" ${!editing?.mastered ? 'selected' : ''}>未掌握</option>
+          <option value="1" ${editing?.mastered ? 'selected' : ''}>已掌握</option>
+        </select>
+      </label>
+      <label class="fld span2"><span>补充学习情况</span>
+        <textarea id="lf-note" rows="2" placeholder="错题、薄弱环节、下节课计划…">${esc(editing?.note || '')}</textarea>
+      </label>
+    </div>
+    <div id="lf-detail-area"></div>
+    <div class="modal-foot">
+      ${editing ? `<button class="btn danger" data-action="del-lesson" data-id="${editing.id}">删除</button>` : ''}
+      <span class="spacer"></span>
+      <button class="btn" data-action="modal-close">取消</button>
+      <button class="btn primary" data-action="save-lesson" data-id="${editing?.id || ''}">保存</button>
+    </div>`;
+
+  openModal(html, backDate || null);
+
+  const root = document.getElementById('modal-root');
+  renderDayTimetableChips(d);
+  const dateInp = root.querySelector('#lf-date');
+  if(dateInp) dateInp.addEventListener('change', () => renderDayTimetableChips(dateInp.value));
+  const modSel = root.querySelector('#lf-module');
+  const goalSel = root.querySelector('#lf-goal');
+  const titleInp = root.querySelector('#lf-title');
+  modSel.addEventListener('change', () => { goalSel.innerHTML = goalOptions(modSel.value, ''); });
+  goalSel.addEventListener('change', () => {
+    const g = goalById(goalSel.value);
+    if(g && !titleInp.value.trim()) titleInp.value = g.title;
+  });
+
+  const presetId = editing?.curriculumLessonId || presetCurriculumId || '';
+  if(presetId){ applyCurriculumToForm(presetId, editing?.detailItems || []); }
+  else{ renderDetailPicker(null, editing?.detailItems || []); }
+
+  if(presetCurriculumId && !editing){
+    const cl = findCurriculumLessonById(presetCurriculumId);
+    if(cl){
+      titleInp.value = cl.lesson.name;
+      document.getElementById('lf-curriculum').value = presetCurriculumId;
+    }
+  }
+}
+
+function applyCurriculumToForm(lessonId, existingItems){
+  const cl = findCurriculumLessonById(lessonId);
+  const area = document.getElementById('lf-detail-area');
+  if(!cl || !area){ if(area) renderDetailPicker(null, existingItems || []); return; }
+  const l = cl.lesson;
+
+  const titleInp = document.getElementById('lf-title');
+  if(titleInp && !titleInp.value.trim()) titleInp.value = l.name;
+
+  const contInp = document.getElementById('lf-contents');
+  const contents = l.details.contents || [];
+  if(contInp){
+    const cur = contInp.value.trim();
+    if(!cur) contInp.value = contents.join('；');
+    else if(contents.length && !cur.includes(contents[0])) contInp.value = cur + '；' + contents.join('；');
+  }
+
+  const goalInp = document.getElementById('lf-goal');
+  const goals = l.details.goals || [];
+  if(goalInp && goals.length){
+    const matched = state.goals.find(g => goals.some(x => x.includes(g.title) || g.title.includes(x)));
+    if(matched) goalInp.value = matched.id;
+  }
+
+  renderDetailPicker(l, existingItems || []);
+}
+
+/* 渲染详情选择器（带快捷按钮） */
+function renderDetailPicker(lesson, existingItems){
+  const area = document.getElementById('lf-detail-area');
+  if(!area) return;
+
+  if(!lesson || !lesson.details || !Object.keys(lesson.details).length){
+    area.innerHTML = `<div class="pull-area"><div class="empty" style="border:none;background:transparent;padding:10px;">该课程暂无具体知识点，请先在【课程设计】中导入</div></div>`;
+    return;
+  }
+
+  const used = new Set((existingItems || []).map(d => d.type + '::' + d.value));
+
+  let html = `<div class="pull-area">
+    <div class="pull-header">
+      <b>📌 具体学习内容（勾选 + 一键添加）</b>
+      <span class="tag" style="background:#e0f2fe;color:#0369a1">已选 <span id="sel-count">0</span> 项</span>
+    </div>`;
+
+  for(const [type, arr] of Object.entries(lesson.details)){
+    if(!arr || !arr.length) continue;
+    const label = DETAIL_LABELS[type] || type;
+    html += `<div class="detail-group">
+      <div class="dg-head">${label}</div>
+      <div class="dg-items">
+        ${arr.map(v => {
+          const key = type + '::' + v;
+          const on = used.has(key);
+          return `<div class="detail-item">
+            <label class="detail-chip ${on?'on':''}">
+              <input type="checkbox" data-detail-type="${type}" value="${esc(v)}" ${on?'checked':''}>
+              <span class="check-mark"></span>
+              <span>${esc(v)}</span>
+            </label>
+            <button class="quick-btn" data-action="detail-todo" data-qtype="${type}" data-qvalue="${esc(v)}" title="直接添加为待办">📝</button>
+            <button class="quick-btn" data-action="detail-card" data-qtype="${type}" data-qvalue="${esc(v)}" title="直接生成闪卡">🃏</button>
+            <button class="quick-btn" data-action="detail-goal" data-qtype="${type}" data-qvalue="${esc(v)}" title="加入学习目标">🎯</button>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  html += `<div class="pull-actions">
+    <span style="font-size:12.5px;color:var(--muted);">批量：</span>
+    <button class="btn xs success" data-action="import-todos">➕ 勾选项全部导入待办</button>
+    <button class="btn xs primary" data-action="import-cards">🃏 勾选项全部生成闪卡</button>
+    <button class="btn xs" data-action="import-goals">🎯 勾选项全部加入目标</button>
+  </div></div>`;
+
+  area.innerHTML = html;
+
+  const updateCount = () => {
+    const cnt = area.querySelectorAll('.detail-chip input:checked').length;
+    const el = area.querySelector('#sel-count');
+    if(el) el.textContent = cnt;
+  };
+
+  area.querySelectorAll('.detail-chip input').forEach(cb => {
+    cb.addEventListener('change', () => {
+      cb.closest('.detail-chip').classList.toggle('on', cb.checked);
+      updateCount();
+    });
+  });
+  updateCount();
+}
+
+function collectDetailItems(){
+  const area = document.getElementById('lf-detail-area');
+  if(!area) return [];
+  const items = [];
+  area.querySelectorAll('.detail-chip input:checked').forEach(cb => {
+    items.push({ type: cb.dataset.detailType, value: cb.value });
+  });
+  return items;
+}
+
+function saveLessonForm(id){
+  const g = i => document.getElementById(i);
+  const date = g('lf-date').value;
+  const title = g('lf-title').value.trim();
+  if(!date){ alert('请选择日期'); return; }
+  if(!title){ alert('请填写上课内容'); return; }
+  let goalId = g('lf-goal').value;
+  if(goalId === '__custom') goalId = '';
+
+  const curriculumLessonId = g('lf-curriculum').value || '';
+  const contentsRaw = g('lf-contents').value.trim();
+  const contents = contentsRaw ? splitList(contentsRaw) : [];
+  const detailItems = collectDetailItems();
+
+  const obj = {
+    date,
+    slot: (g('lf-slot') ? g('lf-slot').value : ''),
+    time: g('lf-time').value,
+    duration: Number(g('lf-duration').value) || 0,
+    moduleId: g('lf-module').value,
+    type: g('lf-type').value,
+    goalId, curriculumLessonId, title, contents, detailItems,
+    status: g('lf-status').value,
+    mastered: g('lf-mastered').value === '1',
+    note: g('lf-note').value.trim()
+  };
+
+  if(id){ Object.assign(state.lessons.find(x => x.id === id), obj); }
+  else{ state.lessons.push({ id: uid(), createdAt: Date.now(), ...obj }); }
+  save();
+
+  const back = lessonCtx.backDate;
+  if(back){ openDayModal(back); } else { closeModal(); }
+  render();
+}
+
+/* ==================== 批量导入 ==================== */
+function importSelectedToTodos(){
+  const items = collectDetailItems();
+  if(!items.length){ alert('请先勾选需要导入的知识点'); return; }
+  const date = document.getElementById('lf-date').value || todayStr();
+  const moduleId = document.getElementById('lf-module').value;
+  let added = 0;
+  for(const it of items){
+    if(state.todos.some(t => t.text === it.value && t.dueDate === date)) continue;
+    state.todos.push({
+      id: uid(), text: it.value, moduleId,
+      dueDate: date, priority: '中', done: false, createdAt: Date.now()
+    });
+    added++;
+  }
+  save();
+  alert(`成功导入 ${added} 条待办事项！`);
+}
+
+function importSelectedToCards(){
+  const items = collectDetailItems();
+  if(!items.length){ alert('请先勾选需要生成闪卡的知识点'); return; }
+  const moduleId = document.getElementById('lf-module').value;
+  let added = 0;
+  for(const it of items){
+    let front = it.value;
+    let back = `类型：${DETAIL_LABELS[it.type] || it.type}\n（请补充释义或答案）`;
+    if(it.type === 'words'){ back = `单词：${it.value}\n词义/用法：（请补充）`; }
+    if(it.type === 'formulas'){ back = `公式：${it.value}\n（请补充适用条件）`; }
+    if(it.type === 'grammar'){ front = `语法点：${it.value}`; back = `（请补充规则与例句）`; }
+    state.cards.push({
+      id: uid(), moduleId, front, back, interval: 0, reps: 0, due: todayStr()
+    });
+    added++;
+  }
+  save();
+  alert(`成功生成 ${added} 张复习闪卡！`);
+}
+
+function importSelectedToGoals(){
+  const items = collectDetailItems();
+  if(!items.length){ alert('请先勾选需要加入目标库的知识点'); return; }
+  const moduleId = document.getElementById('lf-module').value;
+  let added = 0;
+  for(const it of items){
+    if(state.goals.some(g => g.title === it.value && g.moduleId === moduleId)) continue;
+    state.goals.push({
+      id: uid(), moduleId, title: it.value,
+      desc: `来自课程设计：${DETAIL_LABELS[it.type] || it.type}`,
+      level: '基础'
+    });
+    added++;
+  }
+  save();
+  alert(`成功加入 ${added} 个学习目标！`);
+}
+
+/* ==================== 名称管理面板（原「模块管理」，已并入课程设计） ==================== */
+function namePanelHTML(){
+  const subs = state.modules;
+  const rowOf = (kind, label, ph) => `
+      <div class="np-row">
+        <div class="np-label">${label}<span class="np-cnt">${dictList(kind).length}</span></div>
+        <div class="np-chips">
+          ${dictList(kind).map(v => `<span class="np-chip"><i style="background:#a5b4fc"></i>${esc(v)}
+            <button class="np-x" title="删除词条" data-action="dict-del" data-kind="${kind}" data-name="${esc(v)}">×</button></span>`).join('')
+            || '<span class="np-empty">还没有词条，在右边添加</span>'}
+        </div>
+        <div class="np-add">
+          <input id="dict-new-${kind}" placeholder="新增${label}，例如：${ph}">
+          <button class="btn xs primary" data-action="dict-add" data-kind="${kind}">添加${label}</button>
+        </div>
+      </div>`;
+  return `
+    <div class="name-panel">
+      <div class="np-head">
+        <b>🧩 名称管理</b>
+        <span class="np-sub">学科 / 年级 / 课程 / 教材的唯一维护入口 —— 名字在这儿加好，其它地方一律下拉选取。</span>
+        <span class="spacer"></span>
+        <button class="btn xs ghost" data-action="name-panel-toggle">${namePanelOpen ? '收起' : '展开'}</button>
+      </div>
+      ${namePanelOpen ? `
+      <div class="np-body">
+        <div class="np-row">
+          <div class="np-label">学科（= 学习模块）<span class="np-cnt">${subs.length}</span></div>
+          <div class="np-chips">
+            ${subs.map(m => {
+              const cnt = state.lessons.filter(l => l.moduleId === m.id).length;
+              return `<span class="np-chip" style="border-color:${m.color}"><i style="background:${m.color}"></i>${esc(m.name)}
+                <em>${cnt}</em>
+                <button class="np-x" title="删除学科" data-action="mod-del" data-id="${m.id}">×</button></span>`;
+            }).join('') || '<span class="np-empty">还没有学科，在右边添加</span>'}
+          </div>
+          <div class="np-add">
+            <input id="md-name" placeholder="新增学科，例如：物理">
+            <input type="color" id="md-color" value="#8b5cf6">
+            <button class="btn xs primary" data-action="mod-add">添加学科</button>
+          </div>
+        </div>
+        ${rowOf('grade','年级','四年级上学期')}
+        ${rowOf('course','课程','课外英语')}
+        ${rowOf('textbook','教材','新概念')}
+      </div>` : ''}
+    </div>`;
+}
+
+/* ==================== 课程设计视图 ==================== */
+function renderCurriculum(){
+  const v = document.getElementById('view');
+  const totalLessons = state.curriculum.reduce((n,c) =>
+    n + (c.subjects||[]).reduce((m,s) =>
+      m + (s.units||[]).reduce((k,u) => k + (u.lessons||[]).length, 0), 0), 0);
+
+  const grades = dictList('grade');
+  const courses = dictList('course');
+  const textbooks = dictList('textbook');
+
+  const filtered = state.curriculum.filter(c => {
+    if(catFilter.grade && c.grade !== catFilter.grade) return false;
+    if(catFilter.course && c.course !== catFilter.course) return false;
+    if(catFilter.textbook && c.textbook !== catFilter.textbook) return false;
+    return true;
+  });
+
+  v.innerHTML = `
+    <h2 class="page-title">📐 课程设计
+      <span class="sub">分类 ${state.curriculum.length} · 课时 ${totalLessons} · 课表 ${tblSlotCount()} 节课 · 有效周期 ${esc(timetablePeriodLabel())}</span>
+    </h2>
+    <div class="filter-bar">
+      <button class="btn primary" data-action="tbl-import">📘 粘贴课内课表</button>
+      <button class="btn" style="border-color:#f9a8d4;color:#be185d" data-action="tbl-import-out">🎹 粘贴课外单科</button>
+      <button class="btn" data-action="tbl-view">📅 查看课程表</button>
+      <button class="btn primary" data-action="cur-content-import">📚 粘贴课程内容</button>
+      <button class="btn" data-action="cat-new">📁 新建分类（年级 / 课程 / 教材）</button>
+      <button class="btn" data-action="autofill">⚡ 自动填充日历</button>
+      <span class="spacer"></span>
+      <button class="btn danger" data-action="cur-clear">清空全部</button>
+    </div>
+
+    <div class="help-box">
+      <b>两套体系：</b>「课程表」按「天 × 节次」排课（早自习 / 上午N / 下午N / 晚自习），不含小时分钟；「课程内容」是学科 / 单元 / 课时 / 知识点的详细库。<br>
+      <b>使用流程：</b>① 在「🧩 名称管理」里建好学科 / 年级 / 课程 / 教材 → ② 粘贴课程表（课内一套、课外单科）→ ③ 新建分类（三个字段只能下拉选）后粘贴课程内容 → ④ 记录当日课时时用下拉选择课程内容，勾选项可一键加入待办或闪卡。<br>
+      <b>名称统一：</b>所有「名字」只在名称管理里维护；其它界面只能下拉选取；粘贴进来的文本名会自动归一（空格 / 全半角 / 括号 / 大小写），同名不会再复制成两个。<br>
+      <b>文档格式：</b>缩进表示层级（每 2 空格 = 1 级）。第 1 级学科 → 第 2 级单元 → 第 3 级课时 → 第 4 级 <code>键：值</code>。<br>
+      可用键：学习目标、学习内容、生字、单词、语法、方法、背诵、句型、公式、实验、考点、其他
+      <pre>英语
+  Unit 1 Where did you go on vacation
+    第1课时 Section A 1a-2c
+      学习目标：掌握一般过去时的特殊疑问句
+      学习内容：单词朗读；听力训练；对话练习
+      单词：anywhere wonderful few most something nothing everyone
+      语法：一般过去时 特殊疑问句 did
+      句型：Where did you go on vacation? Did you go with anyone?</pre>
+    </div>
+
+    ${namePanelHTML()}
+
+    ${state.curriculum.length ? `
+    <div class="cat-toolbar">
+      <span style="font-size:12.5px;color:var(--muted);">筛选：</span>
+      <select data-catfilter="grade">
+        <option value="">全部年级</option>
+        ${grades.map(g => `<option ${catFilter.grade===g?'selected':''}>${esc(g)}</option>`).join('')}
+      </select>
+      <select data-catfilter="course">
+        <option value="">全部课程</option>
+        ${courses.map(g => `<option ${catFilter.course===g?'selected':''}>${esc(g)}</option>`).join('')}
+      </select>
+      <select data-catfilter="textbook">
+        <option value="">全部教材</option>
+        ${textbooks.map(g => `<option ${catFilter.textbook===g?'selected':''}>${esc(g)}</option>`).join('')}
+      </select>
+      <span class="spacer"></span>
+      <span style="font-size:12px;color:var(--muted);">显示 ${filtered.length} / ${state.curriculum.length} 个分类</span>
+    </div>` : ''}
+
+    ${filtered.length ? filtered.map(cat => {
+      const catLabel = [cat.grade, cat.course, cat.textbook].filter(Boolean).join(' · ') || '未命名分类';
+      const lessonCount = (cat.subjects||[]).reduce((n,s) =>
+        n + (s.units||[]).reduce((m,u) => m + (u.lessons||[]).length, 0), 0);
+      return `<div class="cat-card">
+        <div class="cat-head">
+          <span class="title">📂 ${esc(catLabel)}</span>
+          <span class="path">${(cat.subjects||[]).length} 学科 · ${lessonCount} 课时</span>
+          <span class="spacer"></span>
+          <button class="btn xs primary" data-action="cur-import-cat" data-id="${cat.id}">📚 粘贴课程内容</button>
+          <button class="btn xs ghost danger" data-action="cat-del" data-id="${cat.id}">删除分类</button>
+        </div>
+        ${(cat.subjects||[]).length ? `<div class="cat-subjects">
+          ${cat.subjects.map(s => `
+            <div class="cat-subject">
+              <div class="cs-name">📘 ${esc(s.subject)}
+                <span class="spacer"></span>
+                <button class="btn xs ghost danger" data-action="cat-subject-del" data-id="${s.id}">删学科</button>
+              </div>
+              ${(s.units||[]).map(u => `
+                <div class="cat-unit">
+                  <div class="cu-name">📂 ${esc(u.name)}</div>
+                  ${(u.lessons||[]).map(l => {
+                    const open = !!curExpanded[l.id];
+                    const dkeys = Object.keys(l.details || {});
+                    return `<div class="cat-lesson">
+                      <div class="cl-head">
+                        <span>📖 ${esc(l.name)}</span>
+                        <span class="hrs">${l.hours || 1} 课时</span>
+                        <span class="ops">
+                          <button class="btn xs ghost" data-action="cur-lesson-toggle" data-id="${l.id}">${open?'收起':'展开'}</button>
+                          <button class="btn xs primary" data-action="cur-lesson-use" data-id="${l.id}">用此排课</button>
+                          <button class="btn xs ghost danger" data-action="cur-lesson-del" data-id="${l.id}">删</button>
+                        </span>
+                      </div>
+                      ${open ? `
+                        ${dkeys.length ? dkeys.map(k => `
+                          <div class="cat-detail">
+                            <span class="k">${DETAIL_LABELS[k] || k}</span>
+                            <span class="v">${(l.details[k]||[]).map(x => `<span>${esc(x)}</span>`).join('')}</span>
+                          </div>`).join('') : '<div class="muted" style="font-size:12px;margin-top:5px">暂无详细内容</div>'}
+                      ` : ''}
+                    </div>`;
+                  }).join('') || '<div class="muted" style="font-size:12px;padding:4px 0;">暂无课时</div>'}
+                </div>
+              `).join('') || '<div class="muted" style="font-size:12px;padding:4px 0;">暂无单元</div>'}
+            </div>
+          `).join('')}
+        </div>` : '<div class="empty" style="padding:14px;">尚未粘贴课程内容，点击上方「粘贴课程内容」按钮开始</div>'}
+      </div>`;
+    }).join('') : '<div class="empty">还没有课程分类，点击「新建分类」开始</div>'}
+  `;
+}
+
+/* ==================== 新建分类弹窗 ==================== */
+function openCategoryModal(){
+  const row = (kind, label, ph, id) => `
+      <div class="fld span2"><span>${label}（只能下拉选取）</span>
+        <div style="display:flex;gap:6px">
+          <select id="${id}" style="flex:1">
+            <option value="">（不填）</option>
+            ${optList(dictList(kind), '')}
+          </select>
+          <button class="btn xs" data-action="dict-quick-add" data-kind="${kind}" data-target="${id}">＋新增</button>
+        </div>
+      </div>`;
+  const html = `
+    <div class="modal-head">
+      <h3>📁 新建课程分类</h3>
+      <button class="btn ghost" data-action="modal-close">✕</button>
+    </div>
+    <div class="help-box">
+      分类的三个字段都<b>只能从名称管理里下拉选取</b>，不允许手打 —— 避免同一个名字出现多种写法。<br>
+      缺词条就点右侧「＋新增」（会写进名称管理，以后随取随用），或到「课程设计 → 🧩 名称管理」统一维护。<br>
+      例：四年级上学期 · 课外英语 · 新概念
+    </div>
+    <div class="form-grid">
+      ${row('grade','年级','四年级上学期','cat-grade')}
+      ${row('course','课程','课外英语','cat-course')}
+      ${row('textbook','教材','新概念','cat-textbook')}
+    </div>
+    <div class="modal-foot">
+      <span class="spacer"></span>
+      <button class="btn" data-action="modal-close">取消</button>
+      <button class="btn primary" data-action="cat-save">保存分类</button>
+    </div>`;
+  openModal(html);
+}
+
+function saveCategoryForm(){
+  const grade = canonDict('grade', ((document.getElementById('cat-grade') || {}).value) || '');
+  const course = canonDict('course', ((document.getElementById('cat-course') || {}).value) || '');
+  const textbook = canonDict('textbook', ((document.getElementById('cat-textbook') || {}).value) || '');
+  if(!grade && !course && !textbook){ alert('请至少选择一项'); return; }
+  const dup = state.curriculum.find(c => normName(c.grade) === normName(grade)
+    && normName(c.course) === normName(course) && normName(c.textbook) === normName(textbook));
+  if(dup){ alert('已有完全相同的分类，不用重复创建'); return; }
+  state.curriculum.push({ id: uid(), grade, course, textbook, subjects: [] });
+  save(); closeModal(); render();
+}
+
+/* ==================== 导入课程设计 ==================== */
+function openCurriculumImport(){
+  const cat = importCategoryId ? state.curriculum.find(c => c.id === importCategoryId) : null;
+  const catLabel = cat ? [cat.grade, cat.course, cat.textbook].filter(Boolean).join(' · ') : '';
+  const html = `
+    <div class="modal-head">
+      <h3>📚 粘贴课程内容${catLabel ? ' · ' + esc(catLabel) : ''}</h3>
+      <button class="btn ghost" data-action="modal-close">✕</button>
+    </div>
+    <div class="help-box">
+      <b>格式说明</b>：用缩进表示层级（每 2 空格或 1 个 Tab 为一级）。<br>
+      第 1 级：学科　第 2 级：单元　第 3 级：课时　第 4 级：<code>键：值</code>（多个值用空格或顿号分隔）<br>
+      <b>学科名会自动对齐名称管理里的写法</b>（空格 / 全半角 / 括号 / 大小写差异一律归一），不会再出现「语文」和「语 文」两个学科。<br>
+      可用键：学习目标、学习内容、生字、单词、语法、方法、背诵、句型、公式、实验、考点、其他
+      <pre>英语
+  Unit 1 Where did you go on vacation
+    第1课时 Section A 1a-2c
+      学习目标：掌握一般过去时的特殊疑问句；能谈论假期活动
+      学习内容：单词朗读；听力训练；对话练习
+      单词：anywhere wonderful few most something nothing everyone
+      语法：一般过去时 特殊疑问句 did
+      句型：Where did you go on vacation? Did you go with anyone?
+      背诵：Grammar Focus</pre>
+    </div>
+    <textarea class="import" id="cur-import-text" placeholder="把课程设计文档粘贴到这里…"></textarea>
+    <div class="modal-foot">
+      <span style="font-size:12.5px;color:var(--muted)">写入方式</span>
+      <label class="fld chk"><input type="radio" name="cur-mode" value="merge" checked> 合并</label>
+      <label class="fld chk"><input type="radio" name="cur-mode" value="replace"> 覆盖</label>
+      <span style="font-size:11.5px;color:var(--muted)">合并 = 同学科 / 同单元 / 同课时按名字归并，只补新增内容</span>
+      <span class="spacer"></span>
+      <button class="btn" data-action="modal-close">取消</button>
+      <button class="btn primary" data-action="cur-do-import">导入课程内容</button>
+    </div>`;
+  openModal(html);
+}
+
+function doCurriculumImport(){
+  const text = ((document.getElementById('cur-import-text') || {}).value || '');
+  if(!text.trim()){ alert('请粘贴课程设计内容'); return; }
+  const parsed = parseCurriculum(text);
+  if(!parsed.length){ alert('没有解析到有效内容，请检查缩进格式'); return; }
+
+  const catId = importCategoryId;
+  const cat = catId ? state.curriculum.find(c => c.id === catId) : null;
+  if(!cat){ alert('找不到目标分类，请从分类卡片点击导入'); return; }
+
+  /* ① 学科名先归一：对齐名称管理里的写法；新学科自动入库 */
+  const addedSubjects = [];
+  for(const sub of parsed){
+    const canon = canonSubject(sub.subject);
+    sub.subject = canon;
+    if(!state.modules.some(m => normName(m.name) === normName(canon))) addedSubjects.push(canon);
+    addSubject(canon);
+  }
+
+  /* ② 合并 = 按 学科 / 单元 / 课时 名字归并（复用 id，details 去重相加）；覆盖 = 整分类重写 */
+  const modeEl = document.querySelector('input[name="cur-mode"]:checked');
+  const mode = modeEl ? modeEl.value : 'merge';
+  const before = countLessonsOf(cat);
+  if(mode === 'replace'){
+    cat.subjects = parsed;
+  }else{
+    cat.subjects = cat.subjects || [];
+    mergeSubjectsInto(cat.subjects, parsed);
+  }
+  const after = countLessonsOf(cat);
+
+  save();
+  closeModal();
+  view = 'curriculum';
+  render();
+  alert(`导入成功（${mode === 'merge' ? '合并' : '覆盖'}）：本分类课时 ${before} → ${after}`
+    + (addedSubjects.length ? `\n新增学科：${addedSubjects.join('、')}（已加入名称管理）` : ''));
+}
+
+/* ============ 粘贴界面 ①：课表（课内一套 / 课外单科） ============
+   kind = 'in'  → 课内：一次粘完所有科目
+   kind = 'out' → 课外：一次一门，学科名在弹窗里填
+   写入方式每次都让用户选：合并 merge / 覆盖 replace（覆盖只清同类型）
+=================================================================== */
+function openTimetableImport(kind){
+  const isOut = (kind === KIND_OUT);
+  const p = state.timetablePeriod || { from:'', to:'' };
+  const c = tblKindCounts();
+  const outSubs = tblOutSubjects();
+  const helpMain = isOut ? `
+      <b>课外课按「单科」粘贴</b>：先在上面<b>从名称管理里选</b>学科（想加新学科点「＋新增」），正文里可以只写「周几 + 节次」——
+      <pre>周一 下午3 第3课
+周三 下午3 第4课
+周六 上午2 第5课</pre>
+      把学科名写出来也认（<code>周一 下午3 钢琴 第3课</code>）；<b>省略节次</b>时按「课外节次顺序」依次排。<br>
+      弹窗可以反复开：钢琴粘一次、围棋再粘一次，每次都选「合并」，就会叠进同一张课表。` : `
+      <b>课内课表一次粘完所有科目</b>，一行写一天，用「早自习 / 上午 / 下午 / 晚自习」分组，组内的课按顺序排进各节次（不写小时分钟）：
+      <pre>周一 早自习 无 上午 语文 英语 下午 数学 体育
+周二 早自习 英语 上午 数学 语文 下午 物理 化学</pre>
+      也可以用<b>表格</b>（首行星期、首列节次，用 Tab 或空格对齐）：
+      <pre>节次    周一 周二 周三
+早自习  无   英语 英语
+上午1   语文 数学 语文
+上午2   英语 语文 数学</pre>
+      单节课想写清「讲到哪」，跟在学科后面即可：<code>上午 语文:第1课 春</code>；<code>无</code> / <code>-</code> 表示这节空着。`;
+  const subjOpts = [...new Set([...outSubs.map(s => s.subject), ...subjectDict()])];
+  const html = `
+    <div class="modal-head">
+      <h3>${isOut ? '🎹 粘贴课外单科课表' : '📘 粘贴课内课表'}
+        <span class="tag" style="background:${isOut ? '#fce7f3' : '#e0f2fe'};color:${isOut ? '#be185d' : '#0369a1'}">${isOut ? '一次一门 · 填学科名' : '一次一套 · 含所有科目'}</span></h3>
+      <button class="btn ghost" data-action="modal-close">✕</button>
+    </div>
+    <div class="help-box">${helpMain}<br>
+      <b>课表有效周期</b>：只有落在这个区间内的日期，才会被「自动填充日历 / 近日课程」采用；留空表示不限。<br>
+      当前课表：<b style="color:#4f46e5">📘 课内 ${c.in} 节</b> · <b style="color:#db2777">🎹 课外 ${c.out} 节</b>　（两类共用同一张课表，都会进入学习日历与统计分析）
+    </div>
+    <div class="form-grid">
+      ${isOut ? `
+      <div class="fld"><span>学科名称（必填 · 只能从名称管理下拉选取）</span>
+        <div style="display:flex;gap:6px">
+          <select id="tbl-subject" style="flex:1">
+            <option value="">— 请选择学科 —</option>
+            ${optList(subjOpts, '')}
+          </select>
+          <button class="btn xs" data-action="subj-quick-add" title="新增学科，写入名称管理">＋新增</button>
+        </div>
+      </div>
+      <label class="fld"><span>课外节次顺序（省略节次时按此依次排）</span>
+        <input id="tbl-slots" value="下午3 下午4 晚自习">
+      </label>` : `
+      <label class="fld span2"><span>节次顺序（可留空，默认 早自习 上午1-4 下午1-3 晚自习）</span>
+        <input id="tbl-slots" placeholder="早自习 上午1 上午2 上午3 上午4 下午1 下午2 下午3">
+      </label>`}
+      <label class="fld"><span>课表生效日期（可留空）</span><input type="date" id="tbl-from" value="${p.from || ''}"></label>
+      <label class="fld"><span>课表失效日期（可留空）</span><input type="date" id="tbl-to" value="${p.to || ''}"></label>
+    </div>
+    <textarea class="import" id="tbl-import-text" placeholder="${isOut ? '周一 下午3 第3课&#10;周三 下午3 第4课' : '把课程表粘贴到这里…'}"></textarea>
+    <div class="modal-foot">
+      <span style="font-size:12.5px;color:var(--muted)">写入方式</span>
+      <label class="fld chk"><input type="radio" name="tbl-mode" value="merge" ${isOut ? 'checked' : ''}> 合并</label>
+      <label class="fld chk"><input type="radio" name="tbl-mode" value="replace" ${isOut ? '' : 'checked'}> 覆盖</label>
+      <span style="font-size:11.5px;color:var(--muted)">${isOut ? '覆盖 = 清掉这门外课的旧安排后重写' : '覆盖 = 清掉原有课内课表后重写'}</span>
+      <span class="spacer"></span>
+      <button class="btn" data-action="modal-close">取消</button>
+      <button class="btn primary" data-action="tbl-do-import" data-kind="${isOut ? 'out' : 'in'}">导入${isOut ? '课外单科' : '课内课表'}</button>
+    </div>`;
+  openModal(html);
+}
+
+/* 把解析结果写进课表：mode = merge（并入） / replace（先清同类再写）
+   清空范围只看 kind —— 课内覆盖 = 清掉所有课内；课外覆盖 = 只清掉这一门的课外。 */
+function applyParsedTimetable(parsed, opt){
+  const kind = (opt.kind === KIND_OUT) ? KIND_OUT : KIND_IN;
+  const mode = (opt.mode === 'merge') ? 'merge' : 'replace';
+  const subj = String(opt.subject || '').trim();
+  const grid = gridNow();
+  let cleared = 0;
+  if(mode === 'replace'){
+    for(const w of Object.keys(grid)){
+      for(const s of Object.keys(grid[w])){
+        const kept = entriesOf(grid[w][s]).filter(e => {
+          const drop = (e.kind === kind) && (kind === KIND_IN || !subj || e.subject === subj);
+          if(drop) cleared++;
+          return !drop;
+        });
+        if(kept.length) grid[w][s] = kept; else delete grid[w][s];
+      }
+      if(!Object.keys(grid[w] || {}).length) delete grid[w];
+    }
+  }
+  let added = 0; const days = new Set();
+  for(const w of Object.keys(parsed.grid)){
+    days.add(w);
+    for(const s of Object.keys(parsed.grid[w])){
+      grid[w] = grid[w] || {};
+      const list = entriesOf(grid[w][s]);
+      for(const e of entriesOf(parsed.grid[w][s])){
+        const sub = canonSubject(e.subject) || e.subject;   /* 学科名对齐名称管理 */
+        const idx = list.findIndex(x => x.kind === e.kind && x.subject === sub);
+        const item = { subject: sub, content: e.content || '', kind: e.kind };
+        if(idx >= 0) list[idx] = item; else { list.push(item); added++; }
+      }
+      grid[w][s] = list;
+    }
+  }
+  /* 节次行 = 确实排了课的 + 本次解析出的 + 用户显式指定的，避免出现空行
+     两类课表共用同一套节次行，合完仍按时间顺序排 */
+  const merged = usedSlotsIn(grid).slice();
+  parsed.slots.forEach(s => { if(!merged.includes(s)) merged.push(s); });
+  (opt.keepSlots || []).forEach(s => { if(!merged.includes(s)) merged.push(s); });
+  state.timetable = { slots: sortSlots(merged, opt.keepSlots), grid };
+  /* 新出现的学科 → 补进名称管理（幂等，同义写法不会再建第二个） */
+  tblAllEntries().forEach(e => { addSubject(e.subject); });
+  return { added, cleared, days: days.size };
+}
+
+function doTimetableImport(kind){
+  const isOut = (kind === KIND_OUT);
+  const text = ((document.getElementById('tbl-import-text') || {}).value || '');
+  if(!text.trim()){ alert('请粘贴课程表内容'); return; }
+  const slotStr = (((document.getElementById('tbl-slots') || {}).value) || '').trim();
+  const rawSubj = (((document.getElementById('tbl-subject') || {}).value) || '').trim();
+  if(isOut && !rawSubj){ alert('课外课按单科粘贴，请先从下拉里选一个学科（没有就先点「＋新增」）'); return; }
+  const subjName = isOut ? addSubject(rawSubj) : '';   /* 归一后写回名称管理 */
+
+  let parsed; let keepSlots = [];
+  if(isOut){
+    /* 课外弹窗里的「节次顺序」只决定「省略节次时依次填哪几节」，不往课表里加空行 */
+    const pool = slotStr ? slotStr.split(/[\s,，、]+/).filter(Boolean).map(normalizeSlotName).filter(Boolean) : [];
+    parsed = parseExtraTimetable(text, subjName, pool);
+  }else{
+    parsed = parseTimetable(text, { kind: KIND_IN });
+    if(slotStr){   /* 课内弹窗里的「节次顺序」= 用户想看到的节次行，显式保留 */
+      keepSlots = slotStr.split(/[\s,，、]+/).filter(Boolean).map(normalizeSlotName).filter(Boolean);
+      parsed.slots = keepSlots.concat(parsed.slots.filter(s => !keepSlots.includes(s)));
+    }
+  }
+  if(!tblHasAnyIn(parsed)){
+    alert('没有解析到有效课程。\n格式示例：' + (isOut ? '周一 下午3 第3课' : '周一 早自习 无 上午 语文 英语 下午 数学 体育'));
+    return;
+  }
+  const modeEl = document.querySelector('input[name="tbl-mode"]:checked');
+  const mode = modeEl ? modeEl.value : (isOut ? 'merge' : 'replace');
+  const r = applyParsedTimetable(parsed, { kind: isOut ? KIND_OUT : KIND_IN, subject: subjName, mode, keepSlots });
+  state.timetablePeriod = {
+    from: ((document.getElementById('tbl-from') || {}).value) || '',
+    to:   ((document.getElementById('tbl-to')   || {}).value) || ''
+  };
+  save(); closeModal(); render();
+  const p = state.timetablePeriod;
+  const kc = tblKindCounts();
+  alert(`${isOut ? '课外「' + subjName + '」' : '课内课表'}导入成功（${mode === 'merge' ? '合并' : '覆盖'}）\n`
+    + `写入 ${r.added} 节 · 覆盖掉 ${r.cleared} 节 · 涉及 ${r.days} 天\n`
+    + `当前课表：📘 课内 ${kc.in} 节 · 🎹 课外 ${kc.out} 节`
+    + ((p.from || p.to) ? `\n有效周期：${p.from || '不限'} ~ ${p.to || '不限'}` : ''));
+}
+
+/* ==================== 自动填充日历（受课表有效周期约束） ==================== */
+function openAutoFill(){
+  if(!tblHasAny()){ alert('请先粘贴课程表'); return; }
+  const p = state.timetablePeriod || {};
+  let start = (p.from && p.from > todayStr()) ? p.from : addDays(startOfWeek(todayStr()), 7);
+  let weeks = 18;
+  if(p.to){
+    const diff = Math.round((parseDate(p.to) - parseDate(startOfWeek(start))) / 86400000);
+    weeks = Math.max(1, Math.floor(diff / 7) + 1);
+  }
+  const html = `
+    <div class="modal-head">
+      <h3>⚡ 自动填充日历</h3>
+      <button class="btn ghost" data-action="modal-close">✕</button>
+    </div>
+    <div class="help-box">
+      按周循环生成课时记录，<b>只会在课表有效周期（${esc(timetablePeriodLabel())}）内生成</b>。<br>
+      每节课会按「学科 + 课程内容」匹配课程内容库，自动带入标题、学习内容和知识点。
+    </div>
+    <div class="form-grid">
+      <label class="fld"><span>开始日期</span><input type="date" id="af-start" value="${start}"></label>
+      <label class="fld"><span>周数</span><input type="number" id="af-weeks" value="${weeks}" min="1" max="80"></label>
+      <label class="fld chk span2"><input type="checkbox" id="af-skip" checked> 跳过已有记录（同日同时段不重复添加）</label>
+    </div>
+    <div class="modal-foot">
+      <span class="spacer"></span>
+      <button class="btn" data-action="modal-close">取消</button>
+      <button class="btn primary" data-action="autofill-do">开始填充</button>
+    </div>`;
+  openModal(html);
+}
+
+function doAutoFill(){
+  const start = document.getElementById('af-start').value;
+  const weeks = Math.max(1, Number(document.getElementById('af-weeks').value) || 18);
+  const skip = document.getElementById('af-skip').checked;
+  if(!start){ alert('请选择开始日期'); return; }
+
+  const startWeek = startOfWeek(start);
+  let added = 0, matched = 0;
+  const outDays = new Set();
+  for(let w = 0; w < weeks; w++){
+    for(let day = 1; day <= 7; day++){
+      const date = addDays(startWeek, (day - 1) + w * 7);
+      if(date < start) continue;
+      const list = daySlots(day);
+      if(!list.length) continue;
+      if(!inTimetablePeriod(date)){ outDays.add(date); continue; }
+
+      for(const e of list){
+        /* 课表里写了「讲到哪」就按内容匹配；只写了学科名则退化到该学科的第一个课时 */
+        const found = (e.content ? findCurriculumLessonByName(e.subject, e.content) : null) || firstLessonOfSubject(e.subject);
+        const cl = found ? found.lesson : null;
+        const title = cl ? cl.name : (e.content || e.subject);
+        const moduleId = moduleIdByName(e.subject);
+
+        if(skip){
+          const dup = state.lessons.some(l => l.date === date && l.slot === e.slot && l.title === title);
+          if(dup) continue;
+        }
+
+        state.lessons.push({
+          id: uid(), date, slot: e.slot, time: '', duration: 0,
+          moduleId, type: typeOfKind(e.kind), goalId: '',
+          curriculumLessonId: cl ? cl.id : '',
+          title,
+          contents: cl ? (cl.details.contents || []) : [],
+          detailItems: [],
+          status: '未完成', mastered: false, note: '',
+          createdAt: Date.now()
+        });
+        added++;
+        if(cl) matched++;
+      }
+    }
+  }
+  save(); closeModal(); render();
+  alert(`填充完成：新增 ${added} 条课时记录，其中 ${matched} 条匹配到课程内容。${outDays.size ? `\n已跳过 ${outDays.size} 天超出课表有效周期的安排。` : ''}`);
+}
+
+/* ==================== 课时记录视图 ==================== */
+const lessonFilter = { moduleId:'', type:'', status:'', mastered:'', from:'', to:'', q:'' };
+
+function filteredLessons(){
+  return state.lessons.filter(l => {
+    if(lessonFilter.moduleId && l.moduleId !== lessonFilter.moduleId) return false;
+    if(lessonFilter.type && l.type !== lessonFilter.type) return false;
+    if(lessonFilter.status && l.status !== lessonFilter.status) return false;
+    if(lessonFilter.mastered !== '' && String(!!l.mastered) !== lessonFilter.mastered) return false;
+    if(lessonFilter.from && l.date < lessonFilter.from) return false;
+    if(lessonFilter.to && l.date > lessonFilter.to) return false;
+    if(lessonFilter.q){
+      const q = lessonFilter.q.toLowerCase();
+      const hay = [l.title, l.note, (l.detailItems||[]).map(d=>d.value).join(' '), (l.contents||[]).join(' ')].join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  }).sort((a,b) => (b.date + String(b.slot ? tblSlots().indexOf(b.slot) : 99) + (b.time||''))
+                 .localeCompare(a.date + String(a.slot ? tblSlots().indexOf(a.slot) : 99) + (a.time||'')));
+}
+
+function renderLessons(){
+  const v = document.getElementById('view');
+  const list = filteredLessons();
+  const totalDur = list.reduce((s,l) => s + (l.duration||0), 0);
+
+  v.innerHTML = `
+    <h2 class="page-title">📝 课时记录 <span class="sub">共 ${state.lessons.length} 条，筛选后 ${list.length} 条 · 总时长 ${totalDur} 分钟</span></h2>
+    <div class="filter-bar">
+      <select data-filter="moduleId">
+        <option value="">全部模块</option>
+        ${state.modules.map(m => `<option value="${m.id}" ${lessonFilter.moduleId===m.id?'selected':''}>${esc(m.name)}</option>`).join('')}
+      </select>
+      <select data-filter="type">
+        <option value="">课内 / 课外</option>
+        <option ${lessonFilter.type==='课内'?'selected':''}>课内</option>
+        <option ${lessonFilter.type==='课外'?'selected':''}>课外</option>
+      </select>
+      <select data-filter="status">
+        <option value="">全部状况</option>
+        ${['未完成','部分完成','已完成'].map(s => `<option ${lessonFilter.status===s?'selected':''}>${s}</option>`).join('')}
+      </select>
+      <select data-filter="mastered">
+        <option value="">掌握情况</option>
+        <option value="1" ${lessonFilter.mastered==='1'?'selected':''}>已掌握</option>
+        <option value="0" ${lessonFilter.mastered==='0'?'selected':''}>未掌握</option>
+      </select>
+      <input type="date" data-filter="from" value="${lessonFilter.from}" title="起始日期">
+      <input type="date" data-filter="to" value="${lessonFilter.to}" title="结束日期">
+      <input type="text" id="lq" value="${esc(lessonFilter.q)}" placeholder="搜索内容 / 备注 / 知识点…" style="flex:1;min-width:130px">
+      <button class="btn primary" data-action="add-lesson" data-date="${todayStr()}">＋ 添加课时</button>
+    </div>
+    <div class="rec-list" id="lesson-list">${recListHTML(list)}</div>
+  `;
+
+  const q = document.getElementById('lq');
+  q.addEventListener('input', () => {
+    lessonFilter.q = q.value;
+    document.getElementById('lesson-list').innerHTML = recListHTML(filteredLessons());
+  });
+}
+
+function recListHTML(list){
+  if(!list.length) return '<div class="empty">没有符合条件的记录</div>';
+  let html = '', lastDate = '';
+  list.forEach(l => {
+    if(l.date !== lastDate){
+      lastDate = l.date;
+      const dt = parseDate(l.date);
+      const wd = WD[(dt.getDay()+6)%7];
+      html += `<div style="font-size:12px;color:var(--muted);margin:10px 0 2px;padding-left:2px">
+        ${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')} 周${wd}
+      </div>`;
+    }
+    const m = moduleById(l.moduleId);
+    const g = l.goalId ? goalById(l.goalId) : null;
+    const cl = l.curriculumLessonId ? findCurriculumLessonById(l.curriculumLessonId) : null;
+    html += `<div class="rec">
+      <span class="cdot" style="background:${m?.color || '#9ca3af'}"></span>
+      <div class="body">
+        <div class="r1">
+          <b style="color:#374151">${esc(m?.name || '未分类')}</b>
+          ${slotLabel(l) ? `<span>🕐 ${esc(slotLabel(l))}</span>` : ''}
+          ${l.duration ? `<span>⏱ ${l.duration}分钟</span>` : ''}
+          <span class="tag ${l.type==='课内'?'in':'out'}">${l.type}</span>
+          ${cl ? `<span class="tag cat">📐 ${esc(cl.lesson.name)}</span>` : ''}
+        </div>
+        <div class="r2">${esc(l.title)}</div>
+        <div class="r3">
+          <span class="tag ${l.status==='已完成'?'ok':l.status==='部分完成'?'warn':'bad'}">${l.status}</span>
+          <span class="tag ${l.mastered?'ok':'muted'}">${l.mastered?'已掌握':'未掌握'}</span>
+          ${g ? `<span class="tag goal">🎯 ${esc(g.title)}</span>` : ''}
+        </div>
+        ${(l.detailItems||[]).length ? `<div class="detail-mini">${l.detailItems.map(d =>
+          `<span class="dm" title="${esc(DETAIL_LABELS[d.type] || d.type)}">${esc(d.value)}</span>`).join('')}</div>` : ''}
+        ${l.note ? `<div class="note">📌 ${esc(l.note)}</div>` : ''}
+      </div>
+      <div class="ops">
+        <button class="btn xs ghost" data-action="rec-edit" data-id="${l.id}">编辑</button>
+        <button class="btn xs ghost danger" data-action="rec-del" data-id="${l.id}">删除</button>
+      </div>
+    </div>`;
+  });
+  return html;
+}
+
+/* ==================== 待办清单 ==================== */
+function renderTodos(){
+  const v = document.getElementById('view');
+  const t = todayStr();
+  let list = state.todos.slice();
+  if(todoFilter === 'active')  list = list.filter(x => !x.done);
+  if(todoFilter === 'done')    list = list.filter(x => x.done);
+  if(todoFilter === 'today')   list = list.filter(x => x.dueDate === t && !x.done);
+  if(todoFilter === 'overdue') list = list.filter(x => x.dueDate && x.dueDate < t && !x.done);
+  list.sort((a,b) => (a.done - b.done) || ((a.dueDate||'9999-99-99') < (b.dueDate||'9999-99-99') ? -1 : 1));
+
+  const total = state.todos.length;
+  const done = state.todos.filter(x => x.done).length;
+  const overdue = state.todos.filter(x => x.dueDate && x.dueDate < t && !x.done).length;
+
+  v.innerHTML = `
+    <h2 class="page-title">✅ 待办清单 <span class="sub">完成 ${done}/${total}　已逾期 ${overdue}</span></h2>
+    <div class="todo-add">
+      <input type="text" id="td-text" placeholder="添加一条待办，例如：订正数学卷子第 3 题">
+      <select id="td-module">
+        ${state.modules.map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join('')}
+      </select>
+      <input type="date" id="td-date" value="${todayStr()}">
+      <select id="td-pri"><option>高</option><option selected>中</option><option>低</option></select>
+      <button class="btn primary" data-action="todo-add">添加</button>
+    </div>
+    <div class="filter-bar">
+      <div class="seg">
+        ${[['all','全部'],['active','未完成'],['today','今日到期'],['overdue','已逾期'],['done','已完成']]
+          .map(([k,label]) => `<button class="${todoFilter===k?'active':''}" data-action="todo-filter" data-todofilter="${k}">${label}</button>`).join('')}
+      </div>
+    </div>
+    <div>
+      ${list.map(x => {
+        const m = moduleById(x.moduleId);
+        const isOver = x.dueDate && x.dueDate < t && !x.done;
+        return `<div class="todo-item ${x.done?'done':''}">
+          <input type="checkbox" data-toggle-todo="${x.id}" ${x.done?'checked':''}>
+          <span class="txt">${esc(x.text)}</span>
+          <span class="tag" style="border-left:3px solid ${m?.color || '#ccc'}">${esc(m?.name || '未分类')}</span>
+          ${x.dueDate ? `<span class="tag ${isOver?'bad':''}">${x.dueDate}${isOver?' 逾期':''}</span>` : ''}
+          <span class="pri ${x.priority}">${x.priority}</span>
+          <button class="btn xs ghost danger" data-action="todo-del" data-id="${x.id}">删除</button>
+        </div>`;
+      }).join('') || '<div class="empty">暂无待办</div>'}
+    </div>
+  `;
+
+  const inp = document.getElementById('td-text');
+  inp.addEventListener('keydown', e => { if(e.key === 'Enter') document.querySelector('[data-action="todo-add"]').click(); });
+}
+
+/* ==================== 闪卡 ==================== */
+function rateCard(id, grade){
+  const c = state.cards.find(x => x.id === id);
+  if(!c) return;
+  if(grade === 0){ c.interval = 0; c.reps = 0; c.due = todayStr(); }
+  else if(grade === 1){ c.reps++; c.interval = c.interval ? Math.max(1, Math.round(c.interval * 1.5)) : 1; c.due = addDays(todayStr(), c.interval); }
+  else { c.reps++; c.interval = c.interval ? Math.max(2, Math.round(c.interval * 2.5)) : 2; c.due = addDays(todayStr(), c.interval); }
+  if(cardQueue) cardQueue = cardQueue.filter(x => x !== id);
+  save(); cardFlipped = false; renderCards();
+}
+
+function renderCards(){
+  const v = document.getElementById('view');
+  const t = todayStr();
+  if(cardQueue === null){
+    cardQueue = state.cards.filter(c => !c.due || c.due <= t).map(c => c.id);
+  }
+  cardQueue = cardQueue.filter(id => state.cards.some(c => c.id === id));
+
+  const current = cardQueue.length ? state.cards.find(c => c.id === cardQueue[0]) : null;
+  const dueTotal = state.cards.filter(c => !c.due || c.due <= t).length;
+  const reviewed = state.cards.filter(c => c.due > t && c.reps > 0).length;
+
+  v.innerHTML = `
+    <h2 class="page-title">🎴 复习闪卡 <span class="sub">待复习 ${dueTotal} 张 · 已排期 ${reviewed} 张 · 共 ${state.cards.length} 张</span></h2>
+
+    <div class="flash-wrap">
+      ${current ? `
+        <div class="flash-progress">本轮剩余 ${cardQueue.length} 张　|　当前：${esc(moduleName(current.moduleId))}
+          ${current.reps ? `　·　已复习 ${current.reps} 次` : ''}</div>
+        <div class="flash-card">
+          <div class="flash-front">${esc(current.front)}</div>
+          ${cardFlipped ? `<div class="flash-back">${esc(current.back)}</div>` : ''}
+        </div>
+        <div class="flash-ops">
+          ${cardFlipped ? `
+            <button class="btn danger" data-action="card-rate" data-id="${current.id}" data-grade="0">😵 忘记</button>
+            <button class="btn" data-action="card-rate" data-id="${current.id}" data-grade="1">🤔 模糊</button>
+            <button class="btn primary" data-action="card-rate" data-id="${current.id}" data-grade="2">😃 掌握</button>
+          ` : `<button class="btn primary" data-action="card-flip">显示答案</button>`}
+          <button class="btn ghost" data-action="card-del" data-id="${current.id}">删除此卡</button>
+        </div>
+      ` : `
+        <div class="flash-card" style="min-height:160px">
+          <div style="font-size:34px">🎉</div>
+          <div style="font-size:16px;font-weight:600">本轮复习已完成！</div>
+          <div class="muted" style="font-size:13px">共 ${state.cards.length} 张卡片，待复习 0 张</div>
+        </div>
+        <div class="flash-ops"><button class="btn" data-action="card-reset">重新开始一轮</button></div>
+      `}
+
+      <div class="panel" style="margin-top:20px">
+        <h4>➕ 新建闪卡</h4>
+        <div class="form-grid">
+          <label class="fld"><span>模块</span>
+            <select id="cd-module">${state.modules.map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join('')}</select>
+          </label>
+          <label class="fld"><span>&nbsp;</span><span></span></label>
+          <label class="fld span2"><span>正面（问题 / 知识点）</span><input id="cd-front" placeholder="例如：一元二次方程求根公式"></label>
+          <label class="fld span2"><span>背面（答案 / 要点）</span><textarea id="cd-back" rows="2" placeholder="x = (-b ± √(b²-4ac)) / 2a"></textarea></label>
+        </div>
+        <div style="margin-top:10px"><button class="btn primary" data-action="card-add">添加闪卡</button></div>
+      </div>
+
+      ${state.cards.length ? `
+      <div class="panel">
+        <h4>📚 全部卡片（${state.cards.length}）</h4>
+        <div style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:auto">
+          ${state.cards.map(c => {
+            const isDue = !c.due || c.due <= t;
+            return `<div style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 9px;border-radius:8px;background:#fafbff">
+              <span class="tag" style="border-left:3px solid ${moduleColor(c.moduleId)}">${esc(moduleName(c.moduleId))}</span>
+              <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.front)}</span>
+              <span class="tag ${isDue?'warn':'ok'}">${isDue ? '待复习' : '下次 ' + c.due}</span>
+              <button class="btn xs ghost danger" data-action="card-del" data-id="${c.id}">×</button>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+    </div>
+  `;
+}
+
+/* ==================== 学习目标库 ==================== */
+function renderGoals(){
+  const v = document.getElementById('view');
+  v.innerHTML = `
+    <h2 class="page-title">🎯 学习目标库 <span class="sub">共 ${state.goals.length} 个知识点</span></h2>
+
+    <div class="panel">
+      <h4>➕ 添加学习目标 / 知识点</h4>
+      <div class="form-grid">
+        <label class="fld"><span>所属模块</span>
+          <select id="gl-module">${state.modules.map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join('')}</select>
+        </label>
+        <label class="fld"><span>难度</span>
+          <select id="gl-level"><option>基础</option><option>提升</option><option>拔高</option></select>
+        </label>
+        <label class="fld span2"><span>知识点名称</span><input id="gl-title" placeholder="例如：二次函数最值问题"></label>
+        <label class="fld span2"><span>说明</span><input id="gl-desc" placeholder="补充说明（可选）"></label>
+      </div>
+      <div style="margin-top:10px"><button class="btn primary" data-action="goal-add">添加</button></div>
+    </div>
+
+    ${state.modules.map(m => {
+      const gs = state.goals.filter(g => g.moduleId === m.id);
+      if(!gs.length) return '';
+      return `<h4 class="sec" style="margin-top:18px"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${m.color}"></span>${esc(m.name)}（${gs.length}）</h4>
+      <div class="goal-grid">
+        ${gs.map(g => {
+          const used = state.lessons.filter(l => l.goalId === g.id);
+          const mastered = used.filter(l => l.mastered).length;
+          return `<div class="goal-card" style="--c:${m.color}">
+            <div class="gt">${esc(g.title)}</div>
+            <div class="gd">${esc(g.desc || '—')}</div>
+            <div class="gm">
+              <span class="tag">${g.level}</span>
+              <span>已安排 ${used.length} 节</span>
+              <span>掌握 ${mastered}</span>
+            </div>
+            <div class="go">
+              <button class="btn xs primary" data-action="goal-plan" data-id="${g.id}">加入日历</button>
+              <button class="btn xs ghost danger" data-action="goal-del" data-id="${g.id}">删除</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('') || '<div class="empty">还没有学习目标，先在上方添加吧</div>'}
+  `;
+}
+
+/* ==================== 模块管理 ==================== */
+function renderModules(){
+  const v = document.getElementById('view');
+  v.innerHTML = `
+    <h2 class="page-title">🧩 模块管理 <span class="sub">语文 / 数学 / 英语…可自由增删</span></h2>
+
+    <div class="panel">
+      <h4>➕ 新增模块</h4>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input id="md-name" placeholder="模块名称，例如：物理" style="flex:1;min-width:160px;font-family:inherit;font-size:13.5px;padding:8px 11px;border:1px solid var(--border);border-radius:9px;outline:none">
+        <input type="color" id="md-color" value="#8b5cf6" style="width:46px;height:36px;border:1px solid var(--border);border-radius:9px;cursor:pointer;background:#fff">
+        <button class="btn primary" data-action="mod-add">添加模块</button>
+      </div>
+    </div>
+
+    <div class="mod-list">
+      ${state.modules.map(m => {
+        const cnt = state.lessons.filter(l => l.moduleId === m.id).length;
+        const gc = state.goals.filter(g => g.moduleId === m.id).length;
+        const mc = state.lessons.filter(l => l.moduleId === m.id && l.mastered).length;
+        const dur = state.lessons.filter(l => l.moduleId === m.id).reduce((s,l)=>s+(l.duration||0),0);
+        return `<div class="mod-item">
+          <span class="swatch" style="background:${m.color}"></span>
+          <span class="nm">${esc(m.name)}</span>
+          <span class="meta">课时 ${cnt} · 目标 ${gc} · 掌握 ${mc} · 总时长 ${dur}分</span>
+          <span class="spacer"></span>
+          <button class="btn xs ghost danger" data-action="mod-del" data-id="${m.id}">删除</button>
+        </div>`;
+      }).join('') || '<div class="empty">还没有模块</div>'}
+    </div>
+  `;
+}
+
+/* ==================== 统计分析 ==================== */
+function renderStats(){
+  const v = document.getElementById('view');
+  const t = todayStr();
+
+  let ls = state.lessons.slice();
+  if(statsFrom || statsTo){
+    if(statsFrom) ls = ls.filter(l => l.date >= statsFrom);
+    if(statsTo)   ls = ls.filter(l => l.date <= statsTo);
+  }else{
+    if(statsRange === 'week'){
+      const s = startOfWeek(t);
+      ls = ls.filter(l => l.date >= s && l.date <= addDays(s, 6));
+    }else if(statsRange === 'month'){
+      const d = new Date();
+      const s = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+      ls = ls.filter(l => l.date >= s);
+    }
+  }
+
+  const total = ls.length;
+  const done = ls.filter(l => l.status === '已完成').length;
+  const part = ls.filter(l => l.status === '部分完成').length;
+  const none = total - done - part;
+  const mastered = ls.filter(l => l.mastered).length;
+  const masterRate = total ? Math.round(mastered / total * 100) : 0;
+  const inClass = ls.filter(l => l.type === '课内').length;
+  const outClass = total - inClass;
+  const totalDur = ls.reduce((s,l) => s + (l.duration||0), 0);
+  const avgDur = total ? Math.round(totalDur / total) : 0;
+
+  const perModule = state.modules.map(m => {
+    const ml = ls.filter(l => l.moduleId === m.id);
+    return {
+      m, count: ml.length,
+      mastered: ml.filter(l => l.mastered).length,
+      done: ml.filter(l => l.status === '已完成').length,
+      duration: ml.reduce((s,l)=>s+(l.duration||0),0)
+    };
+  });
+  const maxCount = Math.max(1, ...perModule.map(x => x.count));
+
+  /* 课表安排（计划侧）：每周课内 / 课外节数 + 课外单科分布 */
+  const kc = tblKindCounts();
+  const outSubs = tblOutSubjects();
+  const weekIn = kc.in, weekOut = kc.out, weekTot = weekIn + weekOut;
+  const maxOut = Math.max(1, ...outSubs.map(s => s.count));
+
+  const days = [];
+  for(let i = 6; i >= 0; i--){
+    const d = addDays(t, -i);
+    days.push({ d, n: state.lessons.filter(l => l.date === d).length });
+  }
+  const maxDay = Math.max(1, ...days.map(x => x.n));
+
+  const todoTotal = state.todos.length;
+  const todoDone = state.todos.filter(x => x.done).length;
+  const todoRate = todoTotal ? Math.round(todoDone / todoTotal * 100) : 0;
+  const dueCards = state.cards.filter(c => !c.due || c.due <= t).length;
+
+  const rangeLabel = (statsFrom || statsTo)
+    ? `${statsFrom || '最早'} 至 ${statsTo || '最新'}`
+    : {all:'全部',week:'本周',month:'本月'}[statsRange];
+
+  v.innerHTML = `
+    <h2 class="page-title">📊 统计分析
+      <span class="sub">范围：${esc(rangeLabel)}　·　${total} 节 / ${totalDur} 分钟</span>
+    </h2>
+
+    <div class="filter-bar" style="padding:10px 12px;gap:10px;">
+      <div class="seg">
+        ${[['all','全部'],['month','本月'],['week','本周']].map(([k,label]) =>
+          `<button class="${(!statsFrom && !statsTo && statsRange===k)?'active':''}" data-action="stat-range" data-range="${k}">${label}</button>`).join('')}
+      </div>
+      <span style="font-size:12.5px;color:var(--muted);margin-left:6px;">自定义：</span>
+      <input type="date" id="st-from" value="${statsFrom}" title="起始日期" style="font-family:inherit;font-size:13px;padding:6px 9px;border:1px solid var(--border);border-radius:8px;background:#fcfcfe;outline:none">
+      <span class="muted">至</span>
+      <input type="date" id="st-to" value="${statsTo}" title="结束日期" style="font-family:inherit;font-size:13px;padding:6px 9px;border:1px solid var(--border);border-radius:8px;background:#fcfcfe;outline:none">
+      <button class="btn primary" id="st-apply">应用</button>
+      <button class="btn" id="st-reset">重置</button>
+    </div>
+
+    <div class="stat-cards">
+      <div class="stat-card"><span>课时总数</span><b>${total}</b></div>
+      <div class="stat-card"><span>已完成</span><b style="color:var(--ok)">${done}</b></div>
+      <div class="stat-card"><span>部分完成</span><b style="color:var(--warn)">${part}</b></div>
+      <div class="stat-card"><span>未完成</span><b style="color:var(--bad)">${none}</b></div>
+      <div class="stat-card"><span>掌握率</span><b style="color:var(--primary)">${masterRate}%</b></div>
+      <div class="stat-card"><span>总学习时长</span><b>${totalDur}<small style="font-size:12px;color:var(--muted);font-weight:400"> 分</small></b></div>
+      <div class="stat-card"><span>平均每节</span><b>${avgDur}<small style="font-size:12px;color:var(--muted);font-weight:400"> 分</small></b></div>
+      <div class="stat-card"><span>待复习闪卡</span><b>${dueCards}</b></div>
+    </div>
+
+    <div class="panel">
+      <h4>📚 各模块课时分布（含时长）</h4>
+      ${perModule.map(x => `
+        <div class="stat-row">
+          <span class="lbl" title="${esc(x.m.name)}">${esc(x.m.name)}</span>
+          <div class="bar2"><i style="width:${Math.round(x.count / maxCount * 100)}%;background:${x.m.color}"></i></div>
+          <span class="val">${x.count} 节 · ${x.duration}分 · 掌握 ${x.mastered}</span>
+        </div>`).join('') || '<div class="empty">暂无数据</div>'}
+    </div>
+
+    <div class="panel">
+      <h4>🏫 课内 / 课外占比</h4>
+      <div class="stat-row">
+        <span class="lbl">课内</span>
+        <div class="bar2"><i style="width:${total ? Math.round(inClass/total*100) : 0}%;background:#6366f1"></i></div>
+        <span class="val">${inClass} 节 (${total ? Math.round(inClass/total*100) : 0}%)</span>
+      </div>
+      <div class="stat-row">
+        <span class="lbl">课外</span>
+        <div class="bar2"><i style="width:${total ? Math.round(outClass/total*100) : 0}%;background:#ec4899"></i></div>
+        <span class="val">${outClass} 节 (${total ? Math.round(outClass/total*100) : 0}%)</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h4 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">🗓 课表安排（每周计划）
+        <span class="muted" style="font-weight:400;font-size:12px">课内 ${weekIn} 节 · 课外 ${weekOut} 节 · 有效周期 ${esc(timetablePeriodLabel())}</span>
+        <span class="spacer"></span>
+        <button class="btn xs" data-action="tbl-import">📘 课内课表</button>
+        <button class="btn xs" style="border-color:#f9a8d4;color:#be185d" data-action="tbl-import-out">🎹 课外单科</button>
+      </h4>
+      ${weekTot ? `
+      <div class="stat-row">
+        <span class="lbl">📘 课内</span>
+        <div class="bar2"><i style="width:${Math.round(weekIn/weekTot*100)}%;background:#6366f1"></i></div>
+        <span class="val">${weekIn} 节 / 周 (${Math.round(weekIn/weekTot*100)}%)</span>
+      </div>
+      <div class="stat-row">
+        <span class="lbl">🎹 课外</span>
+        <div class="bar2"><i style="width:${Math.round(weekOut/weekTot*100)}%;background:#ec4899"></i></div>
+        <span class="val">${weekOut} 节 / 周 (${Math.round(weekOut/weekTot*100)}%)</span>
+      </div>` : '<div class="empty">课表还是空的，去「课程设计」粘贴课内 / 课外课表</div>'}
+      ${outSubs.length ? `
+      <div style="margin-top:12px;font-size:12px;color:var(--muted);font-weight:600">课外单科分布</div>
+      ${outSubs.map(s => `
+        <div class="stat-row">
+          <span class="lbl" title="${esc(s.subject)}">🎹 ${esc(s.subject)}</span>
+          <div class="bar2"><i style="width:${Math.round(s.count/maxOut*100)}%;background:#ec4899"></i></div>
+          <span class="val">${s.count} 节 / 周 · 周${s.days.slice().sort((a,b)=>a-b).map(d => WD[d-1]).join('、')}</span>
+        </div>`).join('')}` : ''}
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px">上面是课表（计划），上面两张卡片是实际记录的完成情况。课内、课外共用同一张课表，因此统计口径一致。</div>
+    </div>
+
+    <div class="panel">
+      <h4>📈 近 7 天课时量</h4>
+      <div class="days">
+        ${days.map(x => {
+          const dt = parseDate(x.d);
+          return `<div class="dcol">
+            <div class="dnum">${x.n || ''}</div>
+            <div class="dbar" style="height:${x.n ? Math.max(6, Math.round(x.n / maxDay * 72)) : 3}px;${x.n ? '' : 'background:#e9ecf5'}"></div>
+            <div class="dlab">${dt.getMonth()+1}/${dt.getDate()}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="panel">
+      <h4>✅ 待办与目标</h4>
+      <div class="stat-row">
+        <span class="lbl">待办完成</span>
+        <div class="bar2"><i style="width:${todoRate}%;background:linear-gradient(90deg,#34d399,#10b981)"></i></div>
+        <span class="val">${todoDone}/${todoTotal} (${todoRate}%)</span>
+      </div>
+      <div class="stat-row">
+        <span class="lbl">目标覆盖</span>
+        <div class="bar2"><i style="width:${state.goals.length ? Math.round(state.goals.filter(g => state.lessons.some(l => l.goalId === g.id)).length / state.goals.length * 100) : 0}%;background:linear-gradient(90deg,#fbbf24,#f59e0b)"></i></div>
+        <span class="val">${state.goals.filter(g => state.lessons.some(l => l.goalId === g.id)).length}/${state.goals.length} 个知识点已安排</span>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('st-apply').addEventListener('click', () => {
+    statsFrom = document.getElementById('st-from').value;
+    statsTo = document.getElementById('st-to').value;
+    statsRange = 'all';
+    renderStats();
+  });
+  document.getElementById('st-reset').addEventListener('click', () => {
+    statsFrom = ''; statsTo = ''; statsRange = 'all';
+    renderStats();
+  });
+}
+
+/* ==================== 启动 ==================== */
+render();
+</script>
+
+<!-- ===== 全站统一导航（site-nav.js）· 与其它子页同一套 =====
+     本页内容导航（7 个视图）仍用工具自带的左侧栏；抽屉只负责站级出口：
+     返回导航中心 / 本页快捷 / 云端同步 / 学员管理 / 页面变色。 -->
+<script src="./site-nav.js" data-title="课时记录器" data-theme-default="light"
+        data-sections='[
+            {"ico":"📅","name":"日历 / 周历","sel":".sidebar nav button[data-view=calendar]","click":true},
+            {"ico":"📐","name":"课程设计","sel":".sidebar nav button[data-view=curriculum]","click":true},
+            {"ico":"📝","name":"课时记录","sel":".sidebar nav button[data-view=lessons]","click":true},
+            {"ico":"✅","name":"待办清单","sel":".sidebar nav button[data-view=todos]","click":true},
+            {"ico":"🎴","name":"复习闪卡","sel":".sidebar nav button[data-view=cards]","click":true},
+            {"ico":"🎯","name":"学习目标库","sel":".sidebar nav button[data-view=goals]","click":true},
+            {"ico":"📊","name":"统计分析","sel":".sidebar nav button[data-view=stats]","click":true}
+        ]'></script>
+
+<!-- 侧栏底部的两个站点入口：只做跳转，不引入任何同步实现 -->
+<script>
+(function () {
+    'use strict';
+    var h = document.getElementById('lrGoHome');
+    if (h) h.addEventListener('click', function () { window.location.href = './index.html'; });
+    var y = document.getElementById('lrGoSync');
+    if (y) y.addEventListener('click', function () { window.location.href = './index.html#sync'; });
+})();
+</script>
+</body>
+</html>

@@ -36,10 +36,11 @@
      * 规则：推送日期 + 字母递增（aa → ab → …），导航版本不低于任何子工具版本。
      * 单个页面单独迭代时，把它的版本写进 PAGE_VERS 即可，导航版本同步抬高。
      * ----------------------------------------------------------- */
-    var NAV_VER = 'V20261012 aa';
+    var NAV_VER = 'V20261012 ad';
     var PAGE_VER_DEFAULT = 'V20261012 AA';
     var PAGE_VERS = {
         // 'study-record.html': 'V20261012 AB',
+        '课时记录器.html': 'V20261012 AD',   // 本工具自己迭代到 AD（AA 双粘贴界面 → AB 课表节次 → AC 课内课外双体系 → AD 名称统一）
     };
 
     /* 站点清单：只用于识别「当前在哪一页」 */
@@ -52,7 +53,8 @@
         { file: '朝暮计-双端适配版.html',  ico: '🌅', name: '朝暮计' },
         { file: 'learning-goal.html',    ico: '🎯', name: '学习目标' },
         { file: '游戏改变世界.html',      ico: '🎮', name: '游戏改变世界' },
-        { file: '陪伴星球.html',          ico: '🪐', name: '陪伴星球' }
+        { file: '陪伴星球.html',          ico: '🪐', name: '陪伴星球' },
+        { file: '课时记录器.html',          ico: '🗓️', name: '课时记录器' }
     ];
 
     var me = document.currentScript || (function () {
