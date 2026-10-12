@@ -11,7 +11,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>" />
-    <title>儿童成长助手 | 全周期学习成长计划</title>
+    <title>儿女学习时光 | 全周期学习成长计划</title>
     <!-- 预取其它两个工具页：切换时直接从缓存加载，减少白屏卡顿 -->
     <link rel="prefetch" href="./study-record.html">
     <link rel="prefetch" href="./情商club.html">
@@ -59,7 +59,7 @@
         }
         /* 桌面端（>980px）：侧边栏 fixed 460px，顶栏必须让位，否则标题被盖住 */
         @media (min-width: 981px) {
-            body:not(.sidebar-collapsed) header { padding-left: 460px; }
+            body:not(.sidebar-collapsed) header { padding-left: 300px; }
         }
         .nav-wrap {
             display: flex;
@@ -109,319 +109,173 @@
         .sync-dot.syncing { background: #f59e0b; animation: pulse 1s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-        /* ============ 光阴の侧边栏 ============ */
+        /* ============ 侧边栏（对齐 efficiency-hub 的设计语言）============
+           结构：.brand（图标 + 站名 + 收起键）→ .nav-label（分组）→ #navList（工具项）
+                 → .side-foot（云端同步 / 学员管理 / 页面变色 + 版本徽标）
+           与 hub 保持一致：深色导航轨、.nav-item 承载 ico/name/badge、拖拽排序、
+           版本徽标落在侧栏左下角（导航栏左边下侧）。 */
         .app-shell { display: flex; min-height: calc(100vh - 70px); }
-        .app-main { flex: 1; min-width: 0; padding: 0 20px 0 480px; transition: padding-left .3s; }
+        .app-main { flex: 1; min-width: 0; padding: 0 20px 0 300px; transition: padding-left .3s; }
         body.sidebar-collapsed .app-main { padding-left: 20px; }
+
         .sidebar {
             position: fixed;
             left: 0;
             top: 0;
             bottom: 0;
-            width: 460px;
-            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            width: 280px;
+            background: #0f172a;
             color: #cbd5e1;
             z-index: 200;
             display: flex;
             flex-direction: column;
-            transition: transform .3s cubic-bezier(.4,0,.2,1), width .3s;
-            box-shadow: 4px 0 20px rgba(0,0,0,0.08);
-        }
-        .sidebar.collapsed {
-            transform: translateX(-100%);
-        }
-        .sidebar-inner {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px 0 24px 0;
-            scrollbar-width: thin;
-            scrollbar-color: #475569 transparent;
-        }
-        .sidebar-inner::-webkit-scrollbar { width: 4px; }
-        .sidebar-inner::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        .sidebar-header {
-            padding: 18px 18px 16px 18px;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .sidebar-header .logo-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            box-shadow: 0 4px 12px rgba(37,99,235,0.4);
-            flex: none;
-        }
-        .sidebar-header .meta { flex: 1; min-width: 0; }
-        .sidebar-header .title {
-            font-size: 16px;
-            font-weight: 700;
-            color: #f1f5f9;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .sidebar-header .sub {
-            font-size: 11px;
-            color: #94a3b8;
-            margin-top: 2px;
-        }
-        .sidebar-section {
-            padding: 14px 14px 4px 14px;
-        }
-        .sidebar-section-title {
-            font-size: 11px;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-            padding: 0 8px 8px 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .sidebar-section-title .manage-btn {
-            font-size: 11px;
-            color: #94a3b8;
-            background: rgba(255,255,255,0.08);
-            border: none;
-            border-radius: 6px;
-            padding: 3px 10px;
-            cursor: pointer;
-            text-transform: none;
-            letter-spacing: 0;
-        }
-        .sidebar-section-title .manage-btn:hover { background: rgba(255,255,255,0.16); color: #f1f5f9; }
-        .sidebar-list { list-style: none; padding: 0; margin: 0; }
-        .sidebar-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background .15s, color .15s;
-            color: #cbd5e1;
-            font-size: 14px;
-            user-select: none;
-            position: relative;
-        }
-        .sidebar-item:hover {
-            background: rgba(255,255,255,0.06);
-            color: #f1f5f9;
-        }
-        .sidebar-item.active {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            color: #fff;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(99,102,241,0.35);
-        }
-        .sidebar-item .drag-handle {
-            font-size: 14px;
-            color: #64748b;
-            cursor: grab;
-            flex: none;
-            line-height: 1;
-            user-select: none;
-        }
-        .sidebar-item:hover .drag-handle { color: #cbd5e1; }
-        .sidebar-item .ico {
-            font-size: 18px;
-            flex: none;
-            width: 24px;
-            text-align: center;
-        }
-        .sidebar-item .name {
-            flex: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .sidebar-item .badge {
-            font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-weight: 500;
-            flex: none;
-            background: rgba(255,255,255,0.1);
-            color: #cbd5e1;
-        }
-        .sidebar-item.active .badge {
-            background: rgba(255,255,255,0.25);
-            color: #fff;
-        }
-        .sidebar-item .badge.has-data {
-            background: rgba(99,102,241,0.18);
-            color: #a5b4fc;
-        }
-        .sidebar-item.active .badge.has-data {
-            background: rgba(255,255,255,0.25);
-            color: #fff;
-        }
-        .sidebar-item .badge.no-data {
-            background: rgba(100,116,139,0.2);
-            color: #94a3b8;
-        }
-        .sidebar-item.dragging {
-            opacity: 0.5;
-            border: 1px dashed #6366f1;
-        }
-        .sidebar-item.drag-over {
-            border-top: 2px solid #6366f1;
-        }
-        .sidebar-footer {
-            padding: 10px 14px;
-            border-top: 1px solid rgba(255,255,255,0.06);
-            display: flex;
-            flex-direction: column;
+            padding: 18px 14px 12px;
             gap: 6px;
+            transition: transform .25s cubic-bezier(.4,0,.2,1), width .25s;
+            box-shadow: 4px 0 20px rgba(0,0,0,.10);
         }
-        .sidebar-sync-btn {
-            width: 100%;
-            background: rgba(14,165,233,0.15);
-            color: #7dd3fc;
-            border: 1px solid rgba(14,165,233,0.35);
-            border-radius: 8px;
-            padding: 8px 10px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-right: 8px;
-            white-space: nowrap;
-        }
-        .sidebar-sync-btn:hover { background: rgba(14,165,233,0.28); color: #fff; border-color: rgba(14,165,233,0.6); }
-        .sidebar-user-btn {
-            width: 100%;
-            background: rgba(124,58,237,0.15);
-            color: #c4b5fd;
-            border: 1px solid rgba(124,58,237,0.35);
-            border-radius: 8px;
-            padding: 8px 6px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-        .sidebar-user-btn:hover { background: rgba(124,58,237,0.28); color: #fff; border-color: rgba(124,58,237,0.6); }
-        .sidebar-theme-btn {
-            width: 100%;
-            background: rgba(245,158,11,0.15);
-            color: #fbbf24;
-            border: 1px solid rgba(245,158,11,0.35);
-            border-radius: 8px;
-            padding: 8px 6px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-        }
-        .sidebar-theme-btn:hover { background: rgba(245,158,11,0.28); color: #fff; border-color: rgba(245,158,11,0.6); }
-        /* dark 模式下 select 下拉背景：让浏览器原生 popup 与暗色风格一致 */
-        body.dark select option,
-        html.dark select option { background: #1e293b; color: #f1f5f9; }
-        body.dark select option:checked,
-        html.dark select option:checked { background: #4338ca; color: #fff; }
-        .sidebar-version {
-            text-align: center;
-            font-size: 11px;
-            color: #64748b;
-            margin-top: 6px;
-            padding-top: 6px;
-            border-top: 1px solid rgba(148,163,184,0.18);
-            line-height: 1.7;
-            letter-spacing: 0.2px;
-        }
-        /* 侧栏 Hamburger：贴在侧栏左缘垂直居中，一直显示
-           - 默认位置：垂直 50% / 水平贴在 sidebar 左缘，半圈 tab 样式
-           - .shifted / .collapsed-pos 保留以兼容旧 JS（变 no-op，不再决定位置） */
-        .sidebar-toggle {
-            position: fixed;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 22px;
-            height: 56px;
-            border-radius: 0 10px 10px 0;
+        .sidebar.collapsed { transform: translateX(-100%); }
+
+        /* ---- 品牌区 ---- */
+        .sidebar .brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 14px; flex: none; }
+        .sidebar .brand .logo {
+            width: 38px; height: 38px; border-radius: 10px; flex: 0 0 38px;
             background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            color: #fff;
-            border: none;
-            font-size: 14px;
-            line-height: 1;
-            cursor: pointer;
-            box-shadow: 2px 0 12px rgba(99,102,241,.4);
-            z-index: 250;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: width .25s, padding-left .25s, transform .3s;
-            padding-left: 2px;
-            writing-mode: vertical-rl;
-            letter-spacing: 1px;
+            display: flex; align-items: center; justify-content: center; font-size: 20px;
+            box-shadow: 0 4px 12px rgba(99,102,241,.4);
+        }
+        .sidebar .brand .meta { flex: 1; min-width: 0; }
+        .sidebar .brand .name {
+            font-size: 16px; font-weight: 700; color: #fff; line-height: 1.2;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .sidebar .brand .sub { font-size: 11px; color: #7c8aa5; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sidebar .brand #collapseBtn {
+            margin-left: auto; flex: none; width: 28px; height: 28px; border-radius: 10px;
+            background: transparent; border: none; color: #cbd5e1; font-size: 16px; line-height: 1;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: background .15s, color .15s;
+        }
+        .sidebar .brand #collapseBtn:hover { background: rgba(255,255,255,.1); color: #fff; }
+
+        /* ---- 分组标签 ---- */
+        .sidebar .nav-label {
+            flex: none;
+            font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #5b6b86;
+            padding: 12px 10px 6px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .sidebar .nav-label .mini-btn {
+            font-size: 11px; color: #94a3b8; background: rgba(255,255,255,.08);
+            border: none; border-radius: 6px; padding: 3px 10px; cursor: pointer;
+            text-transform: none; letter-spacing: 0; line-height: 1.5;
+            transition: background .15s, color .15s;
+        }
+        .sidebar .nav-label .mini-btn:hover { background: rgba(255,255,255,.16); color: #f1f5f9; }
+        .sidebar .nav-label #toggleTools {
+            width: 24px; padding: 0; display: flex; align-items: center; justify-content: center;
+            transition: transform .2s ease, background .15s, color .15s;
+        }
+        .sidebar .nav-label #toggleTools.collapsed { transform: rotate(180deg); }
+
+        /* ---- 工具列表 ---- */
+        #navList {
+            overflow: hidden;
+            transition: max-height .25s ease, opacity .25s ease;
+            max-height: calc(100vh - 300px);
+            opacity: 1;
+        }
+        #navList:not(.collapsed) { overflow-y: auto; overflow-x: hidden; }
+        #navList::-webkit-scrollbar { width: 6px; }
+        #navList::-webkit-scrollbar-track { background: transparent; }
+        #navList::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 4px; min-height: 48px; }
+        #navList::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.3); }
+        #navList.collapsed { max-height: 0; opacity: 0; pointer-events: none; overflow-y: hidden; }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 10px;
+            cursor: pointer; font-size: 14px; color: #cbd5e1;
+            transition: background .15s, color .15s; user-select: none;
+        }
+        .nav-item .drag-handle { cursor: grab; color: #7c8aa5; font-size: 13px; margin-right: 2px; flex: 0 0 auto; line-height: 1; }
+        .nav-item .drag-handle:active { cursor: grabbing; }
+        .nav-item .ico { font-size: 17px; width: 22px; text-align: center; flex: 0 0 22px; }
+        .nav-item .name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .nav-item:hover { background: rgba(255,255,255,.06); color: #fff; }
+        .nav-item.active { background: #6366f1; color: #fff; font-weight: 600; box-shadow: 0 4px 12px rgba(99,102,241,.35); }
+        .nav-item .badge {
+            margin-left: auto; font-size: 10px; background: rgba(255,255,255,.16); color: #fff;
+            padding: 1px 7px; border-radius: 999px; flex: none;
+        }
+        .nav-item .badge.has-data { background: rgba(16,185,129,.22); color: #6ee7b7; }
+        .nav-item.active .badge.has-data { background: rgba(255,255,255,.25); color: #fff; }
+        .nav-item .badge.no-data,
+        .nav-item .badge.empty { background: transparent; color: #64748b; }
+        .nav-item.dragging { opacity: .5; background: rgba(99,102,241,.2); }
+        .nav-item.drag-over { border-top: 2px solid #6366f1; }
+
+        /* ---- 底部功能区 ---- */
+        .sidebar .side-foot {
+            margin-top: auto; flex: none;
+            display: flex; flex-direction: column; gap: 8px;
+            padding-top: 12px; padding-bottom: 4px;
+            border-top: 1px solid rgba(255,255,255,.07);
+        }
+        .side-btn {
+            display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 10px;
+            cursor: pointer; font-size: 14px; color: #cbd5e1; border: none; background: transparent;
+            width: 100%; text-align: left; font-family: inherit;
+            transition: background .15s, color .15s;
+        }
+        .side-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+        .side-btn .side-btn-val { margin-left: auto; font-size: 11.5px; color: #7b8ba6; flex: none; }
+
+        /* 版本徽标：导航栏左边下侧（对齐用户约定：导航版本 + 当前子工具版本） */
+        #buildTag {
+            flex: none;
+            font: 600 10px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            letter-spacing: .3px;
+            padding: 6px 8px; border-radius: 8px;
+            background: rgba(255,255,255,.06); color: #8ea2c0;
+            text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            user-select: text;
+        }
+        #buildTag:hover { background: rgba(255,255,255,.1); color: #cbd8ea; }
+        #buildTag .vt-nav { display: block; }
+        #buildTag .vt-tool { display: block; }
+
+        /* ---- 收起态的左缘悬浮标签（贴在侧栏左缘垂直居中）---- */
+        .sidebar-toggle {
+            position: fixed; left: 0; top: 50%; transform: translateY(-50%);
+            width: 22px; height: 56px; border-radius: 0 10px 10px 0;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #fff; border: none; font-size: 14px; line-height: 1; cursor: pointer;
+            box-shadow: 2px 0 12px rgba(99,102,241,.4); z-index: 250;
+            display: flex; align-items: center; justify-content: center;
+            transition: width .25s, padding-left .25s; padding-left: 2px;
         }
         .sidebar-toggle:hover { width: 26px; padding-left: 3px; }
-        .sidebar-toggle:active { transform: translateY(-50%) scale(.96); }
 
-        /* 兼容旧 JS 增删的 class：原本用于控制位置，现在改为无副作用 */
-        .sidebar-toggle.collapsed-pos,
-        .sidebar-toggle.shifted,
-        .sidebar-toggle.collapsed-pos.shifted { /* no-op */ }
+        /* ---- 移动端遮罩 ---- */
         .sidebar-mask {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            z-index: 150;
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.4); z-index: 150;
         }
         .sidebar-mask.show { display: block; }
+
         @media (max-width: 980px) {
-            .sidebar-mask.show { left: min(210px, 46vw); }
-        }
-        .account-pill {
-            padding: 6px 10px;
-            background: rgba(255,255,255,0.06);
-            border-radius: 999px;
-            color: #cbd5e1;
-            font-size: 11px;
-            border: 1px solid rgba(255,255,255,0.06);
-        }
-        .account-pill b { color: #f1f5f9; }
-        @media (max-width: 980px) {
-            .sidebar {
-                width: min(210px, 46vw);
-                transform: none !important;
-                box-shadow: 4px 0 24px rgba(0,0,0,0.25);
-            }
-            .sidebar.collapsed { transform: translateX(-105%) !important; }
-            .sidebar-header { padding: 12px 10px 10px 10px; }
-            .sidebar-header .logo-icon { width: 34px; height: 34px; font-size: 17px; border-radius: 9px; }
-            .sidebar-header .title { font-size: 13px; }
-            .sidebar-header .sub { font-size: 10px; }
-            .sidebar-section { padding: 10px 8px 2px 8px; }
-            .sidebar-section-title { font-size: 10px; padding: 0 6px 6px 6px; }
-            .sidebar-item { padding: 8px 8px; gap: 6px; font-size: 12px; }
-            .sidebar-item .ico { font-size: 14px; width: 18px; }
-            .sidebar-item .badge { font-size: 9px; padding: 1px 5px; }
-            .sidebar-item .drag-handle { font-size: 11px; }
-            .sidebar-footer { padding: 8px 10px; }
-            .sidebar-footer .account-pill { font-size: 10px; padding: 4px 8px; }
-            .sidebar-toggle, .sidebar-toggle.shifted { left: 0 !important; top: 50% !important; transform: translateY(-50%) !important; width: 20px; height: 48px; font-size: 12px; }
+            .sidebar { width: min(260px, 72vw); }
+            .sidebar-mask.show { left: min(260px, 72vw); }
+            .sidebar .brand { padding: 12px 10px 10px; }
+            .sidebar .brand .logo { width: 34px; height: 34px; font-size: 17px; border-radius: 9px; }
+            .sidebar .brand .name { font-size: 14px; }
+            .sidebar .nav-label { padding: 10px 8px 4px; }
+            .nav-item { padding: 9px 10px; gap: 8px; font-size: 13px; }
+            #navList { max-height: calc(100vh - 280px); }
             .app-main { padding-left: 8px; }
             body.sidebar-collapsed .app-main { padding-left: 8px; }
         }
+
         .card {
             background: #fff;
             border-radius: var(--radius);
@@ -2536,21 +2390,19 @@ html.dark body { background:#0f172a !important; color:#e2e8f0 !important; }
 /* 顶栏 */
 html.dark header { background:#1e293b !important; color:#e2e8f0 !important; box-shadow:0 2px 10px rgba(0,0,0,.45) !important; }
 
-/* 侧边栏 */
-html.dark .sidebar,
-html.dark .sidebar-inner { background:#1e293b !important; color:#e2e8f0 !important; border-color:#334155 !important; }
-html.dark .sidebar-header,
-html.dark .sidebar-section,
-html.dark .sidebar-section-title { border-color:#334155 !important; color:#94a3b8 !important; }
-html.dark .sidebar-item { color:#cbd5e1 !important; }
-html.dark .sidebar-item:hover { background:rgba(148,163,184,.12) !important; }
-html.dark .sidebar-item.active { background:rgba(99,102,241,.20) !important; color:#fff !important; }
-html.dark .sidebar-item .ico,
-html.dark .sidebar-item .name,
-html.dark .sidebar-account { color:inherit !important; }
-html.dark .sidebar-version { color:#64748b !important; }
-html.dark .sidebar-toggle { background:#1e293b !important; border-color:#334155 !important; color:#cbd5e1 !important; }
-html.dark .manage-btn { background:rgba(255,255,255,.06) !important; color:#cbd5e1 !important; border-color:#334155 !important; }
+/* 侧边栏（新版沿用 efficiency-hub 的深色导航轨：深色模式下只压低底色，避免与页面撞色） */
+html.dark .sidebar { background:#0b1120 !important; color:#cbd5e1 !important; }
+html.dark .sidebar .brand .name { color:#f1f5f9 !important; }
+html.dark .nav-item { color:#cbd5e1 !important; }
+html.dark .nav-item:hover { background:rgba(148,163,184,.12) !important; }
+html.dark .nav-item.active { background:#6366f1 !important; color:#fff !important; }
+html.dark .nav-item .badge.empty,
+html.dark .nav-item .badge.no-data { background:transparent !important; color:#64748b !important; }
+html.dark .nav-item .badge.has-data { background:rgba(16,185,129,.22) !important; color:#6ee7b7 !important; }
+html.dark .side-btn { color:#cbd5e1 !important; }
+html.dark .side-btn:hover { background:rgba(255,255,255,.1) !important; color:#fff !important; }
+html.dark #buildTag { background:rgba(255,255,255,.06) !important; color:#8ea2c0 !important; }
+html.dark .sidebar .nav-label .mini-btn { background:rgba(255,255,255,.06) !important; color:#cbd5e1 !important; }
 
 /* 卡片 / 面板 / 区块 / 弹窗 */
 html.dark .card,
@@ -2566,7 +2418,7 @@ html.dark [class*="card"] { background:#1e293b !important; color:#e2e8f0 !import
 html.dark .modal-mask { background:rgba(2,6,23,.6) !important; }
 
 /* 云端同步 / 备份中心面板（v2.0.0 新增）
-   ⚠️ 这两块面板由 sync-ui.js / backup-hub.js 动态注入，页面深色补丁的
+   ⚠️ 这两块面板由 sync-github.js 内的面板 / backup-hub.js 动态注入，页面深色补丁的
    [class*="card"] 等通配规则会误伤（把卡片吃成深底），而已有的 .modal-box
    是白底却继承 body 的浅灰字（#e2e8f0 白底不可读）。这里统一兜住：
    .modal-box 固定深色可读文字 + 面板内卡片/提示改用深色配色。 */
@@ -2627,7 +2479,7 @@ html.dark .btn-save { background:#2563eb !important; color:#fff !important; bord
 html.dark .btn-primary:hover,
 html.dark .primary:hover { background:#1d4ed8 !important; }
 html.dark .btn:not(.btn-primary):not(.primary):not(.btn-save):not(.btn-success):not(.btn-danger):not(.btn-warning),
-html.dark button:not(.btn-primary):not(.primary):not(.btn-save):not(.btn-success):not(.btn-danger):not(.btn-warning):not(.sidebar-sync-btn):not(.sidebar-user-btn):not(.sidebar-theme-btn):not(.sidebar-manage-btn):not(.manage-btn) { background:#334155 !important; color:#e2e8f0 !important; border-color:#475569 !important; }
+html.dark button:not(.btn-primary):not(.primary):not(.btn-save):not(.btn-success):not(.btn-danger):not(.btn-warning):not(.side-btn):not(.mini-btn):not(.sidebar-toggle):not(#collapseBtn):not(#buildTag) { background:#334155 !important; color:#e2e8f0 !important; border-color:#475569 !important; }
 
 /* 徽章 / 标签 / 胶囊 */
 html.dark .badge { background:#334155 !important; color:#cbd5e1 !important; border-color:#475569 !important; }
@@ -3061,7 +2913,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
     <header>
         <div class="container nav-wrap">
             <div class="brand-area">
-                <div class="logo">🌱 儿童成长陪伴复盘系统</div>
+                <div class="logo">🌱 儿女学习时光</div>
                 <div class="brand-right">
                     <button class="account-btn" id="accountBtn" title="切换儿童账户">👦 <span id="accountName">选择儿童</span><span id="accountGrade" style="margin-left:4px;font-size:11px;color:#2563eb;"></span> ▾</button>
                     <button class="nav-toggle" id="navToggle" title="展开菜单" aria-label="展开菜单">☰</button>
@@ -3082,35 +2934,44 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
         </div>
     </header>
 
-    <!-- ===== 光阴の侧边栏（网页工具集） ===== -->
+    <!-- ===== 侧边栏（对齐 efficiency-hub：品牌区 / 分组 / 工具轨 / 底部功能区）===== -->
     <div class="sidebar-mask" id="sidebarMask"></div>
     <aside class="sidebar" id="appSidebar">
-        <div class="sidebar-inner">
-            <div class="sidebar-header">
-                <div class="logo-icon">🌱</div>
-                <div class="meta">
-                    <div class="title">光阴の记事本</div>
-                    <div class="sub"><span id="sidebarToolCount">2</span> 个网页 · <span id="sidebarAccount">未选择</span></div>
-                </div>
+        <div class="brand">
+            <div class="logo">🌱</div>
+            <div class="meta">
+                <div class="name" id="siteName" title="儿女学习时光">儿女学习时光</div>
+                <div class="sub"><span id="sidebarToolCount">9</span> 个网页 · <span id="sidebarAccount">未选择</span></div>
             </div>
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">
-                    <span>网页工具</span>
-                    <button class="manage-btn" id="sidebarManageBtn" title="更多工具将陆续添加">＋ 管理</button>
-                </div>
-                <ul class="sidebar-list" id="sidebarTools"></ul>
-            </div>
-            <div class="sidebar-footer">
-                <button class="sidebar-sync-btn" id="sidebarCloudSyncBtn" title="数据云端同步">☁️ 云端同步</button>
-                <button class="sidebar-user-btn" id="sidebarUserManagerBtn" title="学员管理">👤 学员管理</button>
-                <button class="sidebar-theme-btn" id="sidebarThemeBtn" title="切换页面深色/浅色模式">🌗 页面变色</button>
-                <span class="sidebar-version">导航：V20260924 ah<br>导航中心：V20260924 AH</span>
+            <button id="collapseBtn" title="收起侧边栏" aria-label="收起侧边栏">‹</button>
+        </div>
+
+        <div class="nav-label" style="padding-top:8px">
+            <span>我的工具</span>
+            <span style="display:flex;align-items:center;gap:4px">
+                <button id="toggleTools" class="mini-btn" title="收起/展开工具列表" aria-label="收起/展开工具列表">▲</button>
+                <button id="manageModules" class="mini-btn" title="更多工具将陆续添加">管理</button>
+            </span>
+        </div>
+
+        <!-- 工具项由 JS 按 TOOL_DEFS 注入（支持拖拽排序） -->
+        <div id="navList"></div>
+
+        <div class="side-foot">
+            <!-- 云端同步入口由 sync-github.js 自己注入（#syncStatusBtn，带连接状态与自动同步信息），
+                 与 efficiency-hub 完全一致；这里不再手写一颗重复按钮。 -->
+            <button class="side-btn" id="sidebarUserManagerBtn" title="学员管理"><span>👤</span><span>学员管理</span></button>
+            <button class="side-btn" id="sidebarThemeBtn" title="切换页面深色/浅色模式"><span>🌗</span><span>页面变色</span></button>
+            <!-- 版本徽标：导航栏左边下侧。两行文案由侧栏 JS 统一填充（同一套侧栏复用到各页） -->
+            <div id="buildTag" title="构建版本（导航版本不低于本页版本）">
+                <span class="vt-nav">导航：V20261012 aa</span>
+                <span class="vt-tool">儿女学习时光：V20261012 AA</span>
             </div>
         </div>
     </aside>
     <button class="sidebar-toggle" id="sidebarToggle" title="展开/收起侧边栏" aria-label="展开侧边栏">☰</button>
 
-    <div class="app-shell">
+
     <main class="app-main">
     <div class="container">
 
@@ -8771,27 +8632,16 @@ var COMPLETION_FILTER_RANGE = 'all';
         console.log('🌱 系统加载完成（运动场跑道椭圆环 + 小时单位）');
     </script>
 
-    <!-- ===== 云端同步模块：内核 / 两个后端 / 界面，按顺序加载 ===== -->
-    <script src="sync-core.js"></script>
-    <script src="sync-gist.js"></script>
+    <!-- ===== CGA 分片表：必须在同步引擎之前加载（引擎 shardOfKey 读 window.CGAShardMap）===== -->
+    <script src="cga-shard.js"></script>
+    <!-- ===== 云端同步：与 efficiency-hub 同源的引擎 + 两个后端 + 备份中心，按顺序加载 ===== -->
+    <script src="sync-github.js"></script>
     <script src="sync-gitee.js"></script>
-    <script src="sync-ui.js"></script>
-    <!-- ===== 备份中心：本机 IndexedDB 快照 / 恢复 ===== -->
     <script src="backup-hub.js"></script>
     <script>
-        // CGA 没有 #navList（不是导航式工作台），backup-hub 不会自动初始化，
-        // 这里显式挂载：注册侧边栏观察、自动快照、容量统计；入口在云同步面板内。
-        (function () {
-            function bootBackup() {
-                try {
-                    if (window.BackupHub && typeof window.BackupHub.initHub === 'function') {
-                        window.BackupHub.initHub({ silent: true });
-                    }
-                } catch (e) { console.warn('[BackupHub] 初始化失败', e); }
-            }
-            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootBackup);
-            else bootBackup();
-        })();
+        // 侧边栏现在带 #navList（对齐 efficiency-hub 的结构），
+        // backup-hub.js 会据此自动初始化，故此处不再显式调用 initHub ——
+        // 两边都调会让 updateBadge 定时器与侧栏观察器各注册两次。
     </script>
 
 
@@ -8979,16 +8829,8 @@ var COMPLETION_FILTER_RANGE = 'all';
                 renderAccountName();
                 var btn = $('accountBtn');
                 if (btn) btn.addEventListener('click', openAccountModal);
-                // 侧边栏：学员管理 / 云端同步按钮
-                var sidebarUserBtn = document.getElementById('sidebarUserManagerBtn');
-                if (sidebarUserBtn) sidebarUserBtn.addEventListener('click', openAccountModal);
-                var sidebarSyncBtn = document.getElementById('sidebarCloudSyncBtn');
-                if (sidebarSyncBtn) sidebarSyncBtn.addEventListener('click', function() {
-                    // 直接在本页打开云同步弹窗，不跳子页
-                    if (typeof window.openSyncPanel === 'function') {
-                        window.openSyncPanel();
-                    }
-                });
+                // 侧边栏的「学员管理 / 云端同步」按钮统一由侧边栏模块绑定（见侧边栏段），
+                // 这里不再重复绑定 —— 两处都绑会出现「一次点击打开两层面板」。
                 var modal = $('accountModal');
                 if (modal) {
                     modal.addEventListener('click', function(e) {
@@ -9030,71 +8872,110 @@ var COMPLETION_FILTER_RANGE = 'all';
         })();
 
         // ================================================================
-        //  光阴の侧边栏（网页工具集：儿童成长系统 / 学习记录 / 后续扩展）
+        //  侧边栏（对齐 efficiency-hub 的设计与交互）
+        //  · 工具清单由 TOOL_DEFS 驱动，注入 #navList
+        //  · 支持拖拽排序（HTML5 DnD），顺序落 sidebar_order_v3
+        //  · 端到端对齐：品牌区 / nav-label 分组 / nav-item / side-foot 版本徽标
         // ================================================================
         (function() {
             'use strict';
 
             // 网页工具定义：后续新增网页工具只需在下面追加一条
             var TOOL_DEFS = [
-                { key: 'main',  ico: '🌱', name: '儿童成长系统', href: './index.html' },
-                { key: 'study', ico: '📚', name: '儿童学习记录', href: './study-record.html' },
-                { key: 'eq', ico: '💬', name: '情商club', href: './情商club.html' },
-                { key: 'chaomu', ico: '🌅', name: '朝暮计', href: './朝暮计-双端适配版.html' },
-                { key: 'goal', ico: '🎯', name: '学习目标', href: './learning-goal.html' },
-                { key: 'gameedu', ico: '🎮', name: '游戏改变世界', href: './游戏改变世界.html' },
-                { key: 'planet', ico: '🪐', name: '陪伴星球', href: './陪伴星球.html' }
+                { key: 'home',     ico: '🏠', name: '总览',        href: './index.html' },
+                { key: 'review',   ico: '🌱', name: '成长复盘',    href: './成长复盘.html' },
+                { key: 'study',    ico: '📚', name: '学习记录',    href: './study-record.html' },
+                { key: 'eq',       ico: '💬', name: '情商club',    href: './情商club.html' },
+                { key: 'times',    ico: '⏱️', name: '时间统计',    href: './时间统计.html' },
+                { key: 'chaomu',   ico: '🌅', name: '朝暮计',      href: './朝暮计-双端适配版.html' },
+                { key: 'goal',     ico: '🎯', name: '学习目标',    href: './learning-goal.html' },
+                { key: 'gameedu',  ico: '🎮', name: '游戏改变世界', href: './游戏改变世界.html' },
+                { key: 'planet',   ico: '🪐', name: '陪伴星球',    href: './陪伴星球.html' }
             ];
+
+            var ORDER_KEY = 'sidebar_order_v3';
+            var COLLAPSE_KEY = 'sidebar_collapsed_v3';
+            var TOOLS_COLLAPSE_KEY = 'sidebar_tools_collapsed_v3';
+
+            /* 版本号（推送批次）：日期 + 字母递增（aa → ab → …）。
+               导航版本用小写、页面版本用大写，且**导航版本不低于页面版本**。
+               与 site-nav.js 保持同一套口径，改版本时两处一起改。 */
+            var NAV_VER = 'V20261012 aa';
+            var PAGE_VER_DEFAULT = 'V20261012 AA';
+            var PAGE_VERS = {};   // 单页单独迭代时在这里抬高，如 { review: 'V20261012 AB' }
+
+            function $(id) { return document.getElementById(id); }
+
+            // 版本徽标里的「本页名称」用页面名而不是导航项名
+            // （导航项首页叫「总览」，但版本行要写站名「儿女学习时光」）
+            var PAGE_LABEL = {
+                home: '儿女学习时光', review: '成长复盘', study: '学习记录',
+                eq: '情商club', times: '时间统计', chaomu: '朝暮计',
+                goal: '学习目标', gameedu: '游戏改变世界', planet: '陪伴星球'
+            };
+            var PAGE_NAME = PAGE_LABEL[currentKey()] || '儿女学习时光';
 
             // 当前所在网页
             function currentKey() {
-                var p = window.location.pathname.split('/').pop() || 'index.html';
+                var p = '';
+                try { p = decodeURIComponent(window.location.pathname.split('/').pop() || ''); } catch (e) { p = ''; }
+                if (p === '成长复盘.html') return 'review';
                 if (p === 'study-record.html') return 'study';
                 if (p === '情商club.html') return 'eq';
+                if (p === '时间统计.html') return 'times';
                 if (p === '朝暮计-双端适配版.html') return 'chaomu';
                 if (p === 'learning-goal.html') return 'goal';
                 if (p === '游戏改变世界.html') return 'gameedu';
                 if (p === '陪伴星球.html') return 'planet';
-                return 'main';
+                return 'home';
             }
 
+            // 顺序表只决定「排序优先级」，不是白名单：
+            // 表里没有的（新加的工具）补在后面，保证一个都不少。
             function getOrder() {
+                var saved = null;
                 try {
-                    var o = JSON.parse(localStorage.getItem('sidebar_order_v3') || 'null');
-                    if (Array.isArray(o) && o.length) return o;
+                    var o = JSON.parse(localStorage.getItem(ORDER_KEY) || 'null');
+                    if (Array.isArray(o) && o.length) saved = o;
                 } catch (e) {}
-                return TOOL_DEFS.map(function(t) { return t.key; });
+                if (!saved) return TOOL_DEFS.map(function(t) { return t.key; });
+                var seen = {}, out = [];
+                saved.forEach(function(k) {
+                    if (!seen[k] && TOOL_DEFS.some(function(t) { return t.key === k; })) { seen[k] = 1; out.push(k); }
+                });
+                TOOL_DEFS.forEach(function(t) { if (!seen[t.key]) { seen[t.key] = 1; out.push(t.key); } });
+                return out;
             }
             function setOrder(o) {
-                try { localStorage.setItem('sidebar_order_v3', JSON.stringify(o)); } catch (e) {}
+                try { localStorage.setItem(ORDER_KEY, JSON.stringify(o)); } catch (e) {}
             }
+
             function isCollapsed() {
                 // 首次访问默认展开；从第二次开始尊重用户的选择
                 try {
-                    var v = localStorage.getItem('sidebar_collapsed_v3');
-                    if (v === null) return false; // 默认展开
+                    var v = localStorage.getItem(COLLAPSE_KEY);
+                    if (v === null) return false;
                     return v === '1';
                 } catch (e) { return false; }
             }
             function setCollapsed(v) {
-                try { localStorage.setItem('sidebar_collapsed_v3', v ? '1' : '0'); } catch (e) {}
+                try { localStorage.setItem(COLLAPSE_KEY, v ? '1' : '0'); } catch (e) {}
             }
 
             // 统计每个网页的数据量（用于「有数据 / 未使用」徽章）
             function getToolDataCount(key) {
                 var total = 0;
                 try {
-                    if (key === 'main') {
-                        // 汇总主系统的记录类数据
-                        var acc = Storage.cur();
-                        var rk = function(k) { return (acc && Storage._ISOLATED.test(k)) ? (acc + '::' + k) : k; };
+                    if (key === 'home') {
+                        var acc = (typeof Storage !== 'undefined' && Storage.cur) ? Storage.cur() : null;
+                        var isolated = (typeof Storage !== 'undefined' && Storage._ISOLATED) ? Storage._ISOLATED : null;
+                        var rk = function(k) { return (acc && isolated && isolated.test(k)) ? (acc + '::' + k) : k; };
                         ['time_records', 'todos', 'growth_diary', 'growth_homework', 'growth_milestone', 'growth_month_days'].forEach(function(k) {
                             try {
                                 var v = JSON.parse(localStorage.getItem(rk(k)) || '[]');
                                 total += Array.isArray(v) ? v.length : 0;
                             } catch (e) {}
                         });
-                        // 补充：周/月复盘、目标、每日打卡
                         ['growth_week_review', 'growth_month_review', 'growth_goal'].forEach(function(k) {
                             try {
                                 var v = JSON.parse(localStorage.getItem(rk(k)) || 'null');
@@ -9108,233 +8989,277 @@ var COMPLETION_FILTER_RANGE = 'all';
                 return total;
             }
 
-            function makeItemHTML(tool, isActive) {
-                var count = getToolDataCount(tool.key);
-                var badge = count > 0
-                    ? '<span class="badge has-data">有数据</span>'
-                    : '<span class="badge no-data">未使用</span>';
-                return '<li class="sidebar-item' + (isActive ? ' active' : '') + '" data-tool="' + tool.key + '" data-href="' + tool.href + '">' +
-                    '<span class="drag-handle" title="拖动排序">⋮⋮</span>' +
-                    '<span class="ico">' + tool.ico + '</span>' +
-                    '<span class="name">' + tool.name + '</span>' +
-                    badge +
-                '</li>';
+            function badgeHTML(count) {
+                return count > 0
+                    ? '<span class="badge has-data" data-badge="' + count + '">有数据</span>'
+                    : '<span class="badge empty" data-badge="0">未使用</span>';
             }
 
-            function render() {
+            function buildNav() {
+                var list = $('navList');
+                if (!list) return;
                 var order = getOrder();
-                var map = {};
-                TOOL_DEFS.forEach(function(t) { map[t.key] = t; });
+                var byKey = {};
+                TOOL_DEFS.forEach(function(t) { byKey[t.key] = t; });
+                var active = currentKey();
 
-                var toolsList = document.getElementById('sidebarTools');
-                if (toolsList) {
-                    var activeKey = currentKey();
-                    toolsList.innerHTML = order.filter(function(k) { return map[k]; }).map(function(k) {
-                        return makeItemHTML(map[k], k === activeKey);
-                    }).join('');
-                }
+                list.innerHTML = '';
+                order.forEach(function(k) {
+                    var t = byKey[k];
+                    if (!t) return;
+                    var el = document.createElement('div');
+                    el.className = 'nav-item' + (k === active ? ' active' : '');
+                    el.dataset.id = t.key;
+                    el.dataset.href = t.href;
+                    el.draggable = true;
+                    el.innerHTML =
+                        '<span class="drag-handle" title="拖拽排序">⠿</span>' +
+                        '<span class="ico">' + t.ico + '</span>' +
+                        '<span class="name">' + t.name + '</span>' +
+                        badgeHTML(getToolDataCount(t.key));
+                    el.addEventListener('click', function(e) {
+                        if (e.target.classList && e.target.classList.contains('drag-handle')) return;
+                        var cur = currentKey();
+                        if (t.key === cur) {
+                            if (typeof window.showToast === 'function') window.showToast('当前就在此页面');
+                            return;
+                        }
+                        window.location.href = t.href;
+                    });
+                    el.addEventListener('dragstart', onDragStart);
+                    el.addEventListener('dragend', onDragEnd);
+                    el.addEventListener('dragover', onDragOver);
+                    el.addEventListener('dragenter', onDragEnter);
+                    el.addEventListener('dragleave', onDragLeave);
+                    el.addEventListener('drop', onDrop);
+                    list.appendChild(el);
+                });
 
-                var countEl = document.getElementById('sidebarToolCount');
+                // 顶部计数 + 当前儿童
+                var countEl = $('sidebarToolCount');
                 if (countEl) countEl.textContent = TOOL_DEFS.length;
-
-                // 顶部账户名
                 var acc = '';
                 try { acc = localStorage.getItem('child_account_current') || ''; } catch (e) {}
-                var accEl = document.getElementById('sidebarAccount');
+                var accEl = $('sidebarAccount');
                 if (accEl) accEl.textContent = acc || '未选择';
             }
 
-            // 暴露刷新接口给其他模块
-            window.refreshSidebar = render;
+            // 暴露刷新接口给其他模块（新增儿童、改年级后调用）
+            window.refreshSidebar = buildNav;
 
-            function bindItemEvents() {
-                var toolsList = document.getElementById('sidebarTools');
-                if (!toolsList) return;
-                toolsList.addEventListener('click', function(e) {
-                    var item = e.target.closest('.sidebar-item');
-                    if (!item || item.querySelector('.drag-handle') === e.target) return;
-                    var href = item.getAttribute('data-href');
-                    if (href && window.location.pathname.split('/').pop() !== href.split('/').pop()) {
-                        window.location.href = href;
-                    } else {
-                        showToast && showToast('当前就在此页面');
-                    }
-                });
+            // ---------------- 版本徽标（导航栏左边下侧）----------------
+            // 两行：导航版本（小写）+ 当前网页版本（大写），导航恒 >= 网页。
+            function fillBuildTag() {
+                var tag = $('buildTag');
+                if (!tag) return;
+                var nav = tag.querySelector('.vt-nav');
+                var tool = tag.querySelector('.vt-tool');
+                var k = currentKey();
+                if (nav) nav.textContent = '导航：' + NAV_VER;
+                if (tool) tool.textContent = PAGE_NAME + '：' + (PAGE_VERS[k] || PAGE_VER_DEFAULT);
             }
 
-            // 拖拽排序（为后续更多网页工具预留）
-            function bindDragSort() {
-                var list = document.getElementById('sidebarTools');
+            // ---------------- 拖拽排序（HTML5 DnD）----------------
+            var dragEl = null;
+            function onDragStart(e) {
+                dragEl = this;
+                this.classList.add('dragging');
+                try {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', this.dataset.id);
+                } catch (err) {}
+            }
+            function onDragEnd() {
+                this.classList.remove('dragging');
+                document.querySelectorAll('#navList .nav-item').forEach(function(n) { n.classList.remove('drag-over'); });
+                dragEl = null;
+            }
+            function onDragOver(e) {
+                e.preventDefault();
+                try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
+            }
+            function onDragEnter(e) {
+                e.preventDefault();
+                if (!dragEl || this === dragEl) return;
+                this.classList.add('drag-over');
+            }
+            function onDragLeave() {
+                this.classList.remove('drag-over');
+            }
+            function onDrop(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.remove('drag-over');
+                if (!dragEl || this === dragEl) return;
+                var list = $('navList');
                 if (!list) return;
-                var dragItem = null;
-                list.addEventListener('mousedown', function(e) {
-                    if (!e.target.classList.contains('drag-handle')) return;
-                    var li = e.target.closest('.sidebar-item');
-                    if (!li) return;
-                    dragItem = li;
-                    li.classList.add('dragging');
-                });
-                list.addEventListener('mouseup', function() {
-                    if (dragItem) dragItem.classList.remove('dragging');
-                    dragItem = null;
-                    list.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
-                });
-                list.addEventListener('mousemove', function(e) {
-                    if (!dragItem) return;
-                    var target = e.target.closest('.sidebar-item');
-                    if (!target || target === dragItem) return;
-                    list.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
-                    target.classList.add('drag-over');
-                });
-                list.addEventListener('mouseleave', function() {
-                    if (dragItem) {
-                        list.querySelectorAll('.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
-                    }
-                });
-                list.addEventListener('mouseup', function(e) {
-                    if (!dragItem) return;
-                    var target = e.target.closest('.sidebar-item');
-                    if (!target || target === dragItem) {
-                        dragItem.classList.remove('dragging');
-                        dragItem = null;
-                        return;
-                    }
-                    var rect = target.getBoundingClientRect();
-                    var after = (e.clientY - rect.top) > rect.height / 2;
-                    target.parentNode.insertBefore(dragItem, after ? target.nextSibling : target);
-                    dragItem.classList.remove('dragging');
-                    target.classList.remove('drag-over');
-                    dragItem = null;
-
-                    // 持久化新顺序
-                    var newOrder = Array.from(list.querySelectorAll('.sidebar-item')).map(function(li) { return li.getAttribute('data-tool'); });
-                    setOrder(newOrder);
-                });
+                var items = Array.prototype.slice.call(list.querySelectorAll('.nav-item'));
+                var from = items.indexOf(dragEl), to = items.indexOf(this);
+                if (from < 0 || to < 0) return;
+                if (from < to) this.parentNode.insertBefore(dragEl, this.nextSibling);
+                else this.parentNode.insertBefore(dragEl, this);
+                setOrder(Array.prototype.slice.call(list.querySelectorAll('.nav-item')).map(function(n) { return n.dataset.id; }));
             }
 
-            // 侧栏展开/收起
-            function bindToggle() {
-                var sidebar = document.getElementById('appSidebar');
-                var toggle = document.getElementById('sidebarToggle');
-                var mask = document.getElementById('sidebarMask');
-                if (!sidebar || !toggle) return;
+            // ---------------- 工具列表折叠 ----------------
+            function applyToolsCollapse() {
+                var collapsed = false;
+                try { collapsed = localStorage.getItem(TOOLS_COLLAPSE_KEY) === '1'; } catch (e) {}
+                var btn = $('toggleTools'), list = $('navList');
+                if (btn) btn.classList.toggle('collapsed', collapsed);
+                if (list) list.classList.toggle('collapsed', collapsed);
+            }
+            function toggleToolsList() {
+                var btn = $('toggleTools'), list = $('navList');
+                if (!btn || !list) return;
+                var collapsed = !list.classList.contains('collapsed');
+                btn.classList.toggle('collapsed', collapsed);
+                list.classList.toggle('collapsed', collapsed);
+                try { localStorage.setItem(TOOLS_COLLAPSE_KEY, collapsed ? '1' : '0'); } catch (e) {}
+            }
 
-                var isMobile = function() { return window.innerWidth <= 980; };
-
-                function apply(v) {
-                    if (v) {
-                        sidebar.classList.add('collapsed');
-                        document.body.classList.add('sidebar-collapsed');
-                        toggle.classList.add('collapsed-pos');
-                        toggle.setAttribute('aria-label', '展开侧边栏');
-                        if (mask) mask.classList.remove('show');
-                    } else {
-                        sidebar.classList.remove('collapsed');
-                        document.body.classList.remove('sidebar-collapsed');
-                        toggle.classList.remove('collapsed-pos');
-                        toggle.setAttribute('aria-label', '收起侧边栏');
-                        if (isMobile() && mask) mask.classList.add('show');
-                        else if (mask) mask.classList.remove('show');
-                    }
+            // ---------------- 展开 / 收起 ----------------
+            function applyCollapse(v) {
+                var sidebar = $('appSidebar'), mask = $('sidebarMask'), tab = $('sidebarToggle');
+                if (!sidebar) return;
+                if (v) {
+                    sidebar.classList.add('collapsed');
+                    document.body.classList.add('sidebar-collapsed');
+                    if (mask) mask.classList.remove('show');
+                    if (tab) tab.setAttribute('aria-label', '展开侧边栏');
+                } else {
+                    sidebar.classList.remove('collapsed');
+                    document.body.classList.remove('sidebar-collapsed');
+                    if (tab) tab.setAttribute('aria-label', '收起侧边栏');
                 }
+            }
+            function toggleCollapse() {
+                var sidebar = $('appSidebar');
+                if (!sidebar) return;
+                var willCollapse = !sidebar.classList.contains('collapsed');
+                // 窄屏下不收起，改为「点空白关闭抽屉」
+                applyCollapse(willCollapse);
+                setCollapsed(willCollapse);
+                if (!willCollapse && window.innerWidth <= 980) {
+                    var mask = $('sidebarMask');
+                    if (mask) mask.classList.add('show');
+                }
+            }
 
-                // 首次访问（未写过 cookie）→ 默认展开，不写入 localStorage
-                var firstTime = localStorage.getItem('sidebar_collapsed_v3') === null;
-                if (firstTime) apply(false);
-                else apply(isCollapsed());
+            function boot() {
+                buildNav();
+                applyToolsCollapse();
+                applyCollapse(isCollapsed());
+                fillBuildTag();
 
-                toggle.addEventListener('click', function() {
-                    var willOpen = sidebar.classList.contains('collapsed');
-                    setCollapsed(!willOpen);
-                    apply(!willOpen);
-                });
-
+                var collapseBtn = $('collapseBtn');
+                if (collapseBtn) collapseBtn.addEventListener('click', toggleCollapse);
+                var tab = $('sidebarToggle');
+                if (tab) tab.addEventListener('click', toggleCollapse);
+                var mask = $('sidebarMask');
                 if (mask) mask.addEventListener('click', function() {
-                    setCollapsed(true);
-                    apply(true);
+                    applyCollapse(true); setCollapsed(true);
+                });
+                var toggleTools = $('toggleTools');
+                if (toggleTools) toggleTools.addEventListener('click', function(e) { e.stopPropagation(); toggleToolsList(); });
+                // 「管理」与旧版一致：仅提示，工具清单由 TOOL_DEFS 维护
+                var manage = $('manageModules');
+                if (manage) manage.addEventListener('click', function() {
+                    if (typeof window.showToast === 'function') window.showToast('更多网页工具将陆续添加');
                 });
 
-                // 移动端：选择工具后自动收起让位给内容
-                if (isMobile()) {
-                    document.addEventListener('click', function(e) {
-                        var item = e.target.closest ? e.target.closest('.sidebar-item') : null;
-                        if (item) {
-                            setTimeout(function() {
-                                setCollapsed(true);
-                                apply(true);
-                            }, 120);
-                        }
-                    });
-                }
-            }
-
-            // 管理（占位：后续可加入更多工具说明）
-            var manageBtn = document.getElementById('sidebarManageBtn');
-            if (manageBtn) manageBtn.addEventListener('click', function() {
-                showToast && showToast('📌 当前 ' + TOOL_DEFS.length + ' 个网页工具，拖动 ⋮⋮ 可调整顺序');
-            });
-
-            function init() {
-                render();
-                bindItemEvents();
-                bindDragSort();
-                bindToggle();
-                bindFooterActions();
-            }
-
-            // 侧边栏底部功能入口（始终显示）：云同步 / 学员管理
-            function bindFooterActions() {
-                var cloudSyncBtn = document.getElementById('sidebarCloudSyncBtn');
-                if (cloudSyncBtn) cloudSyncBtn.addEventListener('click', function() {
-                    if (typeof window.openSyncPanel === 'function') {
-                        window.openSyncPanel();
-                    } else {
-                        // 兜底：模块尚未初始化时给个提示
-                        if (typeof showToast === 'function') showToast('同步模块还在加载，请稍后再试');
+                // 云端同步：#sync 锚点（子页的「云端同步」按钮都跳到 index.html#sync）。
+                //   · 本页跑着同步引擎（index.html）→ 引擎注入的 #syncStatusBtn 直接开面板；
+                //   · 本页没有引擎 → 转去导航中心的同步面板，绝不在这里再跑一套同步。
+                //   死循环防护：只有「不是首页」时才跳转；首页上是引擎还没注入，重试等待即可。
+                (function openSyncFromHash() {
+                    if (location.hash !== '#sync') return;
+                    var isHome = /(^|\/)index\.html$/.test(location.pathname) || /\/$/.test(location.pathname);
+                    var tries = 0;
+                    function attempt() {
+                        var btn = document.getElementById('syncStatusBtn');
+                        if (btn) { try { btn.click(); } catch (e) {} return; }
+                        var cs = window.CloudSync;
+                        if (cs && typeof cs.openPanel === 'function') { try { cs.openPanel(); } catch (e) {} return; }
+                        if (isHome && tries < 25) { tries++; setTimeout(attempt, 400); return; }  // 等引擎注入入口
+                        if (!isHome) window.location.href = './index.html#sync';                  // 本页无引擎 → 导航中心
                     }
-                });
-                var userMgrBtn = document.getElementById('sidebarUserManagerBtn');
-                if (userMgrBtn) userMgrBtn.addEventListener('click', function() {
-                    var acc = document.getElementById('accountBtn');
+                    setTimeout(attempt, 300);
+                })();
+
+                /* 同步入口兜底（标题栏）：
+                   · index.html 上跑着同步引擎，入口由引擎自己注入 #syncStatusBtn；
+                   · 没跑引擎的子页在这里补一颗，统一跳到导航中心的同步面板。
+                   延迟判定，避免与引擎注入的入口同时出现、变成两颗按钮。 */
+                (function syncEntryFallback() {
+                    function add() {
+                        if (document.getElementById('syncStatusBtn')) return;   // 引擎已注入
+                        if (document.getElementById('sidebarCloudSyncBtn')) return;
+                        var foot = document.querySelector('.sidebar .side-foot');
+                        if (!foot) return;
+                        var b = document.createElement('button');
+                        b.className = 'side-btn';
+                        b.id = 'sidebarCloudSyncBtn';
+                        b.title = '跳到导航中心的云端同步面板';
+                        b.innerHTML = '<span>☁️</span><span>云端同步</span>';
+                        b.addEventListener('click', function () { window.location.href = './index.html#sync'; });
+                        foot.insertBefore(b, foot.firstChild);
+                    }
+                    setTimeout(add, 1200);
+                    window.addEventListener('load', function () { setTimeout(add, 400); });
+                })();
+
+                var userBtn = $('sidebarUserManagerBtn');
+                if (userBtn) userBtn.addEventListener('click', function() {
+                    // 学员管理 = 顶部「选择儿童」按钮的同一个弹窗
+                    var acc = $('accountBtn');
                     if (acc) acc.click();
                 });
-                // 页面变色（深/浅切换）：写到 localStorage 并切换 <html class="dark">
-                var themeBtn = document.getElementById('sidebarThemeBtn');
-                if (themeBtn) {
-                    // 兼容新 key 'page_theme_v1' 与老 key 'theme'
-                    var saved = null;
-                    try { saved = localStorage.getItem('page_theme_v1') || localStorage.getItem('theme'); } catch (e) {}
-                    if (saved === 'light') document.documentElement.classList.remove('dark');
-                    else document.documentElement.classList.add('dark');
-                    themeBtn.textContent = document.documentElement.classList.contains('dark') ? '🌙 页面变色' : '☀️ 页面变色';
-                    themeBtn.addEventListener('click', togglePageTheme);
-                }
-                // 跨标签页同步（其它 tab 切了 → 这里立即跟随）
+                var themeBtn = $('sidebarThemeBtn');
+                if (themeBtn) themeBtn.addEventListener('click', function() { togglePageTheme(); });
+
+                // 深/浅色：与旧实现同 key（page_theme_v1 / theme），跨 tab 跟随
+                var saved = null;
+                try { saved = localStorage.getItem('page_theme_v1') || localStorage.getItem('theme'); } catch (e) {}
+                if (saved === 'light') document.documentElement.classList.remove('dark');
+                else if (saved === 'dark') document.documentElement.classList.add('dark');
+                syncThemeLabel();
+
                 window.addEventListener('storage', function(e) {
-                    if (e.key === 'page_theme_v1' || e.key === 'theme') togglePageTheme(null, false);
+                    if (e.key === 'page_theme_v1' || e.key === 'theme') { syncThemeLabel(); applyThemeFromStorage(); }
+                    else buildNav();   // 其它标签页写了业务数据 → 刷新徽章
                 });
             }
-            function togglePageTheme(btn, persist) {
-                if (persist !== false) {
-                    var willBeDark = !document.documentElement.classList.contains('dark');
-                    try {
-                        localStorage.setItem('page_theme_v1', willBeDark ? 'dark' : 'light');
-                        localStorage.setItem('theme', willBeDark ? 'dark' : 'light');
-                    } catch (e) {}
-                }
-                document.documentElement.classList.toggle('dark');
-                var tb = document.getElementById('sidebarThemeBtn');
-                if (tb) tb.textContent = document.documentElement.classList.contains('dark') ? '🌙 页面变色' : '☀️ 页面变色';
-            }
 
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', init);
-            } else {
-                init();
+            function syncThemeLabel() {
+                var tb = $('sidebarThemeBtn');
+                if (!tb) return;
+                var dark = document.documentElement.classList.contains('dark');
+                var label = tb.querySelector('span:last-child');
+                if (label) label.textContent = dark ? '页面变浅' : '页面变深';
+                else tb.textContent = dark ? '🌙 页面变色' : '☀️ 页面变色';
             }
+            function applyThemeFromStorage() {
+                var v = null;
+                try { v = localStorage.getItem('page_theme_v1') || localStorage.getItem('theme'); } catch (e) {}
+                if (!v) return;
+                document.documentElement.classList.toggle('dark', v === 'dark');
+                syncThemeLabel();
+            }
+            function togglePageTheme() {
+                var willBeDark = !document.documentElement.classList.contains('dark');
+                try {
+                    localStorage.setItem('page_theme_v1', willBeDark ? 'dark' : 'light');
+                    localStorage.setItem('theme', willBeDark ? 'dark' : 'light');
+                } catch (e) {}
+                document.documentElement.classList.toggle('dark', willBeDark);
+                syncThemeLabel();
+            }
+            // site-nav.js / 其它页面也会调它
+            window.togglePageTheme = togglePageTheme;
 
-            // 数据变化时刷新徽章（包括跨 tab 存储事件）
-            window.addEventListener('storage', function() { render(); });
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+            else boot();
         })();
     </script>
     </main></div>

@@ -1,7 +1,7 @@
 {
-  "name": "儿童成长助手",
-  "short_name": "成长助手",
-  "description": "儿童全周期学习成长计划：目标管理、每日监控、周期复盘、成长档案、时间统计",
+  "name": "儿女学习时光",
+  "short_name": "学习时光",
+  "description": "儿女学习时光：目标管理、每日陪伴、周期复盘、成长档案、学习记录与时间统计",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

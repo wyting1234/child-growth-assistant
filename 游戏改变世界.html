@@ -315,6 +315,13 @@
 </head>
 <body>
 
+<!-- 写入时间埋点：backup-hub.js 在**加载时**就给 localStorage.setItem 打钩，
+     把每个键的最后写入时间记进 __hub_meta_v1__（不依赖 initHub，页面上不会多出任何 UI）。
+     全站同源共用一份 localStorage，所以每一页的写入都必须被记下来 —— 否则云端同步
+     在判新旧时只能把「无时间戳」当成「本机刚写过」，取不回另一台设备的较新值。
+     这里只引入埋点，不 mount()：备份与同步的入口仍统一在导航中心。 -->
+<script src="./backup-hub.js"></script>
+
 <!-- ================= NAV / TABS ================= -->
 <nav class="nav">
   <div class="wrap nav-in">

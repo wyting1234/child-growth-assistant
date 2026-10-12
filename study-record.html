@@ -572,6 +572,13 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
 </style>
 </head>
 <body>
+
+<!-- 写入时间埋点：backup-hub.js 在**加载时**就给 localStorage.setItem 打钩，
+     把每个键的最后写入时间记进 __hub_meta_v1__（不依赖 initHub，页面上不会多出任何 UI）。
+     全站同源共用一份 localStorage，所以每一页的写入都必须被记下来 —— 否则云端同步
+     在判新旧时只能把「无时间戳」当成「本机刚写过」，取不回另一台设备的较新值。
+     这里只引入埋点，不 mount()：备份与同步的入口仍统一在导航中心。 -->
+<script src="./backup-hub.js"></script>
     <!-- ===== 全站统一导航：左侧居中汉堡 → 返回导航中心 / 本页快捷 / 常用功能 =====
            本页自带学员管理与云备份弹窗，故用 data-actions="custom" 避免重复绑定 -->
     <script src="./site-nav.js" data-title="学习记录" data-actions="custom"
@@ -2880,8 +2887,12 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             renderLogsPage();
             updateSelects();
 
-            // 学员管理事件（侧边栏入口）：优先用共享 modal，未载入则用本地降级
-            document.getElementById('sidebarUserManagerBtn').onclick = function() {
+            // 学员管理 / 云端同步（侧边栏入口）：这两个按钮**由 site-nav.js 在运行时注入**，
+            // 本页标记里并没有它们 —— 必须判空。否则 site-nav.js 一旦没到位（网络抖动、
+            // Service Worker 缓存缺项），这里就会抛 TypeError，把 renderAll() 之后的所有
+            // 事件绑定一并带走（页面看起来「点了没反应」，但控制台只有一条无关的报错）。
+            var _umBtn = document.getElementById('sidebarUserManagerBtn');
+            if (_umBtn) _umBtn.onclick = function() {
                 if (window.AccountManager && typeof window.AccountManager.open === 'function') {
                     window.AccountManager.open();
                 } else {
@@ -2889,15 +2900,11 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
                     document.getElementById('userManagerModal').classList.add('open');
                 }
             };
-            // 云端同步事件（侧边栏入口）：直接在子页同步，不跳主页
-            document.getElementById('sidebarCloudSyncBtn').onclick = function() {
-                const cfg = getCloudConfig();
-                if (cfg.token) document.getElementById('cloudTokenInput').value = cfg.token;
-                if (cfg.gistId) document.getElementById('cloudGistIdInput').value = cfg.gistId;
-                const lastSync = localStorage.getItem(CLOUD_SYNC_TIME_KEY);
-                setSyncStatus(lastSync ? ('上次同步：' + lastSync.replace('T', ' ').slice(0, 19)) : '尚未同步', 'info');
-                document.getElementById('cloudSyncModal').classList.add('open');
-            };
+            // 云端同步：全站唯一的同步入口在导航中心（index.html#sync），子页只做跳转。
+            // 原实现在子页自带一套 Gist 同步，与首页引擎是两份实现、两个云端副本 —— 已退休；
+            // 本页残留的 cloudSyncModal 弹出层 DOM 保留但不再作为入口（下面照旧绑关闭）。
+            var _csBtn = document.getElementById('sidebarCloudSyncBtn');
+            if (_csBtn) _csBtn.onclick = function() { window.location.href = './index.html#sync'; };
             document.getElementById('closeCloudSyncBtn').onclick = function() {
                 document.getElementById('cloudSyncModal').classList.remove('open');
             };

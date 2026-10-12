@@ -1,18 +1,15 @@
 /* =============================================================
- *  儿童成长助手 · 统一数据备份中心  (BackupHub v2.0)
+ *  efficiency-hub · 统一数据备份中心  (BackupHub v1.0)
  *  -------------------------------------------------------------
- *  集中管理本应用的数据备份 / 恢复 / 快照 / 体检。
- *  - 页面：index.html 调用 BackupHub.mount({id,name,icon}) 注入入口
- *
- *  ⚠️ 与 efficiency-hub 版最大的不同：本应用的数据键**按儿童隔离**。
- *     Storage.rk() 会给「记录类」键加 "<儿童名>::" 前缀（如 小明::growth_diary），
- *     而孩子数量与名字是运行期才知道的 —— 所以 MANIFEST 只能靠 prefixes
- *     动态匹配，绝不能写死具体键名。
+ *  集中管理本站点全部工具的数据备份 / 恢复 / 快照 / 体检。
+ *  - 工具页：BackupHub.mount({id,name,icon})  注入悬浮入口
+ *  - 导航页：自动在侧边栏挂载「数据备份」常驻入口
+ *  所有工具同域（localStorage 共享），因此可跨工具全量备份。
  * ============================================================= */
 (function () {
     'use strict';
 
-    var VERSION = '2.0.0';
+    var VERSION = '1.8.4';
     var META_KEY = '__hub_meta_v1__';          // 记录每个 key 的最后写入时间
     var LAST_SNAP_KEY = '__hub_last_snap_v1__'; // 每日自动快照标记
     var ACT_KEY = '__hub_activity_v1__';        // 最近一次备份 / 同步的时间与项目
@@ -20,97 +17,129 @@
     var IDB_NAME = 'child_growth_backup';
     var IDB_STORE = 'snapshots';
     var MAX_SNAPSHOTS = 5;
-    var QUOTA = 5 * 1024 * 1024;               // localStorage 常规上限 5MB（探测失败时的回退值）
-
-    /* ---------- 真实配额探测 ----------
-     * 硬编码 5MB 在部分浏览器（Chrome 某些版本给 10MB）会误报「即将写满」。
-     * 这里用「填字符直到写不进去」探一次真实上限，并缓存在 sessionStorage，
-     * 避免每次打开面板都做一遍（探测本身要写几百 KB，有成本）。
-     */
-    var QUOTA_KEY = '__hub_quota_probe_v1__';
-    function probeQuota() {
-        try {
-            var cached = sessionStorage.getItem(QUOTA_KEY);
-            if (cached && Number(cached) > 0) { QUOTA = Number(cached); return; }
-        } catch (e) {}
-        var testKey = '__hub_quota_test__';
-        var chunk = 256 * 1024;                       // 每步 256 KB
-        var block = new Array(chunk + 1).join('x');   // 用同一个大字符串反复追加
-        var acc = '';
-        var used = 0;
-        try {
-            // 逐步追加，直到写不进去为止。总耗时通常 < 50ms（几次 setItem）。
-            for (var i = 0; i < 64; i++) {
-                acc += block.slice(0, chunk);
-                localStorage.setItem(testKey, acc);
-                used += chunk;
-                if (used >= 32 * 1024 * 1024) break;  // 32MB 保护上限
-            }
-            QUOTA = used;                             // 能写满 32MB 说明配额很大
-        } catch (e) {
-            // 触发 QuotaExceededError：used 是写成功的量，再往上就是上限。
-            // 保险起见取 used（不夸大），下限 1MB。
-            QUOTA = Math.max(used, 1024 * 1024);
-        } finally {
-            try { localStorage.removeItem(testKey); } catch (e2) {}
-        }
-        // 兜底：上次探测若被强杀，残留的探针键会白占配额，启动时强制清一次
-        try { localStorage.removeItem('__hub_quota_test__'); } catch (e4) {}
-        try { sessionStorage.setItem(QUOTA_KEY, String(QUOTA)); } catch (e3) {}
-    }
-    probeQuota();
-
-    function quotaText() { return (QUOTA / 1024 / 1024).toFixed(QUOTA % (1024 * 1024) === 0 ? 0 : 1) + 'MB'; }
+    var QUOTA = 5 * 1024 * 1024;               // localStorage 常规上限 5MB
     var FORMAT = 'child-growth-backup';
 
-    /* ============ 模块清单：keys=全局键，prefixes=前缀键（含 <儿童>:: 形式） ============ */
-    // ⚠️ 匹配规则见 matchDef()：先用「原始键名」比对，再剥离 "<儿童>::" 前缀后用「裸键名」比对。
-    //    这样 小明::growth_diary 与 小红::growth_diary 都能命中 diary 模块。
-    var MANIFEST = [
-        { id: 'account', name: '儿童账户', icon: '👦',
-          keys: ['child_account_list', 'child_account_current'],
-          prefixes: ['child_account_meta'] },
-        { id: 'diary', name: '成长日记', icon: '📔',
-          keys: [], prefixes: ['growth_diary', 'growth_diary_cats'] },
-        { id: 'homework', name: '作业记录', icon: '📚',
-          keys: [], prefixes: ['growth_homework', 'homework_subjects'] },
-        { id: 'todo', name: '待办事项', icon: '✅',
-          keys: [], prefixes: ['todos'] },
-        { id: 'daily', name: '每日陪伴', icon: '🌤️',
-          keys: [], prefixes: ['daily_fixed', 'daily_temp', 'daily_sign', 'daily_behavior'] },
-        { id: 'behavior', name: '行为评分', icon: '⭐',
-          keys: ['growth_behavior_cfg'], prefixes: ['growth_behavior'] },
-        { id: 'target', name: '目标与指标库', icon: '🎯',
-          keys: ['growth_targets', 'growth_subjects', 'growth_actions', 'growth_indicators',
-                 'growth_keypoints'],
-          prefixes: [] },
-        { id: 'plan', name: '目标计划与复盘', icon: '📝',
-          keys: ['growth_goal', 'growth_week_review', 'growth_month_review'],
-          prefixes: ['growth_milestone', 'growth_month_days'] },
-        { id: 'time', name: '时间统计', icon: '⏱️',
-          keys: [], prefixes: ['time_records'] },
-        { id: 'pomo', name: '番茄钟', icon: '🍅',
-          keys: ['timer_categories'], prefixes: ['pomo_count'] },
-        { id: 'ui', name: '界面设置', icon: '🎨',
-          keys: ['page_theme_v1', 'theme', 'sidebar_order_v3', 'sidebar_collapsed_v3',
-                 'growth_indicator_tab'],
-          prefixes: [] }
-    ];
-
-    // 明确不参与备份的键：同步凭据、运行时状态、外部系统数据。
-    // ⚠️ timer_state_sm 是计时器运行态，同步/备份会让两台设备互相打架；
-    //    studyUsers_v21 属于外部学习系统，本应用只读不写。
-    var EXCLUDE_KEYS = [
-        'github_token', 'github_gist_id',
-        'gitee_token', 'gitee_owner', 'gitee_repo', 'gitee_branch',
-        'sync_last_sync', 'sync_dirty',
-        // sync_backend：同步后端选择是「每台设备各自决定」的（见 sync-core.js 同名注释），
-        // 备份文件带到另一台设备后恢复，会把对方的选择冲掉 —— 与本意直接矛盾，必须排除。
-        'sync_backend',
-        'timer_state_sm', 'studyUsers_v21'
-    ];
+    /* ---- 每日自动快照：调度参数与状态 ----
+       声明放在这里、而不是紧挨下面的函数，是因为 localStorage.setItem 的 hook 在本文件
+       靠前的位置就装好了，之后任何一次写入都会调用 scheduleAutoSnapshot()。
+       若这几个变量声明在下面，早期调用会读到 undefined：
+       常量 undefined → Math.min(undefined, x) = NaN → setTimeout(fn, NaN) 当作 0ms，
+       结果是「立刻封存」，正好退回 v1.8.1 要修掉的老行为。 */
+    var AUTO_SNAP_IDLE_MS = 20000;      // 静默期：最后一次写入后 20s 无新写入才封存
+    var AUTO_SNAP_MAX_WAIT_MS = 120000; // 兜底：自首次调度起最多等 2 分钟
+    var autoSnapTimer = null, autoSnapDeadline = 0;
 
     /* ============ 模块清单：keys=精确键，prefixes=前缀键 ============ */
+    var MANIFEST = [
+        // ⚠️ exclude 里的 5 个键是 **CPA 工具页**借用的 hub_ 前缀键（高亮浮条 / 调色板），
+        //   不是本导航页的设置。不排除的话，本条目（排 MANIFEST[0]）的 'hub_' 前缀
+        //   会先于 cpa 条目把它们吃掉，备份里就归错模块了（L305 取第一个命中）。
+        { id: 'hub', name: '工作台设置', icon: '⚙️', keys: [], prefixes: ['hub_'],
+          exclude: ['hub_cpa', 'hub_deco_v1', 'hub_swatches_v1', 'hub_swatch_def_v1', 'hub_text_v1'],
+          internal: true },
+        { id: 'cpa', name: '考证学习进度', icon: '📚',
+          // ★ 2026-10-10 与 index.html 的 MODULES 对齐（memory §8 缺口②）：
+          //   原先只登记 5 个，其余 10 个靠运行时并集兜 —— 单独打开工具页（无 MODULES）
+          //   时会掉进「未归类」。这里补齐，并把 hub_* 那几个「工具页借用 hub_ 前缀」的
+          //   键也显式登记（否则会被排在前面的 hub 条目的 hub_ 前缀截胡）。
+          keys: ['cpa_learning_data_v3', 'cpa_study_projects_v1', 'cpa_study_current_project_v1',
+                 'cpa_appearance_v1', 'accCheck_v3_migrated',
+                 'cpa_font_scale', 'cpa_sidebar_folded_v1', 'cpa_user_guide_v1',
+                 'kp_outline_no_v1',
+                 'hub_cpa', 'hub_deco_v1', 'hub_swatches_v1', 'hub_swatch_def_v1', 'hub_text_v1',
+                 'accCheck_v3', 'accWrong_v3', 'accMods_v3', 'accPlan_v3'],
+          prefixes: ['cpa_learning_data_v3_', 'cpa_study_', 'cpa_', 'hub_cpa_', 'accCheck_v3',
+                     'accWrong_v3', 'accMods_v3', 'accPlan_v3'] },
+        { id: 'studybk', name: '备考学习工作台', icon: '📐',
+          keys: ['cpaMasteryTree_v1', 'cpaMasteryScore_v1', 'cpaMasterySub_v1',
+                 'cpaTreeEditMode_v1', 'cpaTreeLv_v1', 'cpaScoreCols_v1'],
+          prefixes: ['wb_bk_', 'cpaMastery', 'cpaTree', 'cpaScore'] },
+        { id: 'work', name: '工作管理系统', icon: '🗂️',
+          keys: ['workLogs', 'workTodos', 'workWeekly', 'workStaff', 'workCategories'] },
+        { id: 'diary', name: '日记', icon: '📝',
+          keys: ['diary_app_data', 'diary_app_draft', 'diary_editor_font'] },
+        { id: 'time', name: '时间统计', icon: '⏱️',
+          keys: ['timeRecords', 'timeTodos', 'timeCategoriesV2', 'timeTimerState',
+                 'timeTimerHistory', 'timeDoneFolded'] },
+        { id: 'info', name: '信息研判', icon: '📡',
+          keys: ['multi_info_records', 'info_categories'] },
+        { id: 'reading', name: '阅读·思享', icon: '📖',
+          keys: ['reading_think_system_v1'], prefixes: ['reading_think_'] },
+        { id: 'life', name: '生活工作台', icon: '🏠',
+          // organizer_* / storage_categories 原属已删除的 box（收纳盒）条目，
+          //   2026-09-23 并入 life 时只写了注释、没落进 keys ⇒ 靠运行时并集兜。
+          keys: ['wb_life_v1', 'organizer_items_v2', 'organizer_theme', 'storage_categories'],
+          prefixes: ['wb_life_', 'organizer_', 'storage_'] },
+        { id: 'star', name: '恒星时间管理法', icon: '🪐',
+          keys: ['stellar_tag_system_v2', 'stellar_time_records'], prefixes: ['stellar_'] },
+        { id: 'idle', name: '琐碎时间记录', icon: '🧩',
+          keys: ['idleManagerData_v15'], prefixes: ['idleManagerData_'] },
+        { id: 'idol', name: '偶像学习', icon: '🎯',
+          keys: ['imitation_targets', 'good_habits', 'daily_checklist', 'bad_habits'] },
+        { id: 'health', name: '健康管理', icon: '💪',
+          keys: ['mySleepData', 'mySportData', 'myWeightData', 'myBpData',
+                 'myWaterData', 'myDietData', 'healthFoodDB'] },
+        { id: 'social', name: '人际交往与沟通', icon: '🤝',
+          // ★ 与 index.html 的 MODULES 对齐（2026-09-18 审计）：comm_ 前缀只覆盖前三个，
+          //   后面这些是同一工具的业务键，漏登记会让它们掉进「未归类」。
+          keys: ['comm_daily', 'comm_week', 'comm_month', 'tool_dialog', 'tool_relation', 'tool_script',
+                 'action_plan_data', 'action_categories', 'wisdom_data', 'if_then_plans', 'if_then_categories'],
+          prefixes: ['comm_'] },
+        { id: 'learning', name: '学习目标管理', icon: '🎯',
+          // wb_goal / wb_ex 是「主键」，不带尾下划线 ⇒ 下面的 'wb_goal_' / 'wb_ex_' 前缀
+          //   匹配不到它们（startswith('wb_goal_') 为 False）。必须精确登记。
+          keys: ['wb_goal', 'wb_ex', 'wb_goal_seeded', 'wb_ex_seeded'],
+          prefixes: ['wb_goal_db_', 'wb_goal_draft_', 'wb_goal_', 'wb_ex_'] },
+        { id: 'previewer', name: '代码预览器', icon: '💻',
+          keys: ['previewer_html', 'previewer_css', 'previewer_js'] },
+        { id: 'travel', name: '旅行助手', icon: '🧭',
+          keys: ['roam_last_tab'], prefixes: ['roam_assistant_', 'roam_'] },
+        { id: 'chaomu', name: '朝暮计', icon: '🌅',
+          // zmv_ / __zmq_：朝暮计的视图模式与压缩块（__zmq_<字节数>），
+          //   键名不带 chaomuji_ 前缀，只靠前缀匹配会掉进「未归类」。
+          keys: ['zmv_view_mode', '__zmq', 'chaomuji_diary_v1'],
+          prefixes: ['chaomuji_', '__zmq_', 'zmv_'],
+          exclude: ['chaomuji_backups_v1'] },   // 旧版自带备份仓，避免体积翻倍
+        { id: 'team', name: '成员管理', icon: '👥', keys: ['teamMembers_v1'] }
+    ];
+    /* ★ 2026-09-23：删掉两条失效条目 ——
+       · dream（梦想成真）：工具 2026-09-23 已从库删除，留个条目只会让备份面板出现空卡片；
+       · box（收纳盒）：导航页 MODULES 已把它并入 life（生活工作台），
+         下面的并集逻辑会把 organizer_items_v2 / organizer_theme / storage_categories
+         从 MODULES.life 带过来，所以 organizer_* 现在归 life，不需要再单列。
+       team（成员管理）**保留**：工具页不在导航注册表里，但用户可能真有 teamMembers_v1 数据，
+       删掉条目会把它推进「未归类」（并集只加不减，所以留着是安全的）。 */
+
+    /* ---- 与导航页 index.html 的 MODULES 对齐：消掉「两份清单漂移」 ----
+       本文件要能独自在工具页里加载（那里没有 MODULES），所以自留一份 MANIFEST；
+       但 MANIFEST 与 index.html 的 MODULES 是同一个事实的两份抄写 ——
+       MODULES 决定「同步后该重载哪个工具页」，MANIFEST 决定「备份按模块怎么分组」，
+       两者不一致就会出现「备份算在 A、同步却重载 B」这种谁也想不通的现象。
+       2026-09-18 一次审计就查出 index.html 侧漏登记了 18 个键。
+       所以：导航页在场时以 MODULES 为准做**并集**（只加不减，绝不删掉本地独有的规则）；
+       MODULES 里有、MANIFEST 里没有的模块 id，就地补一个空壳条目，
+       否则并集来的键会找不到落点、全部掉进「未归类」。 */
+    try {
+        if (typeof MODULES !== 'undefined' && Array.isArray(MODULES)) {
+            var _byId = {}, _i, _j;
+            for (_i = 0; _i < MANIFEST.length; _i++) _byId[MANIFEST[_i].id] = MANIFEST[_i];
+            for (_i = 0; _i < MODULES.length; _i++) {
+                var _m = MODULES[_i];
+                if (!_m || !_m.id) continue;
+                var _g = _byId[_m.id];
+                if (!_g) {
+                    _g = _byId[_m.id] = { id: _m.id, name: _m.name || _m.id, icon: _m.icon || '📦',
+                                          keys: [], prefixes: [] };
+                    MANIFEST.push(_g);
+                }
+                var _ks = _m.keys || [];
+                for (_j = 0; _j < _ks.length; _j++) {
+                    if (_g.keys.indexOf(_ks[_j]) < 0) _g.keys.push(_ks[_j]);
+                }
+            }
+        }
+    } catch (e) { /* 并集失败不影响既有能力：退回 MANIFEST 单清单 */ }
 
     /* ============ 工具函数 ============ */
     function bytesOf(s) {
@@ -123,21 +152,9 @@
     }
     function fmtTime(ts) {
         if (!ts) return '—';
-        // 兼容三种历史形态，避免任何一种是「Invalid Date → NaN-NaN-NaN」：
-        //   ① 数字时间戳 1789402841000（新版同步写的）
-        //   ② 数字字符串 "1789402841000"（localStorage 读出来永远是字符串）
-        //   ③ 旧版同步写的 Date.toLocaleString() 文本
-        // new Date("1789402841000") 是 Invalid Date，必须先转成 Number。
-        var d;
-        if (typeof ts === 'number') d = new Date(ts);
-        else {
-            var s = String(ts).trim();
-            if (/^\d+$/.test(s)) d = new Date(Number(s));
-            else d = new Date(s);
-        }
-        if (isNaN(d.getTime())) return String(ts);   // 实在解析不了就原样显示，别给 NaN
-        return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) +
-               ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+        var d = new Date(ts), p = function (n) { return String(n).padStart(2, '0'); };
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+               ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
     }
     function pad2(n) { return String(n).padStart(2, '0'); }
     function stamp() {
@@ -161,58 +178,64 @@
         }
         return false;
     }
+    /* ---- 不纳入备份的键（2026-09-23 新增）------------------------------------
+       为什么必须有这张表：备份文件与快照是**会被搬出浏览器的** —— 界面上就引导用户
+       「导出一份 JSON 存到网盘或微信收藏」。而在此之前，这里只排除了 __hub_* 与埋点前缀，
+       实测（2026-09-23 线上探针）的结果是：
+         ★ GitHub / Gitee 令牌的明文被写进了导出文件与快照 ★
+       云同步那边早就有一张 EXCLUDE_KEYS（令牌绝不出口），备份侧只是漏了同一个决定。
 
-    /* ============ 儿童前缀处理（CGA 特有） ============ */
-    // 记录类键的真实名字是 "<儿童名>::growth_diary"（见 index.html 的 Storage.rk()）。
-    // 匹配模块时，既要能命中带前缀的，也要能命中不带前缀的全局键。
-    function splitAccount(k) {
-        var i = String(k).indexOf('::');
-        if (i < 0) return { account: '', base: String(k) };
-        return { account: String(k).slice(0, i), base: String(k).slice(i + 2) };
-    }
-    function baseKeyOf(k) { return splitAccount(k).base; }
+       两类排除：
+         ① SECRET_KEYS  —— 凭据与同步技术键：换设备/换人拿到都没有意义，反而危险；
+         ② HEAVY_*      —— 背景大图与朝暮计自带快照仓：动辄几百 KB～几 MB，
+                           备份走 IndexedDB（QUOTA = 5MB、最多留 5 份），会把额度吃光。
 
-    // 明确排除的键（同步凭据 / 运行时状态 / 外部系统）——清单见文件头部 EXCLUDE_KEYS
-    function isExcludedKey(k) {
-        var base = baseKeyOf(k);
-        for (var i = 0; i < EXCLUDE_KEYS.length; i++) {
-            if (k === EXCLUDE_KEYS[i] || base === EXCLUDE_KEYS[i]) return true;
+       ⚠️ 设置类与业务数据**一律保留**（主题 / 字色 / 便签 / 各工具业务键都在其中）——
+          它们正是备份存在的意义，别顺手一起排掉。
+          判据只有一条：**这个键搬出这台机器之后，还成立吗？** 不成立才排。 */
+    var SECRET_KEYS = {
+        // 凭据：令牌 + 仓库坐标 + Gist id
+        github_token: 1, gitee_token: 1, gitee_owner: 1, gitee_repo: 1, gitee_branch: 1,
+        github_gist_id: 1, github_cloud_state: 1, cloud_backend: 1,
+        // 同步技术键：本机记录，带过去只会与另一端互相覆盖
+        sync_last_sync: 1, sync_timestamps: 1, sync_key_ts_v1: 1, ehub_autosync_v1: 1
+    };
+    var HEAVY_PREFIXES = [
+        'chaomuji_web_v27_bg',        // 朝暮计·页面背景（data:image 大图）
+        'chaomuji_web_v27_cardbg',    // 朝暮计·卡片背景
+        'chaomuji_web_v27_hcardbg',   // 朝暮计·习惯卡背景
+        'zmv_bg_'                     // 朝暮计·背景质量等设置（与背景同族，一起走）
+    ];
+    var HEAVY_KEYS = { chaomuji_backups_v1: 1 };   // 朝暮计 v27 内置快照仓（单独就 600KB+）
+    var HEAVY_MIN = 30 * 1024;                     // 超过 30KB 的内嵌图片视为背景资源
+
+    function isSecretOrHeavy(k, v) {
+        if (SECRET_KEYS[k] || HEAVY_KEYS[k]) return true;
+        for (var i = 0; i < HEAVY_PREFIXES.length; i++) {
+            if (k.indexOf(HEAVY_PREFIXES[i]) === 0) return true;
         }
+        if (v && v.length > HEAVY_MIN && v.slice(0, 11) === 'data:image/') return true;
         return false;
     }
-
-    /* 兜底防护：任何「值不是字符串」的键都不是业务数据。
-     *
-     * 为什么需要：localStorage 存的一律是字符串。一旦某个键取出来是函数/对象，
-     * 说明它是被脚本挂上去的实例属性（历史 bug：localStorage.setItem = fn 会在实例上
-     * 造出一个名为 "setItem" 的键），而不是用户数据。这类键一旦被当数据备份出去，
-     * 备份文件里就会出现整段 JS 源码。这里统一拦掉，避免同类问题换名字再犯。
-     * 注意：必须放在 allKeys() 里而不是 isExcludedKey()，因为后者签名只有 key。 */
-    function isNonDataKey(k) {
-        try {
-            var v = localStorage.getItem(k);
-            return v !== null && typeof v !== 'string';
-        } catch (e) { return true; }
+    // 供 UI/测试复用：这个键会不会被备份排除（内部读一次值以判大图兜底）
+    function isBackupExcluded(k) {
+        var v = null; try { v = localStorage.getItem(k); } catch (e) { }
+        return !!isSecretOrHeavy(k, v);
     }
-
-    // 一个键是否属于某个模块定义。
-    // ⚠️ 必须同时比对「原始键名」与「剥离儿童前缀后的裸键名」：
-    //    小明::growth_diary 只有剥成 growth_diary 才能被 diary 模块的 prefixes 命中。
-    function matchesDef(def, k) {
-        if (!def) return false;
-        if (def.exclude && def.exclude.indexOf(k) >= 0) return false;
-        var base = baseKeyOf(k);
-        var i;
-        if (def.keys) {
-            for (i = 0; i < def.keys.length; i++) {
-                if (k === def.keys[i] || base === def.keys[i]) return true;
-            }
-        }
-        if (def.prefixes) {
-            for (i = 0; i < def.prefixes.length; i++) {
-                var p = def.prefixes[i];
-                if (k.indexOf(p) === 0 || base.indexOf(p) === 0) return true;
-            }
+    // 纯界面偏好键：值变了不代表「你的数据还没备份」，不计入 pendingChanges。
+    //
+    // hub_*（单下划线，不是 __hub_）是导航页自身的 UI 状态：hub_theme、hub_lastModule、
+    // hub_sidebar_pref、hub_tools_collapsed、hub_nav_order、hub_custom_modules…
+    // 这些键的特点是：只要在导航页点一下（切模块、收侧边栏、换主题）就被重写，
+    // 而它们的变化对「数据是否已经有一份备份」毫无信息量。把它们算进 pending，
+    // 橙字警告几乎永远亮着，真正的内容差异（比如日记、工作日志改了）反而被淹没。
+    //
+    // ⚠️ 注意这里只是「不参与待备份统计」，不是「不备份」：
+    //    hub_* 仍归 hub 模块、照旧进快照与导出，换设备照样能带走主题和侧边栏偏好。
+    var UI_ONLY_PREFIXES = ['hub_'];
+    function isUiOnlyKey(k) {
+        for (var i = 0; i < UI_ONLY_PREFIXES.length; i++) {
+            if (k.indexOf(UI_ONLY_PREFIXES[i]) === 0) return true;
         }
         return false;
     }
@@ -230,7 +253,12 @@
     // 关页 / 切后台前把时间埋点落盘，否则"备份后又有改动"会漏判
     try {
         window.addEventListener('beforeunload', flushMeta);
-        window.addEventListener('pagehide', flushMeta);
+        window.addEventListener('pagehide', function () {
+            flushMeta();
+            // 补一次当天备份：新策略是「静默期后封存」，只开几秒就关掉的访问等不到静默期，
+            // 不能因此整天没有备份。这里做兜底（runAutoSnapshot 内部会先查当天是否已备份）。
+            try { if (!autoSnapshotDone()) runAutoSnapshot(); } catch (e) {}
+        });
     } catch (e) {}
 
     // 数据一改动就顺带刷新侧边栏（节流，避免频繁 scan）
@@ -244,56 +272,21 @@
         }, 2500);
     }
 
-    /* ⚠️ 必须改「Storage 原型」，而且原型要从 localStorage 自己取。
-     *
-     * 两个坑叠加，缺一个都会静默失效：
-     *
-     * 坑① localStorage 是 Storage 接口的实例，setItem 定义在**原型**上。
-     *      向实例赋同名属性不会覆盖原型方法，而是新增一个名为 "setItem" 的
-     *      普通数据属性 —— 它会被 localStorage.key(i) 枚举出来，进了备份文件：
-     *          "unmatched": { "setItem": "function (k, v) { ... }" }
-     *      同时包装完全不生效：业务代码调 localStorage.setItem(...) 走的仍是
-     *      原型方法，写入时间埋点从未刷新，"备份后是否有改动"失去时间戳依据。
-     *
-     * 坑② 本页 window.Storage 被 CGA 的业务对象影子化了（index.html 顶层
-     *      `var Storage = { rk/set/get ... }` 覆盖了原生 Storage 构造器）。
-     *      所以 `Storage.prototype.setItem` 拿到的是业务对象的原型，
-     *      在上面挂 setItem 毫无作用 —— 必须从 localStorage 反查原型链：
-     *          Object.getPrototypeOf(localStorage)
-     *
-     * 包装链：sync-ui.js 也包一层。两边都改同一份原型，后包的会调用前一层
-     * （读取原型当前值作为 orig），链式关系天然保持。
-     * 标志位放闭包 —— 挂 localStorage 上同样会污染出一个新键。
-     */
-    var setItemWrapped = false;
     var _setItem = null;
     try {
-        var _proto = Object.getPrototypeOf(localStorage);
-        if (_proto && typeof _proto.setItem === 'function') {
-            _setItem = _proto.setItem;
-            _proto.setItem = function (k, v) {
-                var r = _setItem.apply(this, arguments);
-                try {
-                    if (!isInternalKey(k)) { meta[k] = Date.now(); metaDirty = true; }
-                    if (!metaTimer) metaTimer = setTimeout(flushMeta, 2000);
-                    scheduleSideRefresh();
-                } catch (e) {}
-                return r;
-            };
-            setItemWrapped = true;
-        }
-    } catch (e) { console.warn('[BackupHub] 包装 setItem 失败', e); }
-
-    /* 清理历史遗留：早期版本向 localStorage 实例赋值，留下的 "setItem" 键
-     * （以及 sync-ui 留下的 __hub_setItem_wrapped 键）会一直躺在用户浏览器里，
-     * 继续被当成数据备份出去。这里主动删一次，让旧用户升级后自动洗净。 */
-    try {
-        if (Object.prototype.hasOwnProperty.call(localStorage, 'setItem')) {
-            localStorage.removeItem('setItem');
-        }
-        if (Object.prototype.hasOwnProperty.call(localStorage, '__hub_setItem_wrapped')) {
-            localStorage.removeItem('__hub_setItem_wrapped');
-        }
+        _setItem = localStorage.setItem;
+        localStorage.setItem = function (k, v) {
+            var r = _setItem.apply(localStorage, arguments);
+            try {
+                if (!isInternalKey(k)) { meta[k] = Date.now(); metaDirty = true; }
+                if (!metaTimer) metaTimer = setTimeout(flushMeta, 2000);
+                scheduleSideRefresh();
+                // 数据还在动 → 把「每日自动快照」往后推，等页面安静下来再拍，
+                // 否则拍到的永远是「刚打开那一秒」的状态（见 scheduleAutoSnapshot 注释）
+                scheduleAutoSnapshot();
+            } catch (e) {}
+            return r;
+        };
     } catch (e) {}
 
     /* ============ 扫描：把 localStorage 按模块归类 ============ */
@@ -302,7 +295,11 @@
         try {
             for (var i = 0; i < localStorage.length; i++) {
                 var k = localStorage.key(i);
-                if (k && !isInternalKey(k) && !isIgnoredKey(k) && !isExcludedKey(k) && !isNonDataKey(k)) out.push(k);
+                if (!k || isInternalKey(k) || isIgnoredKey(k)) continue;
+                // 凭据 / 巨型资源不进备份（见 SECRET_KEYS 上方注释）：
+                // 这里必须带上值判断，否则 >30KB 的 data:image 兜底规则没法生效。
+                try { if (isSecretOrHeavy(k, localStorage.getItem(k))) continue; } catch (e) { }
+                out.push(k);
             }
         } catch (e) {}
         return out;
@@ -316,40 +313,33 @@
         });
         var other = { def: { id: '_other', name: '未归类数据', icon: '🗃️' }, keys: [], bytes: 0 };
 
-        // 大图单独记账：内嵌的 base64 背景图动辄几 MB，会被算进「已用空间」，
-        // 于是用户看到「4.9MB / 5MB 即将写满」而恐慌 —— 但它们既不该被当成
-        // 「数据」看待，也不会同步上云（同步内核把它排除了）。必须拆开显示。
-        var imgBytes = 0, imgCount = 0;
-        var DATA_IMG_MIN = 30 * 1024;
-
         keys.forEach(function (k) {
-            var size = 0, val = '';
-            try { val = localStorage.getItem(k) || ''; size = bytesOf(val); } catch (e) {}
-            var isBigImg = val.length > DATA_IMG_MIN && val.slice(0, 11) === 'data:image/';
-            if (isBigImg) { imgBytes += size; imgCount++; }
-
+            var size = 0;
+            try { size = bytesOf(localStorage.getItem(k) || ''); } catch (e) {}
             var hit = null;
             for (var i = 0; i < MANIFEST.length; i++) {
                 var m = MANIFEST[i];
+                if (m.exclude && m.exclude.indexOf(k) >= 0) continue;
                 if (used[k]) break;
-                if (matchesDef(m, k)) { hit = m; break; }
+                var ok = (m.keys && m.keys.indexOf(k) >= 0);
+                if (!ok && m.prefixes) {
+                    for (var p = 0; p < m.prefixes.length; p++) {
+                        if (k.indexOf(m.prefixes[p]) === 0) { ok = true; break; }
+                    }
+                }
+                if (ok) { hit = m; break; }
             }
             var g = hit ? groups[hit.id] : other;
             if (hit) used[k] = hit.id;
-            g.keys.push({ key: k, bytes: size, ts: meta[k] || 0, isImage: isBigImg });
-            if (!isBigImg) g.bytes += size;   // 图片不计入模块「数据体积」
+            g.keys.push({ key: k, bytes: size, ts: meta[k] || 0 });
+            g.bytes += size;
         });
 
         var list = MANIFEST.map(function (m) { return groups[m.id]; });
         list.push(other);
-        var total = 0, dataBytes = 0;
-        list.forEach(function (g) { dataBytes += g.bytes; });
-        // total 仍是 localStorage 实际占用（用于配额告警），dataBytes 是纯数据
-        total = dataBytes + imgBytes;
-        return {
-            groups: list, total: total, keyCount: keys.length,
-            dataBytes: dataBytes, imgBytes: imgBytes, imgCount: imgCount
-        };
+        var total = 0;
+        list.forEach(function (g) { total += g.bytes; });
+        return { groups: list, total: total, keyCount: keys.length };
     }
 
     /* ============ 最近备份 / 同步记录（供侧边栏展示） ============ */
@@ -360,7 +350,14 @@
     // 单个键归属到哪个模块（与 scan() 的归类规则保持一致）
     function moduleOfKey(k) {
         for (var i = 0; i < MANIFEST.length; i++) {
-            if (matchesDef(MANIFEST[i], k)) return MANIFEST[i];
+            var m = MANIFEST[i];
+            if (m.exclude && m.exclude.indexOf(k) >= 0) continue;
+            if (m.keys && m.keys.indexOf(k) >= 0) return m;
+            if (m.prefixes) {
+                for (var p = 0; p < m.prefixes.length; p++) {
+                    if (k.indexOf(m.prefixes[p]) === 0) return m;
+                }
+            }
         }
         return { id: '_other', name: '未归类', icon: '🗃️' };
     }
@@ -449,18 +446,35 @@
             if (rec && rec.fp && rec.ts === since) fp = rec.fp;
         } catch (e) { fp = null; }
         var keys = [];
+        var k;
         try {
-            for (var k in meta) {
-                if (!Object.prototype.hasOwnProperty.call(meta, k)) continue;
-                if (isInternalKey(k) || isIgnoredKey(k)) continue;
-                // 有指纹：以「值是否变化」为准。
-                // 为什么这比时间戳准：备份过程本身要花时间，期间被重写但内容没变的键
+            if (fp) {
+                // 有指纹：以「值是否变化」为准。遍历的是 localStorage 的当前全量业务键，
+                // **不依赖 meta 埋点**。
+                //
+                // 为什么不依赖 meta：meta 是靠给 localStorage.setItem 打 hook 记写入时间的，
+                // 而这个 hook 有可能**静默装不上**——比如浏览器把 Storage 包成 Proxy、
+                // 隐私模式下 Storage 被冻结、实例属性赋值被忽略。hook 一失效 meta 就是空的，
+                // 旧实现会永远报「0 项改动」：不是少报，是**永远不报**。
+                // 用户看到「备份后有改动 0 项」，会以为全都备份好了——这是最危险的一类静默失效。
+                // 而指纹比对本来只需要「当前值 + 备份时的指纹」，根本用不到写入时间。
+                //
+                // 为什么指纹比时间戳准：备份过程本身要花时间，期间被重写但内容没变的键
                 // （业务代码无脑重写很常见）时间戳会晚于锚点，用时间戳就会误报
                 // 「备份后有改动」；比对内容则不会。
-                if (fp) {
+                var cur = allKeys();
+                for (var i = 0; i < cur.length; i++) {
+                    k = cur[i];
+                    if (isIgnoredKey(k) || isUiOnlyKey(k)) continue;
                     if (valueFingerprint(k) !== fp[k]) keys.push(k);
-                } else if ((meta[k] || 0) > since) {
-                    keys.push(k);
+                }
+            } else {
+                // 没有可用指纹（首次使用、指纹写不下）：只能退回时间戳判断，
+                // 此时 meta 是唯一依据，hook 失效就确实无能为力。
+                for (k in meta) {
+                    if (!Object.prototype.hasOwnProperty.call(meta, k)) continue;
+                    if (isInternalKey(k) || isIgnoredKey(k) || isUiOnlyKey(k)) continue;
+                    if ((meta[k] || 0) > since) keys.push(k);
                 }
             }
         } catch (e) {}
@@ -799,9 +813,9 @@
         '.bh-cloud .bh-up{background:#08bd74;color:#fff}',
         '.bh-cloud .bh-dl{background:#3b82f6;color:#fff}',
         '.bh-cloud .bh-cfg{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}',
-        'html.dark .bh-cloud,html[data-theme="dark"] .bh-cloud{background:#0f172a;border-color:#1f2c47}',
-        'html.dark .bh-cloud .bh-cs,html[data-theme="dark"] .bh-cloud .bh-cs{color:#cbd5e1}',
-        'html.dark .bh-cloud .bh-cs b,html[data-theme="dark"] .bh-cloud .bh-cs b{color:#f1f5f9}',
+        'html[data-theme="dark"] .bh-cloud{background:#0f172a;border-color:#1f2c47}',
+        'html[data-theme="dark"] .bh-cloud .bh-cs{color:#cbd5e1}',
+        'html[data-theme="dark"] .bh-cloud .bh-cs b{color:#f1f5f9}',
         '.bh-sec-t{font-size:12px;font-weight:700;color:#64748b;letter-spacing:.5px;margin:0 0 8px;display:flex;align-items:center;gap:6px}',
         '.bh-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}',
         '.bh-stat{background:#f8fafc;border:1px solid #e6e8ef;border-radius:10px;padding:9px 10px}',
@@ -820,16 +834,9 @@
         '.bh-btn.dgr{background:#fff;border-color:#fecaca;color:#dc2626}',
         '.bh-btn.dgr:hover{background:#fef2f2}',
         '.bh-btn.sm{padding:5px 9px;font-size:12px}',
-        '.bh-opts{display:flex;align-items:center;gap:12px;font-size:12px;color:#475569;margin-top:8px;flex-wrap:wrap}',
-        // 同上：全局 input{width:100%} 会把单选按钮拉成长条
-        '.bh-opts label{display:inline-flex;align-items:center;gap:5px;width:auto;white-space:nowrap}',
-        '.bh-opts input[type=radio]{flex:0 0 14px;width:14px;min-width:14px;max-width:14px;height:14px;margin:0;cursor:pointer}',
+        '.bh-opts{display:flex;align-items:center;gap:12px;font-size:12px;color:#475569;margin-top:8px}',
         '.bh-mod{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid #e6e8ef;border-radius:10px;margin-bottom:6px;background:#fff}',
         '.bh-mod:hover{border-color:#c7d2fe;background:#fbfcff}',
-        // ⚠️ CGA 的 index.html 有全局 `input,textarea,select{width:100%}`，
-        //    会把这里的复选框撑成整行宽，把模块名挤成 0 宽（看起来像空白行）。
-        //    必须显式锁死复选框尺寸。
-        '.bh-mod input[type=checkbox]{flex:0 0 16px;width:16px;min-width:16px;max-width:16px;height:16px;margin:0;cursor:pointer}',
         '.bh-mod .bh-mi{font-size:16px;width:20px;text-align:center;flex:0 0 20px}',
         '.bh-mod .bh-mn{font-size:13px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
         '.bh-mod .bh-mm{font-size:11px;color:#94a3b8;flex:0 0 auto}',
@@ -843,7 +850,7 @@
         'margin-left:6px;border:none;border-radius:6px;background:#eef2ff;color:#4f46e5;cursor:pointer;',
         'font-size:12px;line-height:1;flex:0 0 auto;padding:0}',
         '.bh-nav-exp:hover{background:#4f46e5;color:#fff}',
-        'html.dark .bh-nav-exp,html[data-theme="dark"] .bh-nav-exp{background:#1e293b;color:#818cf8}',
+        'html[data-theme="dark"] .bh-nav-exp{background:#1e293b;color:#818cf8}',
         // v1.6.2：侧边栏状态条已移除（备份/同步状态只在云端同步面板内展示）
         '.bh-float{position:fixed;right:16px;bottom:16px;z-index:999996;display:flex;align-items:center;gap:6px;',
         'background:#fff;color:#334155;border:1px solid #e2e8f0;border-radius:999px;padding:8px 14px;font-size:13px;',
@@ -872,14 +879,14 @@
         '.bh-notify.atbot{top:auto;bottom:16px;left:50%;right:auto;width:min(340px,calc(100vw - 32px));transform:translateX(-50%) translateY(12px)}',
         '.bh-notify.atbot.show{transform:translateX(-50%) translateY(0)}',
         '@media(max-width:520px){.bh-notify{top:10px;right:10px;left:10px;width:auto}}',
-        'html.dark .bh-panel,html[data-theme="dark"] .bh-panel{background:#111a2e;color:#e5e9f2;border-left:1px solid #1f2c47}',
-        'html.dark .bh-head,html[data-theme="dark"] .bh-head{border-color:#1f2c47}',
-        'html.dark .bh-stat,html[data-theme="dark"] .bh-stat,html.dark .bh-empty,html[data-theme="dark"] .bh-empty{background:#0f1a30;border-color:#1f2c47}',
-        'html.dark .bh-mod,html[data-theme="dark"] .bh-mod,html.dark .bh-snap,html[data-theme="dark"] .bh-snap{background:#0f1a30;border-color:#1f2c47;color:#e5e9f2}',
-        'html.dark .bh-btn,html[data-theme="dark"] .bh-btn{background:#16223c;border-color:#24334f;color:#cbd5e1}',
-        'html.dark .bh-btn:hover,html[data-theme="dark"] .bh-btn:hover{border-color:#4f46e5;background:#1b2947}',
-        'html.dark .bh-x,html[data-theme="dark"] .bh-x{background:#1b2947;color:#cbd5e1}',
-        'html.dark .bh-float,html[data-theme="dark"] .bh-float{background:#16223c;border-color:#24334f;color:#e5e9f2}',
+        'html[data-theme="dark"] .bh-panel{background:#111a2e;color:#e5e9f2;border-left:1px solid #1f2c47}',
+        'html[data-theme="dark"] .bh-head{border-color:#1f2c47}',
+        'html[data-theme="dark"] .bh-stat,html[data-theme="dark"] .bh-empty{background:#0f1a30;border-color:#1f2c47}',
+        'html[data-theme="dark"] .bh-mod,html[data-theme="dark"] .bh-snap{background:#0f1a30;border-color:#1f2c47;color:#e5e9f2}',
+        'html[data-theme="dark"] .bh-btn{background:#16223c;border-color:#24334f;color:#cbd5e1}',
+        'html[data-theme="dark"] .bh-btn:hover{border-color:#4f46e5;background:#1b2947}',
+        'html[data-theme="dark"] .bh-x{background:#1b2947;color:#cbd5e1}',
+        'html[data-theme="dark"] .bh-float{background:#16223c;border-color:#24334f;color:#e5e9f2}',
         '@media(max-width:520px){.bh-stats{grid-template-columns:repeat(2,1fr)}}'
     ].join('\n');
 
@@ -1094,28 +1101,10 @@
             '<div class="bh-stat"><b>' + usedModules + '</b><span>有数据模块</span></div>';
         el.bar.className = 'bh-bar' + (pct > 92 ? ' danger' : (pct > 80 ? ' warn' : ''));
         el.bar.querySelector('i').style.width = Math.max(1.5, pct) + '%';
-
-        // 提示分三种情况，别一律吓唬：
-        //   ① 有图片资源占大头 → 说清「是图片不是数据」，并给可执行建议
-        //   ② 纯数据就快满 → 这才是真的该导出备份
-        //   ③ 正常 → 只报百分比
-        var imgShare = s.total > 0 ? (s.imgBytes / s.total) : 0;
-        var note, danger = false;
-        if (s.imgBytes > 1024 * 1024 && imgShare > 0.3) {
-            note = '其中图片资源 ' + fmtBytes(s.imgBytes) + '（' + s.imgCount + ' 个，占 ' +
-                   (imgShare * 100).toFixed(0) + '%），纯数据仅 ' + fmtBytes(s.dataBytes) +
-                   '。图片不会同步到云端，可改成用图床链接或删除以释放空间。';
-            danger = pct > 92;
-        } else if (pct > 92) {
-            note = '⚠️ 存储空间即将写满（' + pct.toFixed(1) + '%），请立即导出备份并清理旧数据';
-            danger = true;
-        } else if (pct > 80) {
-            note = '⚠️ 存储空间已用 ' + pct.toFixed(1) + '%，建议导出备份';
-            danger = true;
-        } else {
-            note = '占用上限约 ' + quotaText() + ' 的 ' + pct.toFixed(1) + '%（纯数据 ' + fmtBytes(s.dataBytes) + '）';
-        }
-        el.note.className = 'bh-note' + (danger ? ' danger' : '');
+        var note = '占用上限约 5MB 的 ' + pct.toFixed(1) + '%';
+        if (pct > 92) note = '⚠️ 存储空间即将写满（' + pct.toFixed(1) + '%），请立即导出备份并清理旧数据';
+        else if (pct > 80) note = '⚠️ 存储空间已用 ' + pct.toFixed(1) + '%，建议导出备份';
+        el.note.className = 'bh-note' + (pct > 80 ? ' danger' : '');
         el.note.textContent = note;
     }
 
@@ -1157,7 +1146,7 @@
         if (!box) return;
         var cs = cloudApi();
         if (!cs) {
-            box.innerHTML = '<div class="bh-cs">跨设备同步由<b>导航页</b>提供。请回到效率中心首页再打开这里，' +
+            box.innerHTML = '<div class="bh-cs">跨设备同步由<b>导航页</b>提供。请回到「儿女学习时光」首页再打开这里，' +
                 '即可把数据上传到云端、并在另一台设备下载下来。</div>';
             return;
         }
@@ -1184,29 +1173,10 @@
                 }
                 var cnt = r.cloudCount || 0;
                 if (cnt) {
-                    // 本机键数 vs 云端键数的差额必须解释清楚，否则用户会以为「丢数据」。
-                    // 差额来自四类「故意不同步」的键：凭据、备份内部键、大图、运行时状态。
-                    var sc = scan();
-                    var localSyncable = (function () {
-                        try { return window.CGASyncCore ? window.CGASyncCore.localKeys().length : sc.keyCount; }
-                        catch (e) { return sc.keyCount; }
-                    })();
-                    var gap = localSyncable - cnt;
-                    var gapNote = '';
-                    if (gap > 0) {
-                        gapNote = '<br><span style="color:#94a3b8">云端比本机少 <b>' + gap + '</b> 项，' +
-                                  '差额是<b>不上传</b>的：登录凭据、备份内部记录、' +
-                                  (sc.imgCount ? '内嵌图片（' + sc.imgCount + ' 个）' : '内嵌图片') +
-                                  '、计时器运行时状态。</span>';
-                    } else if (gap < 0) {
-                        gapNote = '<br><span style="color:#94a3b8">云端比本机多 <b>' + (-gap) +
-                                  '</b> 项，点「云端 → 本机」合并即可补齐。</span>';
-                    }
                     setTxt('☁️ 云端已有 <b>' + cnt + '</b> 项数据' +
                         (r.updatedAt ? '，更新于 <b>' + fmtTime(r.updatedAt) + '</b>' : '') + '。<br>' +
-                        '本机 <b>' + localSyncable + '</b> 个可同步键' +
-                        (last && last !== 'NaN' ? '，上次同步 ' + fmtTime(last) : '') + '。' +
-                        gapNote + '<br>' + hint);
+                        '本机 <b>' + scan().keyCount + '</b> 个数据键' +
+                        (last ? '，上次同步 ' + fmtTime(last) : '') + '。<br>' + hint);
                 } else {
                     setTxt('☁️ 云端<b>还没有数据</b>。<br>请先点「本机 → 云端」把这台设备的数据传上去，' +
                         '再到另一台设备点「云端 → 本机」。');
@@ -1235,12 +1205,9 @@
     function askRestoreMode(ts) {
         return new Promise(function (resolve) {
             var mask = document.createElement('div');
-            // ⚠️ 必须用 flex-start + overflow-y:auto，不能用 center。
-            //    center 时若内容超过视口高度，会上下同时溢出，且溢出部分**滚不到**
-            //    （scrollHeight === clientHeight，滚动条不出现），按钮就点不到了。
-            mask.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.45);z-index:2147483000;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px 0;box-sizing:border-box';
+            mask.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.45);z-index:2147483000;display:flex;align-items:center;justify-content:center';
             var box = document.createElement('div');
-            box.style.cssText = 'background:#fff;border-radius:14px;padding:22px;max-width:440px;width:88%;box-shadow:0 8px 32px rgba(0,0,0,.22);font-family:inherit;margin:auto 0;flex:0 0 auto;box-sizing:border-box';
+            box.style.cssText = 'background:#fff;border-radius:14px;padding:22px;max-width:440px;width:88%;box-shadow:0 8px 32px rgba(0,0,0,.22);font-family:inherit';
             box.innerHTML = '<h3 style="margin:0 0 8px;font-size:16px;color:#1e293b">恢复到 ' + fmtTime(ts) + ' 的快照？</h3>' +
                 '<p style="margin:0 0 16px;font-size:13px;color:#64748b;line-height:1.7">恢复前会先自动快照当前状态，随时可再恢复回来。<br>' +
                 '<b>合并恢复</b>：只补齐本机缺失的数据，已有内容一律不动；<br><b>覆盖恢复</b>：用快照替换本机全部数据。</p>' +
@@ -1344,13 +1311,42 @@
     });
 
     /* ============ 每日自动快照（仅导航页执行） ============ */
-    function maybeAutoSnapshot() {
-        try {
-            var today = new Date().toDateString();
-            if (localStorage.getItem(LAST_SNAP_KEY) === today) return;
-            localStorage.setItem(LAST_SNAP_KEY, today);
-            createSnapshot('每日自动快照');
-        } catch (e) {}
+    //
+    // v1.8.1 起改为「静默期封存」，不再在 DOMContentLoaded 立刻执行。
+    //
+    // 为什么改：导航页自身的初始化（恢复侧边栏折叠、主题、上次停留模块）以及各工具
+    // iframe 的懒加载启动，会在页面打开后的几秒到几十秒里持续写 localStorage。
+    // 原来一加载就封存，等于拍下「开机第一秒」的照片——之后全部的开机写入都落在锚点
+    // 之后，pendingChanges 于是每次都稳定报出「⚠️ 备份后有改动 N 项」。
+    // 后果不是误报某一项，而是**提示整体失效**：用户发现它天天亮，就不再看了，
+    // 真正需要被看见的差异（日记/工作日志没进备份）也跟着被忽略。
+    //
+    // 现在：最后一次数据写入之后静默 AUTO_SNAP_IDLE_MS 才封存；数据一直在动就顺延，
+    // 但自首次调度起最迟不超过 AUTO_SNAP_MAX_WAIT_MS（否则只开几秒的访问永远备份不了）。
+    // 页面被关闭 / 切后台时由 pagehide 补一次（见文件上方的 pagehide 监听）。
+    // 调度参数与状态变量（AUTO_SNAP_IDLE_MS / AUTO_SNAP_MAX_WAIT_MS / autoSnapTimer /
+    // autoSnapDeadline）声明在文件顶部的常量区，原因见那里的注释。
+
+    function autoSnapshotDone() {
+        try { return localStorage.getItem(LAST_SNAP_KEY) === new Date().toDateString(); }
+        catch (e) { return true; }   // 读不到就当已完成，宁可漏一次也不重复拍
+    }
+    // 真正封存。先落日期标记，保证同一天不会重复执行（createSnapshot 是异步落盘的）。
+    function runAutoSnapshot() {
+        if (autoSnapTimer) { clearTimeout(autoSnapTimer); autoSnapTimer = null; }
+        autoSnapDeadline = 0;
+        if (autoSnapshotDone()) return;
+        try { localStorage.setItem(LAST_SNAP_KEY, new Date().toDateString()); } catch (e) {}
+        try { createSnapshot('每日自动快照'); } catch (e) {}
+    }
+    // 数据每变动一次就调用：重设静默计时器，把封存时刻往后推。
+    function scheduleAutoSnapshot() {
+        if (autoSnapshotDone()) return;
+        var now = Date.now();
+        if (!autoSnapDeadline) autoSnapDeadline = now + AUTO_SNAP_MAX_WAIT_MS;
+        var wait = Math.min(AUTO_SNAP_IDLE_MS, Math.max(1000, autoSnapDeadline - now));
+        if (autoSnapTimer) clearTimeout(autoSnapTimer);
+        autoSnapTimer = setTimeout(runAutoSnapshot, wait);
     }
 
     /* ============ 侧边栏入口（导航页） ============ */
@@ -1452,7 +1448,7 @@
             bar.className = 'bh-ss-bar' + (pct > 92 ? ' danger' : (pct > 80 ? ' warn' : ''));
             var i = bar.querySelector('i');
             if (i) i.style.width = Math.max(2, pct) + '%';
-            bar.title = '已用 ' + fmtBytes(s.total) + ' / 约 ' + quotaText() + '（' + pct.toFixed(1) + '%）';
+            bar.title = '已用 ' + fmtBytes(s.total) + ' / 约 5MB（' + pct.toFixed(1) + '%）';
         }
         box.title = '已用 ' + fmtBytes(s.total) + '，' + s.keyCount + ' 个数据键，' +
             used + ' 个模块有数据。点此打开云端同步（含备份 / 恢复 / 快照）';
@@ -1556,7 +1552,7 @@
         var s = scan();
         b.textContent = fmtBytes(s.total);
         b.className = 'badge' + (s.total > QUOTA * 0.8 ? '' : ' empty');
-        b.title = '已用 ' + fmtBytes(s.total) + ' / 约 ' + quotaText();
+        b.title = '已用 ' + fmtBytes(s.total) + ' / 约 5MB';
     }
     function watchSidebar() {
         // v1.6.2：侧边栏不再注入任何备份节点，只清理历史残留，无需监听重建
@@ -1626,18 +1622,15 @@
         close: close,
         toast: toast,
         notify: notify,
-        // 供 sync-*.js 调用：把节流中的写入时间埋点立刻落盘。
-        // 为什么必须暴露：埋点是 2 秒节流写的，用户改完数据马上点「上传」时，
-        // __hub_meta_v1__ 里还是旧时间戳 → 分片的脏判定会以为「没变」→
-        // 该片被跳过、改动静默丢在本地没传上去。同步前先 flush 掉这个窗口。
-        flushMeta: function () {
-            try { if (metaTimer) { clearTimeout(metaTimer); metaTimer = null; } flushMeta(); } catch (e) {}
-        },
         // 供 sync-github.js 调用：记录一次云端同步的时间与项目
-        markSync: function (dir, keys) {
+        // opts.auto：来自自动同步（页面上并没有人点按钮）。
+        // 记录里必须区分开 —— 否则用户在「最近活动」里看到一条双向同步，
+        // 会以为是自己手动点的，无法判断这其实是后台自动跑的结果。
+        markSync: function (dir, keys, opts) {
             var ks = keys || [];
+            var auto = !!(opts && opts.auto);
             recordAct('sync', {
-                kind: dir === 'down' ? '云端 → 本机' : '本机 → 云端',
+                kind: (auto ? '自动' : '') + (dir === 'down' ? '云端 → 本机' : (dir === 'both' ? '双向同步（两端合并）' : '本机 → 云端')),
                 count: ks.length,
                 items: summarizeKeys(ks)
             });
@@ -1648,7 +1641,7 @@
             // 「本机备份」，界面就会显示「⚠️ 备份后有改动 99 项」——可这些数据
             // 云端有、本机也有，用户完全没丢东西，提示纯属噪音。
             // 同步成功意味着「这份数据在云端有一份」，等价于已备份，所以刷新基准。
-            if (dir === 'down') {
+            if (dir === 'down' || dir === 'both') {
                 try {
                     var act0 = getAct();
                     var ts0 = (act0.backup && act0.backup.ts) || 0;
@@ -1692,7 +1685,9 @@
             opts = opts || {};
             var boot = function () {
                 watchSidebar();
-                maybeAutoSnapshot();
+                // v1.8.1：不再立刻封存，改为「静默期后封存」（数据写入会不断顺延）。
+                // 若此刻还没有任何写入，scheduleAutoSnapshot 会在 20s 后拍下第一张。
+                scheduleAutoSnapshot();
                 // v1.6.2：侧边栏无常驻状态条，备份/同步状态只在云端同步面板内展示
                 window.addEventListener('storage', function () { updateBadge(); });
                 // 导航页不再加右下角悬浮按钮：侧边栏已有常驻入口 + 容量卡，悬浮按钮重复碍事
