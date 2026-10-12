@@ -2664,7 +2664,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             <button class="side-btn" id="sidebarThemeBtn" title="切换页面深色/浅色模式"><span>🌗</span><span>页面变色</span></button>
             <!-- 版本徽标：导航栏左边下侧。两行文案由侧栏 JS 统一填充（同一套侧栏复用到各页） -->
             <div id="buildTag" title="构建版本（导航版本不低于本页版本）">
-                <span class="vt-nav">导航：V20261012 ad</span>
+                <span class="vt-nav">导航：V20261012 ae</span>
                 <span class="vt-tool">成长复盘：V20261012 AA</span>
             </div>
         </div>
@@ -3142,7 +3142,7 @@ html.dark [style*="color:#0f172a"] { color:#e2e8f0 !important; }
             _ACCOUNT_KEY: 'child_account_current',
             _LIST_KEY: 'child_account_list',
             // 需要按账户隔离的记录类键（daily_* 覆盖每日打卡/临时/签到动态键）
-            _ISOLATED: /^(growth_behavior|time_records|todos|timer_state_sm|growth_week_review|growth_month_review|growth_milestone|growth_month_days|growth_diary|growth_homework|daily_)/,
+            _ISOLATED: /^(growth_behavior|time_records|todos|timer_state_sm|growth_week_review|growth_month_review|growth_milestone|growth_month_days|growth_diary|growth_homework|lesson_recorder_v3|daily_)/,
             cur: function() {
                 try { return localStorage.getItem(Storage._ACCOUNT_KEY) || ''; } catch (e) { return ''; }
             },
@@ -8246,9 +8246,9 @@ var COMPLETION_FILTER_RANGE = 'all';
             /* 版本号（推送批次）：日期 + 字母递增（aa → ab → …）。
                导航版本用小写、页面版本用大写，且**导航版本不低于页面版本**。
                与 site-nav.js 保持同一套口径，改版本时两处一起改。 */
-            var NAV_VER = 'V20261012 ad';
+            var NAV_VER = 'V20261012 ae';
             var PAGE_VER_DEFAULT = 'V20261012 AA';
-            var PAGE_VERS = { lesson: 'V20261012 AD' };   // 单页单独迭代时在这里抬高，如 { review: 'V20261012 AB' }
+            var PAGE_VERS = { lesson: 'V20261012 AE' };   // 单页单独迭代时在这里抬高，如 { review: 'V20261012 AB' }
 
             function $(id) { return document.getElementById(id); }
 
@@ -8335,8 +8335,11 @@ var COMPLETION_FILTER_RANGE = 'all';
                     } else if (key === 'lesson') {
                         // 课时记录器：整份数据放在一个 JSON 里（lesson_recorder_v3），
                         // 用「已记课时数」当使用量，与其它工具保持同一套粗粒度口径。
+                        // ⚠️ 该键已按学员隔离（<学员名>::lesson_recorder_v3），必须经 Storage.rk()
+                        //    拿当前学员的实际键 —— 直接读裸键会让徽标永远是 0。
                         try {
-                            var lr = JSON.parse(localStorage.getItem('lesson_recorder_v3') || 'null');
+                            var lrKey = (Storage.rk ? Storage.rk('lesson_recorder_v3') : 'lesson_recorder_v3');
+                            var lr = JSON.parse(localStorage.getItem(lrKey) || 'null');
                             if (lr && Array.isArray(lr.lessons)) total = lr.lessons.length;
                         } catch (e) {}
                     }

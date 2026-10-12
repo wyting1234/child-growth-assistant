@@ -29,6 +29,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
 .sidebar nav button:hover{background:#f6f7fb}
 .sidebar nav button.active{background:var(--primary-soft);color:var(--primary);font-weight:600}
 .sidebar .foot{margin-top:16px;padding:10px;font-size:11px;color:var(--muted);border-top:1px dashed var(--border)}
+  /* 学员切换：课时数据按学员隔离（键名前缀「<学员名>::」）。
+     这里只切换「当前是谁」，增删学员仍归导航中心 —— 不重复造一套账户管理。 */
+  .child-bar{display:flex;align-items:center;gap:6px;padding:0 10px 12px}
+  .child-bar[hidden]{display:none}
+  .child-bar label{font-size:11px;color:var(--muted);white-space:nowrap}
+  .child-bar select{flex:1;min-width:0;font-family:inherit;font-size:12px;padding:5px 7px;
+    border:1px solid var(--border);border-radius:8px;background:#fff;color:inherit;cursor:pointer}
+  .child-hint{font-size:10.5px;line-height:1.5;color:var(--muted);padding:0 10px 10px;margin:0}
+  .child-hint.warn{color:#92400e;background:#fffbeb;border:1px solid #fde68a;
+    border-radius:8px;padding:5px 8px;margin:0 10px 10px}
+  .child-hint[hidden]{display:none}
+  .lr-tip{position:fixed;left:50%;top:16px;transform:translateX(-50%) translateY(-8px);
+    z-index:9999;background:#111827;color:#fff;font-size:12.5px;line-height:1.5;
+    padding:9px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);
+    max-width:80vw;text-align:center;opacity:0;pointer-events:none;
+    transition:opacity .22s,transform .22s}
+  .lr-tip.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 main{padding:20px 22px 60px;min-width:0}
 h2.page-title{font-size:18px;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -336,6 +353,11 @@ textarea.import:focus{border-color:var(--primary);background:#fff;box-shadow:0 0
   .sidebar nav{flex-direction:row;overflow-x:auto;gap:6px}
   .sidebar nav button{white-space:nowrap}
   .sidebar .foot{display:none}
+  /* 底部信息在窄屏被隐藏了，但「当前是谁」必须看得见 */
+  .child-bar{padding:0 2px 10px}
+  .child-bar select{flex:0 1 240px}
+  .child-hint{padding:0 2px 10px}
+  .child-hint.warn{margin:0 2px 10px}
   main{padding:14px}
   .cal-grid{gap:3px}
   .cal-cell{min-height:74px;padding:4px}
@@ -379,6 +401,13 @@ textarea.import:focus{border-color:var(--primary);background:#fff;box-shadow:0 0
 <div id="app">
   <aside class="sidebar">
     <div class="brand"><span class="brand-name">📚 课时记录器</span><small>Lesson Recorder</small></div>
+    <!-- 学员切换：课时数据按学员隔离。身份键 child_account_current 与
+         导航中心 / 成长复盘共用，所以在哪一页换人，全站换的都是同一位。 -->
+    <div class="child-bar" id="childBar" hidden>
+      <label for="childSel">👦 学员</label>
+      <select id="childSel" title="切换学员：每位学员的课时数据分开保存"></select>
+    </div>
+    <div class="child-hint" id="childHint" hidden></div>
     <nav>
       <button data-view="calendar" class="active">📅 日历 / 周历</button>
       <button data-view="curriculum">📐 课程设计</button>
@@ -394,8 +423,8 @@ textarea.import:focus{border-color:var(--primary);background:#fff;box-shadow:0 0
            子页再挂一套实现只会多出一个云端副本、多一套合并策略。 -->
       <button class="foot-link" id="lrGoHome">🧭 返回导航中心</button>
       <button class="foot-link" id="lrGoSync">☁️ 云端同步</button>
-      <div style="font-weight:600;color:#4b5563;letter-spacing:.2px;margin-top:10px">课时记录器：V20261012 AD</div>
-      <div style="margin-top:2px">导航：V20261012 ad</div>
+      <div style="font-weight:600;color:#4b5563;letter-spacing:.2px;margin-top:10px">课时记录器：V20261012 AE</div>
+      <div style="margin-top:2px">导航：V20261012 ae</div>
       <div style="margin-top:6px">数据保存在本机浏览器 · 建议定期备份</div>
     </div>
   </aside>
@@ -450,8 +479,54 @@ function splitList(s){
 }
 
 /* ==================== 状态管理 ==================== */
+/* 数据按「学员」隔离，与站内其它记录类数据同一套约定：键名前加「<学员名>::」前缀。
+ * 当前学员取自全局键 child_account_current —— 导航中心、成长复盘、本工具共用同一份身份，
+ * 所以在这一页换人，全站换的都是同一位；也正因如此，导航中心的「删除学员」能靠
+ * `学员名::` 前缀把本工具的数据一并清掉，不会留孤儿数据。
+ * 未指定学员时退回无前缀的裸键 —— 与首页 Storage.rk() 的行为对称。 */
 const KEY = 'lesson_recorder_v3';
+const ACCOUNT_CUR  = 'child_account_current';
+const ACCOUNT_LIST = 'child_account_list';
 let state;
+let loadedChild = curChild();   // 当前这份 state 属于谁（'' = 未指定）
+
+function curChild(){
+  try{ return String(localStorage.getItem(ACCOUNT_CUR) || '').trim(); }catch(e){ return ''; }
+}
+function childList(){
+  try{
+    const v = JSON.parse(localStorage.getItem(ACCOUNT_LIST) || '[]');
+    return (Array.isArray(v) ? v : []).map(x => String(x ?? '').trim()).filter(Boolean);
+  }catch(e){ return []; }
+}
+function setCurChild(name){
+  try{
+    if(name) localStorage.setItem(ACCOUNT_CUR, name);
+    else localStorage.removeItem(ACCOUNT_CUR);
+  }catch(e){}
+}
+/* 每次读写都实时解析，绝不缓存：学员可能在别的页 / 别的标签被切过，
+ * 缓存下来的话，换完人还会继续往旧的那位身上写。 */
+function dataKey(){
+  const c = curChild();
+  return c ? (c + '::' + KEY) : KEY;
+}
+/* 认领历史数据：本改造之前，整份数据放在无前缀的 lesson_recorder_v3 里。
+ * 第一个被指定的学员把它接手，原键随即删除 —— 不删的话，换到另一位学员
+ * 又会被认领一次，等于所有人抢同一份数据。因此最多只会发生一次。 */
+function claimLegacyData(){
+  const c = curChild();
+  if(!c) return false;
+  let legacy = null;
+  try{ legacy = localStorage.getItem(KEY); }catch(e){}
+  if(legacy == null) return false;
+  try{ if(localStorage.getItem(c + '::' + KEY) != null) return false; }catch(e){ return false; }
+  try{
+    localStorage.setItem(c + '::' + KEY, legacy);
+    localStorage.removeItem(KEY);
+  }catch(e){ return false; }
+  return true;
+}
 
 /* ==================== 课程表结构：天 × 节次 ==================== */
 /* 一节课 = 某个「星期几」的某个「节次」上什么学科；节次按 早自习 / 上午N / 下午N / 晚自习 排列 */
@@ -672,7 +747,7 @@ function defaultState(){
 }
 function load(){
   try{
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(dataKey());
     if(!raw) return defaultState();
     const s = JSON.parse(raw);
     s.modules ||= []; s.goals ||= []; s.lessons ||= []; s.todos ||= []; s.cards ||= [];
@@ -700,7 +775,8 @@ function load(){
     return s;
   }catch(e){ return defaultState(); }
 }
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+function save(){ try{ localStorage.setItem(dataKey(), JSON.stringify(state)); }catch(e){} }
+const claimedLegacy = claimLegacyData();   // 改造前那份无前缀数据，认领给当前学员
 state = load();
 
 /* ==================== 查询辅助 ==================== */
@@ -1141,6 +1217,84 @@ function parseExtraTimetable(text, subjectName, poolSlots){
   return { slots: sortSlots(slots, pool), grid };
 }
 
+/* ==================== 学员切换 ==================== */
+/* 只切换「当前是谁」；增删学员仍在导航中心，这里不重复造账户管理。 */
+function flashTip(text){
+  if(!text) return;
+  let el = document.getElementById('lrTip');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'lrTip';
+    el.className = 'lr-tip';
+    document.body.appendChild(el);
+  }
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.classList.remove('show'); }, 2800);
+}
+function renderChildBar(){
+  const bar = document.getElementById('childBar');
+  const sel = document.getElementById('childSel');
+  if(!bar || !sel) return;
+  const list = childList();
+  const cur  = curChild();
+  if(!list.length){ bar.hidden = true; return; }   // 站点还没建学员：不显示，免得凭空造一个身份
+  bar.hidden = false;
+  const names = list.slice();
+  if(cur && names.indexOf(cur) === -1) names.unshift(cur);  // 当前学员不在清单里也让他出现
+  sel.innerHTML =
+    (cur ? '' : '<option value="">— 未指定 —</option>') +
+    names.map(n => `<option value="${esc(n)}"${n === cur ? ' selected' : ''}>${esc(n)}</option>`).join('');
+  sel.value = cur;
+  updateChildSummary();
+}
+/* 只改一行小字，不重建下拉框 —— 所以在每次 render 之后都可以放心调用，
+ * 不会打断正在操作 select 的用户。 */
+function updateChildSummary(){
+  const hint = document.getElementById('childHint');
+  if(!hint) return;
+  const cur = curChild();
+  const n = (state && Array.isArray(state.lessons)) ? state.lessons.length : 0;
+  if(cur){
+    hint.className = 'child-hint';
+    hint.textContent = '已记 ' + n + ' 条课时';
+  }else{
+    hint.className = 'child-hint warn';
+    hint.textContent = '未指定学员 · 数据存全局键，各学员共用';
+  }
+  hint.hidden = false;
+}
+/* 换学员：先用旧身份把当前改动落盘（dataKey() 是实时解析的，顺序不能反），
+ * 再换身份、重新载入、整页重渲染。 */
+function switchChild(name){
+  name = String(name || '').trim();
+  if(name === curChild()) return;
+  save();
+  setCurChild(name);
+  claimLegacyData();                 // 新身份名下若是空的，看能否接手历史数据
+  loadedChild = curChild();
+  state = load();
+  render();
+  renderChildBar();
+  flashTip(name ? ('已切换到「' + name + '」') : '已切到「未指定」· 数据存全局键');
+}
+{
+  const sel = document.getElementById('childSel');
+  if(sel) sel.addEventListener('change', () => switchChild(sel.value));
+}
+/* 别的页 / 别的标签切了学员，本页跟着切 —— 否则这一页会继续显示上一位的数据，
+ * 而用户以为自己已经在看新选的那位了。 */
+window.addEventListener('storage', e => {
+  if(e.key && e.key !== ACCOUNT_CUR) return;
+  const now = curChild();
+  if(now === loadedChild) return;
+  loadedChild = now;
+  state = load();
+  render();
+  renderChildBar();
+});
+
 /* ==================== 视图路由 ==================== */
 let view = 'calendar';
 let calMode = 'month';
@@ -1171,6 +1325,7 @@ function render(){
     case 'modules':    renderCurriculum(); break;   /* 模块管理已并入课程设计 */
     case 'stats':      renderStats();      break;
   }
+  updateChildSummary();
 }
 document.querySelector('.sidebar nav').addEventListener('click', e => {
   const b = e.target.closest('button[data-view]');
@@ -3290,6 +3445,8 @@ function renderStats(){
 
 /* ==================== 启动 ==================== */
 render();
+renderChildBar();
+if(claimedLegacy) flashTip('已把原有课时数据归到「' + curChild() + '」名下');
 </script>
 
 <!-- ===== 全站统一导航（site-nav.js）· 与其它子页同一套 =====
